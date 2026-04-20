@@ -1,0 +1,21 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password"
+  },
+  "tabs": {
+    "home": "Home",
+    "record": "Record",
+    "body": "Body",
+    "circle": "Circle",
+    "stats": "Stats"
+  }
+}

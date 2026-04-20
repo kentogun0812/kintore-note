@@ -1,0 +1,21 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集"
+  },
+  "auth": {
+    "login": "ログイン",
+    "register": "新規登録",
+    "email": "メールアドレス",
+    "password": "パスワード"
+  },
+  "tabs": {
+    "home": "ホーム",
+    "record": "記録",
+    "body": "ボディ",
+    "circle": "サークル",
+    "stats": "分析"
+  }
+}
