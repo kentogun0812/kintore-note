@@ -6,34 +6,38 @@ import { spacing } from '@/constants/spacing';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
+import { useTranslation } from 'react-i18next';
 
 export default function CircleScreen() {
+  const { t } = useTranslation();
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-      <Text style={{ fontSize: typography.fontSize['2xl'], fontWeight: 'heavy', color: colors.dark.text.primary, marginBottom: spacing.xs }}>
-        Private Circle
+      <Text style={styles.screenTitle}>
+        {t('circle.title')}
       </Text>
 
-      <Card style={{ padding: spacing.xl, alignItems: 'center', backgroundColor: colors.dark.bg.tertiary, borderStyle: 'dashed', borderWidth: 1, borderColor: colors.dark.border.subtle, gap: spacing.md, marginTop: spacing.md }}>
+      <Card style={styles.comingSoonCard}>
         <Icon name="people" size={48} color={colors.dark.text.tertiary} />
-        <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.lg, fontWeight: 'bold' }}>
-          Coming in Phase 2
+        <Text style={styles.comingSoonTitle}>
+          {t('circle.comingSoon')}
         </Text>
-        <Text style={{ color: colors.dark.text.secondary, textAlign: 'center' }}>
-          Connect with friends, share your training menus, and react to their daily hanko stamps in a private, supportive feed.
+        <Text style={styles.comingSoonSubtitle}>
+          {t('circle.comingSoonDesc')}
         </Text>
-        <View style={{ marginTop: spacing.sm, opacity: 0.5 }}>
-           <Button label="Add Friend" iconName="person-add" />
+        <View style={styles.buttonWrapper}>
+           <Button label={t('circle.addFriend')} iconName="person-add" />
         </View>
       </Card>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -44,5 +48,34 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     paddingBottom: spacing.xl * 2,
     gap: spacing.md,
+  },
+  screenTitle: {
+    fontSize: typography.fontSize['2xl'],
+    fontWeight: 'heavy',
+    color: colors.dark.text.primary,
+    marginBottom: spacing.xs,
+  },
+  comingSoonCard: {
+    padding: spacing.xl,
+    alignItems: 'center',
+    backgroundColor: colors.dark.bg.tertiary,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  comingSoonTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+  },
+  comingSoonSubtitle: {
+    color: colors.dark.text.secondary,
+    textAlign: 'center',
+  },
+  buttonWrapper: {
+    marginTop: spacing.sm,
+    opacity: 0.5,
   },
 });

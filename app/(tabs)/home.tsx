@@ -9,8 +9,10 @@ import { Icon } from '@/components/Icon';
 import { HankoCalendar } from '@/components/HankoCalendar';
 import { Link, router } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
+import { useTranslation } from 'react-i18next';
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const currentDate = new Date();
   const year = currentDate.getFullYear();
@@ -34,7 +36,7 @@ export default function HomeScreen() {
         {/* Home Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.welcomeText}>Good morning,</Text>
+            <Text style={styles.welcomeText}>{t('home.welcome')}</Text>
             <Text style={styles.nameText}>
               {user?.email?.split('@')[0] || 'Lifter'}
             </Text>
@@ -54,13 +56,13 @@ export default function HomeScreen() {
           <View style={styles.streakHeader}>
             <Icon name="flame" size={28} color={colors.dark.accent.warning} />
             <Text style={styles.streakValue}>
-              14日連続！
+              {t('home.streak', { count: 14 })}
             </Text>
           </View>
           <View style={styles.streakInfo}>
             <Icon name="trophy-outline" size={16} color={colors.dark.text.secondary} />
             <Text style={styles.streakLabel}>
-              Current Streak
+              {t('home.currentStreak')}
             </Text>
           </View>
         </Card>
@@ -70,7 +72,7 @@ export default function HomeScreen() {
             <View style={styles.sectionTitleContainer}>
               <Icon name="calendar" size={20} color={colors.dark.accent.primary} />
               <Text style={styles.sectionTitle}>
-                Hanko Calendar
+                {t('home.hankoCalendar')}
               </Text>
             </View>
             <Text style={styles.sectionSubtitle}>
@@ -87,7 +89,7 @@ export default function HomeScreen() {
             <View style={styles.sectionTitleContainer}>
               <Icon name="list" size={20} color={colors.dark.accent.primary} />
               <Text style={styles.sectionTitle}>
-                今日のメニュー
+                {t('home.todayMenu')}
               </Text>
             </View>
           </View>
@@ -98,32 +100,33 @@ export default function HomeScreen() {
                  <Icon name="fitness-outline" size={16} color={colors.dark.text.secondary} />
                  <Text style={styles.menuItemName}>Bench Press</Text>
                </View>
-               <Text style={styles.menuItemSets}>3 sets</Text>
+               <Text style={styles.menuItemSets}>3 {t('common.sets')}</Text>
             </View>
             <View style={styles.menuItem}>
                <View style={styles.menuItemInfo}>
                  <Icon name="fitness-outline" size={16} color={colors.dark.text.secondary} />
                  <Text style={styles.menuItemName}>Incline Dumbbell Press</Text>
                </View>
-               <Text style={styles.menuItemSets}>3 sets</Text>
+               <Text style={styles.menuItemSets}>3 {t('common.sets')}</Text>
             </View>
             <View style={styles.menuItemLast}>
                <View style={styles.menuItemInfo}>
                  <Icon name="fitness-outline" size={16} color={colors.dark.text.secondary} />
                  <Text style={styles.menuItemName}>Cable Crossover</Text>
                </View>
-               <Text style={styles.menuItemSets}>4 sets</Text>
+               <Text style={styles.menuItemSets}>4 {t('common.sets')}</Text>
             </View>
           </View>
 
           <Link href="/training/session" asChild>
-            <Button label="Start Session" iconName="play" fullWidth />
+            <Button label={t('home.startSession')} iconName="play" fullWidth />
           </Link>
         </Card>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

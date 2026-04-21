@@ -6,6 +6,7 @@ import { typography } from '@/constants/typography';
 import { spacing } from '@/constants/spacing';
 import { Button } from '@/components/Button';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -18,6 +19,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 export default function HankoStampModal() {
+  const { t } = useTranslation();
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const streakOpacity = useSharedValue(0);
@@ -62,12 +64,12 @@ export default function HankoStampModal() {
   });
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.dark.bg.primary, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={styles.container}>
       <Stack.Screen options={{ presentation: 'fullScreenModal', headerShown: false }} />
       
-      <View style={{ alignItems: 'center', gap: spacing.xl, marginBottom: 100 }}>
-        <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize['2xl'], fontWeight: 'heavy' }}>
-          よくできました！
+      <View style={styles.content}>
+        <Text style={styles.title}>
+          {t('hanko.wellDone')}
         </Text>
         
         <View style={styles.hankoHitbox}>
@@ -79,15 +81,15 @@ export default function HankoStampModal() {
         </View>
         
         <Animated.View style={animatedStreakStyle}>
-          <Text style={{ color: colors.dark.accent.warning, fontSize: typography.fontSize.xl, fontWeight: 'bold' }}>
-            🔥 15日連続
+          <Text style={styles.streakText}>
+            🔥 {t('hanko.streak', { count: 15 })}
           </Text>
         </Animated.View>
       </View>
       
-      <View style={{ position: 'absolute', bottom: spacing['4xl'], width: '100%', paddingHorizontal: spacing.xl }}>
+      <View style={styles.footer}>
         <Button 
-          label="Close" 
+          label={t('common.close')} 
           fullWidth
           onPress={() => {
             router.dismissAll();
@@ -99,7 +101,35 @@ export default function HankoStampModal() {
   );
 }
 
+
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    alignItems: 'center',
+    gap: spacing.xl,
+    marginBottom: 100,
+  },
+  title: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize['2xl'],
+    fontWeight: 'heavy',
+  },
+  streakText: {
+    color: colors.dark.accent.warning,
+    fontSize: typography.fontSize.xl,
+    fontWeight: 'bold',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: spacing['4xl'],
+    width: '100%',
+    paddingHorizontal: spacing.xl,
+  },
   hankoHitbox: {
     width: 200,
     height: 200,

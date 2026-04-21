@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -22,30 +22,30 @@ export default function ExerciseDetailScreen() {
   return (
     <ScrollView 
       contentInsetAdjustmentBehavior="automatic"
-      style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}
+      style={styles.container}
     >
       <Stack.Screen options={{ title: 'Details', headerLargeTitle: false }} />
       
-      <View style={{ width: '100%', aspectRatio: 16/9, backgroundColor: colors.dark.bg.elevated, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.imagePlaceholder}>
         <Icon name="image-outline" size={48} color={colors.dark.text.tertiary} />
       </View>
       
-      <View style={{ padding: spacing.xl, gap: spacing.md }}>
+      <View style={styles.content}>
         <View>
-          <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.xl, fontWeight: 'bold' }}>
+          <Text style={styles.title}>
             ベンチプレス (Bench Press)
           </Text>
-          <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.md, marginTop: spacing.xs }}>
+          <Text style={styles.category}>
             大胸筋 (Chest)
           </Text>
         </View>
 
-        <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
-          <Text style={{ color: colors.dark.text.primary, fontWeight: 'semibold', fontSize: typography.fontSize.md }}>
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>
             Description
           </Text>
-          <Text style={{ color: colors.dark.text.secondary, lineHeight: typography.lineHeight.relaxed }}>
-            ベンチに仰向けになり、バーベルを胸の高さまで下ろしてから押し上げるトレーニングです。大胸筋を中心に、三角筋前部、上腕三頭筋を鍛えることができます。
+          <Text style={styles.description}>
+            ベンチに仰向けになり、バーベルを胸 của 高さまで下ろしてから押し上げるトレーニングです。大胸筋を中心に、三角筋前部、上腕三頭筋を鍛えることができます。
           </Text>
         </View>
 
@@ -53,10 +53,55 @@ export default function ExerciseDetailScreen() {
           label="Add to Menu" 
           iconName="add-circle"
           fullWidth
-          style={{ marginTop: spacing.xl }}
+          style={styles.addButton}
           onPress={handleAddToMenu}
         />
       </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  imagePlaceholder: {
+    width: '100%',
+    aspectRatio: 16/9,
+    backgroundColor: colors.dark.bg.elevated,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    padding: spacing.xl,
+    gap: spacing.md,
+  },
+  title: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.xl,
+    fontWeight: 'bold',
+  },
+  category: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.md,
+    marginTop: spacing.xs,
+  },
+  section: {
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  sectionHeader: {
+    color: colors.dark.text.primary,
+    fontWeight: 'semibold',
+    fontSize: typography.fontSize.md,
+  },
+  description: {
+    color: colors.dark.text.secondary,
+    lineHeight: typography.lineHeight.relaxed,
+  },
+  addButton: {
+    marginTop: spacing.xl,
+  },
+});
+

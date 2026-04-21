@@ -17,7 +17,7 @@ export default function CameraScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={{ color: 'white', textAlign: 'center', marginBottom: 20 }}>
+        <Text style={styles.permissionText}>
           We need your permission to show the camera
         </Text>
         <Button label="Grant Permission" onPress={requestPermission} />
@@ -35,12 +35,12 @@ export default function CameraScreen() {
       <CameraView style={styles.camera} facing={facing}>
         <View style={styles.overlay}>
           <Pressable style={styles.backButton} onPress={() => router.back()}>
-            <Icon name="close" size={28} color="white" />
+            <Icon name="close" size={28} color={colors.white} />
           </Pressable>
           
           <View style={styles.bottomControls}>
              <Pressable style={styles.flipButton} onPress={toggleCameraFacing}>
-               <Icon name="camera-reverse" size={28} color="white" />
+               <Icon name="camera-reverse" size={28} color={colors.white} />
              </Pressable>
              
              <Pressable style={styles.captureButton}>
@@ -59,14 +59,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: 'black',
+    backgroundColor: colors.black,
+  },
+  permissionText: {
+    color: colors.white,
+    textAlign: 'center',
+    marginBottom: 20,
   },
   camera: {
     flex: 1,
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.transparent,
     flexDirection: 'column',
     justifyContent: 'space-between',
   },
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
   },
   flipButton: {
     padding: 15,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.dark.alpha.black50,
     borderRadius: 30,
     width: 60,
     height: 60,
@@ -93,13 +98,13 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'white',
+    backgroundColor: colors.white,
     padding: 5,
   },
   captureInner: {
     flex: 1,
     borderRadius: 40,
     borderWidth: 2,
-    borderColor: 'black',
+    borderColor: colors.black,
   }
 });

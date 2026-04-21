@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
@@ -7,96 +7,200 @@ import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
+import { useTranslation } from 'react-i18next';
 
 export default function PremiumScreen() {
+  const { t } = useTranslation();
   const features = [
-    { icon: 'infinite', title: 'Unlimited Workouts', description: 'Log as many sessions as you lift.' },
-    { icon: 'stats-chart', title: 'Advanced Analytics', description: 'Deep dive into your progress curves.' },
-    { icon: 'cloud-upload', title: 'Cloud Sync', description: 'Keep your data safe across devices.' },
-    { icon: 'star', title: 'Exclusive Programs', description: 'Access to professional training plans.' },
+    { icon: 'infinite', title: t('premium.features.unlimited.title'), description: t('premium.features.unlimited.desc') },
+    { icon: 'stats-chart', title: t('premium.features.stats.title'), description: t('premium.features.stats.desc') },
+    { icon: 'cloud-upload', title: t('premium.features.cloud.title'), description: t('premium.features.cloud.desc') },
+    { icon: 'star', title: t('premium.features.programs.title'), description: t('premium.features.programs.desc') },
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
       {/* Custom Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.base, paddingVertical: spacing.sm }}>
+      <View style={styles.header}>
         <Pressable 
           onPress={() => router.back()} 
           hitSlop={12}
-          style={{ 
-            width: 40, 
-            height: 40, 
-            borderRadius: 20, 
-            borderWidth: 1, 
-            borderColor: colors.dark.border.default, 
-            justifyContent: 'center', 
-            alignItems: 'center' 
-          }}
+          style={styles.backButton}
         >
           <Icon name="chevron-back" size={24} color={colors.dark.text.primary} />
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: spacing.xl, gap: spacing.xxl }}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Hero */}
-        <View style={{ alignItems: 'center', gap: spacing.md }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: colors.dark.accent.primary, justifyContent: 'center', alignItems: 'center', shadowColor: colors.dark.accent.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 10 }}>
-            <Icon name="diamond" size={40} color="white" />
+        <View style={styles.heroContainer}>
+          <View style={styles.heroIconContainer}>
+            <Icon name="diamond" size={40} color={colors.white} />
           </View>
-          <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize['3xl'], fontWeight: 'heavy', textAlign: 'center' }}>
-            Kintore Note PRO
+          <Text style={styles.heroTitle}>
+            {t('premium.title')}
           </Text>
-          <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.base, textAlign: 'center' }}>
-            Take your training to the ultimate level with professional tools.
+          <Text style={styles.heroSubtitle}>
+            {t('premium.subtitle')}
           </Text>
         </View>
 
         {/* Features */}
-        <View style={{ gap: spacing.lg }}>
+        <View style={styles.featuresList}>
           {features.map((f) => (
-            <View key={f.title} style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
-              <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.dark.bg.secondary, justifyContent: 'center', alignItems: 'center' }}>
+            <View key={f.title} style={styles.featureItem}>
+              <View style={styles.featureIconContainer}>
                 <Icon name={f.icon as any} size={24} color={colors.dark.accent.primary} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.base, fontWeight: 'bold' }}>{f.title}</Text>
-                <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.sm }}>{f.description}</Text>
+              <View style={styles.featureTextContainer}>
+                <Text style={styles.featureTitle}>{f.title}</Text>
+                <Text style={styles.featureDescription}>{f.description}</Text>
               </View>
             </View>
           ))}
         </View>
 
         {/* Plans */}
-        <View style={{ gap: spacing.md }}>
-          <Pressable 
-            style={{ 
-              padding: spacing.lg, 
-              backgroundColor: colors.dark.bg.secondary, 
-              borderRadius: radius.lg, 
-              borderWidth: 2, 
-              borderColor: colors.dark.accent.primary, 
-              flexDirection: 'row', 
-              justifyContent: 'space-between', 
-              alignItems: 'center' 
-            }}
-          >
+        <View style={styles.plansContainer}>
+          <Pressable style={styles.planCard}>
             <View>
-              <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.lg, fontWeight: 'bold' }}>Annual Plan</Text>
-              <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.sm }}>$49.99 / year</Text>
+              <Text style={styles.planTitle}>{t('premium.plans.annual')}</Text>
+              <Text style={styles.planSubtitle}>{t('premium.plans.price')}</Text>
             </View>
-            <View style={{ backgroundColor: colors.dark.accent.primary, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm }}>
-               <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 10 }}>SAVE 50%</Text>
+            <View style={styles.saveBadge}>
+               <Text style={styles.saveBadgeText}>{t('premium.plans.save')}</Text>
             </View>
           </Pressable>
 
-          <Button label="Start 7-Day Free Trial" fullWidth variant="primary" />
-          <Text style={{ color: colors.dark.text.tertiary, textAlign: 'center', fontSize: typography.fontSize.xs }}>
-            Cancel anytime. Terms of Use & Privacy Policy apply.
+          <Button label={t('premium.startTrial')} fullWidth variant="primary" />
+          <Text style={styles.footerText}>
+            {t('premium.terms')}
           </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    padding: spacing.xl,
+    gap: spacing.xxl,
+  },
+  heroContainer: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  heroIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.dark.accent.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.dark.accent.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+  },
+  heroTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: 'heavy',
+    textAlign: 'center',
+  },
+  heroSubtitle: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.base,
+    textAlign: 'center',
+  },
+  featuresList: {
+    gap: spacing.lg,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  featureIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.dark.bg.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  featureTextContainer: {
+    flex: 1,
+  },
+  featureTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.base,
+    fontWeight: 'bold',
+  },
+  featureDescription: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
+  },
+  plansContainer: {
+    gap: spacing.md,
+  },
+  planCard: {
+    padding: spacing.lg,
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.lg,
+    borderWidth: 2,
+    borderColor: colors.dark.accent.primary,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+  },
+  planSubtitle: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
+  },
+  saveBadge: {
+    backgroundColor: colors.dark.accent.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.sm,
+  },
+  saveBadgeText: {
+    color: colors.white,
+    fontWeight: 'bold',
+    fontSize: 10,
+  },
+  footerText: {
+    color: colors.dark.text.tertiary,
+    textAlign: 'center',
+    fontSize: typography.fontSize.xs,
+  },
+});
+

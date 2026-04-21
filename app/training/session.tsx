@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, ScrollView, Pressable, TextInput, StyleSheet } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -10,8 +10,10 @@ import { Icon } from '@/components/Icon';
 import { NumpadModal } from '@/components/NumpadModal';
 import { useTrainingStore } from '@/store/training.store';
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next';
 
 export default function ActiveSessionScreen() {
+  const { t } = useTranslation();
   const { exercises, startSession, addSet, updateSet, toggleSetComplete } = useTrainingStore();
 
   const [numpad, setNumpad] = useState<{
@@ -68,24 +70,16 @@ export default function ActiveSessionScreen() {
   }, []);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
+    <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: 'Active Session', 
+          title: t('session.title'), 
           headerLargeTitle: false,
           headerLeft: () => (
             <Pressable 
               onPress={() => router.back()} 
               hitSlop={8} 
-              style={{ 
-                width: 36, 
-                height: 36, 
-                borderRadius: 18, 
-                borderWidth: 1, 
-                borderColor: colors.dark.border.default, 
-                justifyContent: 'center', 
-                alignItems: 'center'
-              }}
+              style={styles.headerBackButton}
             >
               <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
             </Pressable>
@@ -95,59 +89,67 @@ export default function ActiveSessionScreen() {
       
       <ScrollView 
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: spacing.base, gap: spacing.lg }}
+        contentContainerStyle={styles.scrollContent}
       >
         {exercises.map((ex) => (
-          <View key={ex.id} style={{ gap: spacing.md }}>
-            <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.xl, fontWeight: 'bold' }}>
+          <View key={ex.id} style={styles.exerciseContainer}>
+            <Text style={styles.exerciseName}>
               {ex.name}
             </Text>
             
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
-              <View style={{ flexDirection: 'row', padding: spacing.md, backgroundColor: colors.dark.bg.elevated, borderBottomWidth: 1, borderBottomColor: colors.dark.border.subtle }}>
-                <Text style={{ flex: 1, color: colors.dark.text.secondary, textAlign: 'center' }}>Set</Text>
-                <Text style={{ flex: 3, color: colors.dark.text.secondary, textAlign: 'center' }}>kg</Text>
-                <Text style={{ flex: 3, color: colors.dark.text.secondary, textAlign: 'center' }}>Reps</Text>
-                <Text style={{ flex: 1, color: colors.dark.text.secondary, textAlign: 'center' }}>✓</Text>
+            <Card style={styles.exerciseCard}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderSet}>{t('session.sets')}</Text>
+                <Text style={styles.tableHeaderMain}>kg</Text>
+                <Text style={styles.tableHeaderMain}>{t('session.reps')}</Text>
+                <Text style={styles.tableHeaderCheck}>✓</Text>
               </View>
               
               {ex.sets.map((set, index) => (
-                <View key={set.id} style={{ flexDirection: 'row', padding: spacing.md, alignItems: 'center', backgroundColor: set.completed ? colors.dark.bg.elevated : 'transparent' }}>
-                  <Text style={{ flex: 1, color: colors.dark.text.primary, textAlign: 'center', fontWeight: 'bold' }}>{index + 1}</Text>
-                  <View style={{ flex: 3, alignItems: 'center' }}>
+                <View key={set.id} style={[
+                  styles.setRow, 
+                  { backgroundColor: set.completed ? colors.dark.bg.elevated : colors.transparent }
+                ]}>
+                  <Text style={styles.setNumber}>{index + 1}</Text>
+                  <View style={styles.setInputContainer}>
                     <Pressable 
                       onPress={() => !set.completed && setNumpad({ visible: true, type: 'weight', value: set.weight, exId: ex.id, setId: set.id })}
-                      style={{ backgroundColor: colors.dark.bg.tertiary, padding: spacing.sm, borderRadius: radius.md, width: '80%', alignItems: 'center' }}
+                      style={styles.setInput}
                     >
-                      <Text style={{ color: set.completed ? colors.dark.text.secondary : colors.dark.text.primary, fontVariant: ['tabular-nums'] }}>{set.weight || '--'} kg</Text>
+                      <Text style={[
+                        styles.setInputText,
+                        { color: set.completed ? colors.dark.text.secondary : colors.dark.text.primary }
+                      ]}>{set.weight || '--'} kg</Text>
                     </Pressable>
                   </View>
-                  <View style={{ flex: 3, alignItems: 'center' }}>
+                  <View style={styles.setInputContainer}>
                     <Pressable 
                       onPress={() => !set.completed && setNumpad({ visible: true, type: 'reps', value: set.reps, exId: ex.id, setId: set.id })}
-                      style={{ backgroundColor: colors.dark.bg.tertiary, padding: spacing.sm, borderRadius: radius.md, width: '80%', alignItems: 'center' }}
+                      style={styles.setInput}
                     >
-                      <Text style={{ color: set.completed ? colors.dark.text.secondary : colors.dark.text.primary, fontVariant: ['tabular-nums'] }}>{set.reps || '--'}</Text>
+                      <Text style={[
+                        styles.setInputText,
+                        { color: set.completed ? colors.dark.text.secondary : colors.dark.text.primary }
+                      ]}>{set.reps || '--'}</Text>
                     </Pressable>
                   </View>
-                  <View style={{ flex: 1, alignItems: 'center' }}>
+                  <View style={styles.setCheckContainer}>
                     <Pressable 
                       onPress={() => handleToggleComplete(ex.id, set.id, set.completed)}
-                      style={{ 
-                        width: 32, height: 32, borderRadius: 16, 
-                        backgroundColor: set.completed ? colors.dark.accent.success : colors.dark.bg.tertiary, 
-                        justifyContent: 'center', alignItems: 'center' 
-                      }}>
+                      style={[
+                        styles.checkCircle,
+                        { backgroundColor: set.completed ? colors.dark.accent.success : colors.dark.bg.tertiary }
+                      ]}>
                        <Icon name={set.completed ? 'checkmark' : 'checkmark'} size={18} color={set.completed ? colors.dark.bg.primary : colors.dark.text.secondary} />
                     </Pressable>
                   </View>
                 </View>
               ))}
               
-              <Pressable onPress={() => addSet(ex.id)} style={{ padding: spacing.md, alignItems: 'center', borderTopWidth: 1, borderTopColor: colors.dark.border.subtle }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Pressable onPress={() => addSet(ex.id)} style={styles.addSetButton}>
+                <View style={styles.addSetContent}>
                   <Icon name="add-circle-outline" size={18} color={colors.dark.accent.info} />
-                  <Text style={{ color: colors.dark.accent.info, fontWeight: 'bold' }}>Add Set</Text>
+                  <Text style={styles.addSetText}>{t('session.addExercise')}</Text>
                 </View>
               </Pressable>
             </Card>
@@ -155,35 +157,39 @@ export default function ActiveSessionScreen() {
         ))}
       </ScrollView>
 
-      <View style={{ padding: spacing.base, paddingBottom: spacing.xl, backgroundColor: colors.dark.bg.elevated, borderTopWidth: 1, borderTopColor: colors.dark.border.subtle, gap: spacing.md }}>
+      <View style={styles.footerContainer}>
         {/* Rest Timer Block */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.dark.bg.secondary, padding: spacing.md, borderRadius: radius.lg }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <View style={styles.timerContainer}>
+          <View style={styles.timerInfo}>
             <Icon name="timer-outline" size={24} color={restLeft > 0 ? colors.dark.accent.info : colors.dark.text.secondary} />
-            <Text style={{ color: restLeft > 0 ? colors.dark.accent.info : colors.dark.text.secondary, fontSize: typography.fontSize.lg, fontWeight: 'bold' }}>
+            <Text style={[
+              styles.timerLabel,
+              { color: restLeft > 0 ? colors.dark.accent.info : colors.dark.text.secondary }
+            ]}>
               {restLeft > 0 ? formatRest(restLeft) : 'Rest Timer'}
             </Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-             <Pressable onPress={() => startRest(60)} style={{ padding: spacing.xs, backgroundColor: colors.dark.bg.tertiary, borderRadius: radius.sm }}>
-               <Text style={{ color: colors.dark.text.primary }}>1:00</Text>
+          <View style={styles.timerPresets}>
+             <Pressable onPress={() => startRest(60)} style={styles.presetButton}>
+               <Text style={styles.presetText}>1:00</Text>
              </Pressable>
-             <Pressable onPress={() => startRest(90)} style={{ padding: spacing.xs, backgroundColor: colors.dark.bg.tertiary, borderRadius: radius.sm }}>
-               <Text style={{ color: colors.dark.text.primary }}>1:30</Text>
+             <Pressable onPress={() => startRest(90)} style={styles.presetButton}>
+               <Text style={styles.presetText}>1:30</Text>
              </Pressable>
-             <Pressable onPress={() => startRest(120)} style={{ padding: spacing.xs, backgroundColor: colors.dark.bg.tertiary, borderRadius: radius.sm }}>
-               <Text style={{ color: colors.dark.text.primary }}>2:00</Text>
+             <Pressable onPress={() => startRest(120)} style={styles.presetButton}>
+               <Text style={styles.presetText}>2:00</Text>
              </Pressable>
           </View>
         </View>
 
         <Button 
-          label="Complete Session" 
+          label={t('session.finish')} 
           iconName="checkmark-done"
           fullWidth
           onPress={() => router.push('/modals/session-summary')}
         />
       </View>
+
 
       <NumpadModal 
         visible={numpad.visible}
@@ -195,3 +201,146 @@ export default function ActiveSessionScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  headerBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    padding: spacing.base,
+    gap: spacing.lg,
+  },
+  exerciseContainer: {
+    gap: spacing.md,
+  },
+  exerciseName: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.xl,
+    fontWeight: 'bold',
+  },
+  exerciseCard: {
+    padding: 0,
+    overflow: 'hidden',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    backgroundColor: colors.dark.bg.elevated,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.subtle,
+  },
+  tableHeaderSet: {
+    flex: 1,
+    color: colors.dark.text.secondary,
+    textAlign: 'center',
+  },
+  tableHeaderMain: {
+    flex: 3,
+    color: colors.dark.text.secondary,
+    textAlign: 'center',
+  },
+  tableHeaderCheck: {
+    flex: 1,
+    color: colors.dark.text.secondary,
+    textAlign: 'center',
+  },
+  setRow: {
+    flexDirection: 'row',
+    padding: spacing.md,
+    alignItems: 'center',
+  },
+  setNumber: {
+    flex: 1,
+    color: colors.dark.text.primary,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  setInputContainer: {
+    flex: 3,
+    alignItems: 'center',
+  },
+  setInput: {
+    backgroundColor: colors.dark.bg.tertiary,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    width: '80%',
+    alignItems: 'center',
+  },
+  setInputText: {
+    fontVariant: ['tabular-nums'],
+  },
+  setCheckContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  checkCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addSetButton: {
+    padding: spacing.md,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border.subtle,
+  },
+  addSetContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  addSetText: {
+    color: colors.dark.accent.info,
+    fontWeight: 'bold',
+  },
+  footerContainer: {
+    padding: spacing.base,
+    paddingBottom: spacing.xl,
+    backgroundColor: colors.dark.bg.elevated,
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border.subtle,
+    gap: spacing.md,
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.dark.bg.secondary,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+  },
+  timerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  timerLabel: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+  },
+  timerPresets: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  presetButton: {
+    padding: spacing.xs,
+    backgroundColor: colors.dark.bg.tertiary,
+    borderRadius: radius.sm,
+  },
+  presetText: {
+    color: colors.dark.text.primary,
+  },
+});
+

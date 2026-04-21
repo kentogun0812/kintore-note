@@ -3,19 +3,104 @@
     "save": "保存",
     "cancel": "キャンセル",
     "delete": "削除",
-    "edit": "編集"
+    "edit": "編集",
+    "close": "閉じる",
+    "sets": "セット",
+    "reps": "レップ",
+    "weight": "重量",
+    "finished": "完了！",
+    "goodJob": "お疲れ様でした！",
+    "more": "件以上",
+    "exercises": "種目"
   },
-  "auth": {
-    "login": "ログイン",
-    "register": "新規登録",
-    "email": "メールアドレス",
-    "password": "パスワード"
+  "home": {
+    "welcome": "おはようございます、",
+    "streak": "{{count}}日連続！",
+    "currentStreak": "現在の継続日数",
+    "hankoCalendar": "ハンコカレンダー",
+    "todayMenu": "今日のメニュー",
+    "startSession": "トレーニング開始"
+  },
+  "record": {
+    "title": "トレーニング",
+    "quickStart": "クイックスタート",
+    "quickStartDesc": "メニューなしでトレーニングを開始し、その場で記録します。",
+    "startEmpty": "空のセッションを開始",
+    "menuBuilder": "メニュービルダー",
+    "exerciseLibrary": "種目ライブラリ",
+    "savedMenus": "保存済みメニュー",
+    "noMenus": "まだ保存されたメニューはありません。"
+  },
+  "stats": {
+    "title": "分析",
+    "comingSoon": "フェーズ2で公開予定",
+    "comingSoonDesc": "ヒートマップ、ボリューム推移グラフ、自己ベストのお祝い機能などを開発中です。",
+    "preview": "ボリュームチャート（プレビュー）"
+  },
+  "circle": {
+    "title": "プライベートサークル",
+    "comingSoon": "フェーズ2で公開予定",
+    "comingSoonDesc": "友達とつながり、メニューの共有やハンコスタンプへのリアクションができる限定フィードです。",
+    "addFriend": "友達を追加"
+  },
+  "settings": {
+    "title": "設定",
+    "preferences": "基本設定",
+    "language": "言語",
+    "notifications": "通知",
+    "legal": "規約・プライバシー",
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfUse": "利用規約",
+    "signOut": "ログアウト",
+    "upgradePro": "PROにアップグレード",
+    "unlockStats": "高度な分析機能を解放",
+    "version": "筋トレノート v1.0.0"
+  },
+  "premium": {
+    "title": "筋トレノート PRO",
+    "subtitle": "プロフェッショナルなツールでトレーニングの質を高めましょう。",
+    "features": {
+      "unlimited": { "title": "無制限の記録", "desc": "すべてのセッションを制限なく記録できます。" },
+      "stats": { "title": "高度な分析", "desc": "トレーニングの推移を詳細に分析できます。" },
+      "cloud": { "title": "クラウド同期", "desc": "デバイス間でデータを安全に同期します。" },
+      "programs": { "title": "限定プログラム", "desc": "プロのトレーニングプランにアクセスできます。" }
+    },
+    "plans": {
+      "annual": "年額プラン",
+      "price": "4,900円 / 年",
+      "save": "50% お得"
+    },
+    "startTrial": "7日間の無料トライアルを開始",
+    "terms": "いつでもキャンセル可能。利用規約とプライバシーポリシーが適用されます。"
+  },
+  "session": {
+    "title": "トレーニング中",
+    "finish": "終了",
+    "addExercise": "種目を追加",
+    "sets": "セット",
+    "weight": "重量",
+    "reps": "回数",
+    "status": "状態"
+  },
+  "hanko": {
+    "wellDone": "よくできました！",
+    "streak": "{{count}}日連続"
   },
   "tabs": {
     "home": "ホーム",
-    "record": "記録",
-    "body": "ボディ",
+    "record": "トレーニング",
+    "body": "記録",
     "circle": "サークル",
     "stats": "分析"
+  },
+  "menuBuilder": {
+    "title": "メニュービルダー",
+    "menuName": "メニュー名",
+    "placeholder": "例：胸の日",
+    "exercises": "種目",
+    "add": "追加",
+    "noExercises": "種目が追加されていません。",
+    "saving": "保存中...",
+    "saveMenu": "メニューを保存"
   }
 }

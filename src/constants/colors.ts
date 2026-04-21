@@ -1,4 +1,9 @@
 export const colors = {
+  // Common colors
+  transparent: 'transparent',
+  white: '#FFFFFF',
+  black: '#000000',
+
   // Dark theme (default)
   dark: {
     bg: {
@@ -30,6 +35,15 @@ export const colors = {
       inkLight: '#E54D42',        // Hanko highlight
       paper: '#FFF8F0',           // Stamp paper texture
     },
+    alpha: {
+      white80: 'rgba(255, 255, 255, 0.8)',
+      white50: 'rgba(255, 255, 255, 0.5)',
+      black80: 'rgba(0, 0, 0, 0.8)',
+      black60: 'rgba(0, 0, 0, 0.6)',
+      black50: 'rgba(0, 0, 0, 0.5)',
+      accent10: 'rgba(229, 77, 66, 0.1)',
+      accent20: 'rgba(229, 77, 66, 0.2)',
+    }
   },
   
   // Reaction colors
@@ -39,3 +53,4 @@ export const colors = {
     flower: '#FF69B4',            // 💮
   },
 } as const;
+

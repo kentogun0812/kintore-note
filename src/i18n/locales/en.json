@@ -3,13 +3,88 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
-    "edit": "Edit"
+    "edit": "Edit",
+    "close": "Close",
+    "sets": "sets",
+    "reps": "reps",
+    "weight": "weight",
+    "finished": "Finished!",
+    "goodJob": "Good job!",
+    "more": "more",
+    "exercises": "exercises"
   },
-  "auth": {
-    "login": "Login",
-    "register": "Register",
-    "email": "Email",
-    "password": "Password"
+  "home": {
+    "welcome": "Good morning,",
+    "streak": "{{count}} day streak!",
+    "currentStreak": "Current Streak",
+    "hankoCalendar": "Hanko Calendar",
+    "todayMenu": "Today's Menu",
+    "startSession": "Start Session"
+  },
+  "record": {
+    "title": "Training",
+    "quickStart": "Quick Start",
+    "quickStartDesc": "Start an empty session and log exercises as you go.",
+    "startEmpty": "Start Empty Session",
+    "menuBuilder": "Menu Builder",
+    "exerciseLibrary": "Exercise Library",
+    "savedMenus": "Saved Menus",
+    "noMenus": "No saved menus yet."
+  },
+  "stats": {
+    "title": "Analytics",
+    "comingSoon": "Coming in Phase 2",
+    "comingSoonDesc": "Detailed muscle heatmaps, volume progression charts, and PR celebrations are currently in development.",
+    "preview": "Volume Chart Preview"
+  },
+  "circle": {
+    "title": "Private Circle",
+    "comingSoon": "Coming in Phase 2",
+    "comingSoonDesc": "Connect with friends, share your training menus, and react to their daily hanko stamps in a private, supportive feed.",
+    "addFriend": "Add Friend"
+  },
+  "settings": {
+    "title": "Settings",
+    "preferences": "Preferences",
+    "language": "Language",
+    "notifications": "Notifications",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "signOut": "Sign Out",
+    "upgradePro": "Upgrade to PRO",
+    "unlockStats": "Unlock advanced stats & analytics",
+    "version": "Kintore Note v1.0.0"
+  },
+  "premium": {
+    "title": "Kintore Note PRO",
+    "subtitle": "Take your training to the ultimate level with professional tools.",
+    "features": {
+      "unlimited": { "title": "Unlimited Workouts", "desc": "Log as many sessions as you lift." },
+      "stats": { "title": "Advanced Analytics", "desc": "Deep dive into your progress curves." },
+      "cloud": { "title": "Cloud Sync", "desc": "Keep your data safe across devices." },
+      "programs": { "title": "Exclusive Programs", "desc": "Access to professional training plans." }
+    },
+    "plans": {
+      "annual": "Annual Plan",
+      "price": "$49.99 / year",
+      "save": "SAVE 50%"
+    },
+    "startTrial": "Start 7-Day Free Trial",
+    "terms": "Cancel anytime. Terms of Use & Privacy Policy apply."
+  },
+  "session": {
+    "title": "Workout Session",
+    "finish": "Finish",
+    "addExercise": "Add Exercise",
+    "sets": "SETS",
+    "weight": "WEIGHT",
+    "reps": "REPS",
+    "status": "STATUS"
+  },
+  "hanko": {
+    "wellDone": "Well done!",
+    "streak": "{{count}} days streak"
   },
   "tabs": {
     "home": "Home",
@@ -17,5 +92,15 @@
     "body": "Body",
     "circle": "Circle",
     "stats": "Stats"
+  },
+  "menuBuilder": {
+    "title": "Menu Builder",
+    "menuName": "Menu Name",
+    "placeholder": "Ex: Chest Day",
+    "exercises": "Exercises",
+    "add": "Add",
+    "noExercises": "No exercises added yet.",
+    "saving": "Saving...",
+    "saveMenu": "Save Menu"
   }
 }

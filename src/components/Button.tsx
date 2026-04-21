@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View, PressableProps } from 'react-native';
+import { Pressable, Text, View, PressableProps, StyleSheet } from 'react-native';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
@@ -74,16 +74,10 @@ export function Button({
     <Pressable
       onPress={handlePress}
       style={(state) => [
+        styles.base,
         {
           height: getHeight(),
           backgroundColor: getBackgroundColor(state.pressed),
-          flexDirection: 'row',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: spacing.sm,
-          borderRadius: radius.md,
-          paddingHorizontal: spacing.xl,
-          borderCurve: 'continuous',
           width: fullWidth ? '100%' : 'auto',
           borderWidth: variant === 'outline' ? 1 : 0,
           borderColor: variant === 'outline' ? colors.dark.border.default : 'transparent',
@@ -93,14 +87,27 @@ export function Button({
       {...props}
     >
       {iconPosition === 'left' && iconElement}
-      <Text style={{
-        color: getTextColor(),
-        fontSize: typography.fontSize.base,
-        fontWeight: typography.fontWeight.semibold,
-      }}>
+      <Text style={[styles.text, { color: getTextColor() }]}>
         {label}
       </Text>
       {iconPosition === 'right' && iconElement}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.xl,
+    borderCurve: 'continuous',
+  },
+  text: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+  },
+});
+

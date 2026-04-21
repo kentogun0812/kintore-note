@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, StyleSheet } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
@@ -8,29 +8,45 @@ import { spacing, radius } from '@/constants/spacing';
 import { Icon, IconName } from '@/components/Icon';
 import { Card } from '@/components/Card';
 import { useAuthStore } from '@/store/auth.store';
+import { useTranslation } from 'react-i18next';
+
+interface MenuItem {
+  label: string;
+  icon: string;
+  value?: string;
+  onPress?: () => void;
+  isToggle?: boolean;
+  toggleValue?: boolean;
+  onToggle?: (val: boolean) => void;
+}
 
 export default function SettingsScreen() {
+  const { t, i18n } = useTranslation();
   const signOut = useAuthStore((s) => s.signOut);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [language, setLanguage] = useState('English');
 
   const handleSignOut = async () => {
     await signOut();
     router.replace('/auth/login');
   };
 
-  const menuSections = [
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'en' ? 'ja' : 'en';
+    i18n.changeLanguage(newLang);
+  };
+
+  const menuSections: { title: string; items: MenuItem[] }[] = [
     {
-      title: 'Preferences',
+      title: t('settings.preferences'),
       items: [
         { 
-          label: 'Language', 
-          value: language,
+          label: t('settings.language'), 
+          value: i18n.language === 'en' ? 'English' : '日本語',
           icon: 'globe-outline', 
-          onPress: () => setLanguage(language === 'English' ? 'Tiếng Việt' : 'English') 
+          onPress: toggleLanguage 
         },
         { 
-          label: 'Notifications', 
+          label: t('settings.notifications'), 
           icon: 'notifications-outline', 
           isToggle: true,
           toggleValue: notificationsEnabled,
@@ -39,94 +55,84 @@ export default function SettingsScreen() {
       ],
     },
     {
-      title: 'Legal',
+      title: t('settings.legal'),
       items: [
-        { label: 'Privacy Policy', icon: 'shield-checkmark-outline' },
-        { label: 'Terms of Use', icon: 'document-text-outline' },
+        { label: t('settings.privacyPolicy'), icon: 'shield-checkmark-outline' },
+        { label: t('settings.termsOfUse'), icon: 'document-text-outline' },
       ],
     },
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
+    <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
       {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.base, paddingVertical: spacing.sm }}>
+      <View style={styles.header}>
         <Pressable 
           onPress={() => router.back()} 
           hitSlop={12}
-          style={{ 
-            width: 36, 
-            height: 36, 
-            borderRadius: 18, 
-            borderWidth: 1, 
-            borderColor: colors.dark.border.default, 
-            justifyContent: 'center', 
-            alignItems: 'center' 
-          }}
+          style={styles.backButton}
         >
           <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
         </Pressable>
-        <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.xl, fontWeight: 'bold' }}>
-          Settings
+        <Text style={styles.headerTitle}>
+          {t('settings.title')}
         </Text>
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.base, gap: spacing.lg }}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Premium Banner */}
         <Pressable onPress={() => router.push('/premium')}>
-          <Card style={{ backgroundColor: colors.dark.accent.primary, borderCurve: 'continuous', overflow: 'hidden' }}>
-            <View style={{ padding: spacing.lg, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-               <View style={{ gap: spacing.xs, flex: 1 }}>
-                 <Text style={{ color: 'white', fontSize: typography.fontSize.lg, fontWeight: 'heavy' }}>Upgrade to PRO</Text>
-                 <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: typography.fontSize.sm }}>Unlock advanced stats & analytics</Text>
+          <Card style={styles.premiumCard}>
+            <View style={styles.premiumContent}>
+               <View style={styles.premiumTextContainer}>
+                 <Text style={styles.premiumTitle}>{t('settings.upgradePro')}</Text>
+                 <Text style={styles.premiumSubtitle}>{t('settings.unlockStats')}</Text>
                </View>
-               <Icon name="diamond" size={40} color="white" />
+               <Icon name="diamond" size={40} color={colors.white} />
             </View>
           </Card>
         </Pressable>
 
         {menuSections.map((section) => (
-          <View key={section.title} style={{ gap: spacing.sm }}>
-            <Text style={{ color: colors.dark.text.tertiary, fontSize: typography.fontSize.xs, fontWeight: 'bold', textTransform: 'uppercase', paddingHorizontal: spacing.xs }}>
+          <View key={section.title} style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>
               {section.title}
             </Text>
-            <View style={{ backgroundColor: colors.dark.bg.secondary, borderRadius: radius.lg, overflow: 'hidden' }}>
+            <View style={styles.sectionContent}>
               {section.items.map((item, i) => (
                 <Pressable
                   key={item.label}
                   onPress={item.onPress}
-                  disabled={item.isToggle} // Disable press if it's a switch item
-                  style={({ pressed }) => ({
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: spacing.md,
-                    gap: spacing.md,
-                    backgroundColor: pressed ? colors.dark.bg.elevated : 'transparent',
-                    borderBottomWidth: i < section.items.length - 1 ? 1 : 0,
-                    borderBottomColor: colors.dark.border.subtle,
-                  })}
+                  disabled={item.isToggle}
+                  style={({ pressed }) => [
+                    styles.menuItem,
+                    { 
+                      backgroundColor: pressed ? colors.dark.bg.elevated : 'transparent',
+                      borderBottomWidth: i < section.items.length - 1 ? 1 : 0,
+                    }
+                  ]}
                 >
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: colors.dark.bg.tertiary, justifyContent: 'center', alignItems: 'center' }}>
+                  <View style={styles.menuIconContainer}>
                     <Icon name={item.icon as any} size={18} color={colors.dark.text.secondary} />
                   </View>
-                  <Text style={{ flex: 1, color: colors.dark.text.primary, fontSize: typography.fontSize.base }}>{item.label}</Text>
+                  <Text style={styles.menuItemLabel}>{item.label}</Text>
                   
                   {item.isToggle ? (
                     <Switch 
                       value={item.toggleValue} 
                       onValueChange={item.onToggle}
                       trackColor={{ false: colors.dark.bg.elevated, true: colors.dark.accent.primary }}
-                      thumbColor="white"
+                      thumbColor={colors.white}
                     />
                   ) : (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <View style={styles.menuValueContainer}>
                       {item.value && (
-                        <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.sm }}>{item.value}</Text>
+                        <Text style={styles.menuItemValue}>{item.value}</Text>
                       )}
                       <Icon name="chevron-forward" size={16} color={colors.dark.text.tertiary} />
                     </View>
@@ -139,29 +145,150 @@ export default function SettingsScreen() {
 
         <Pressable
           onPress={handleSignOut}
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: spacing.sm,
-            backgroundColor: pressed ? 'rgba(229, 77, 66, 0.1)' : colors.dark.bg.secondary,
-            borderRadius: radius.lg,
-            padding: spacing.md,
-            marginTop: spacing.md,
-            borderWidth: 1,
-            borderColor: pressed ? colors.dark.accent.primary : 'transparent',
-          })}
+          style={({ pressed }) => [
+            styles.signOutButton,
+            {
+              backgroundColor: pressed ? colors.dark.alpha.accent10 : colors.dark.bg.secondary,
+              borderColor: pressed ? colors.dark.accent.primary : 'transparent',
+            }
+          ]}
         >
           <Icon name="log-out-outline" size={20} color={colors.dark.accent.primary} />
-          <Text style={{ color: colors.dark.accent.primary, fontWeight: 'bold', fontSize: typography.fontSize.base }}>
-            Sign Out
+          <Text style={styles.signOutText}>
+            {t('settings.signOut')}
           </Text>
         </Pressable>
 
-        <Text style={{ color: colors.dark.text.tertiary, fontSize: typography.fontSize.xs, textAlign: 'center', marginTop: spacing.xl }}>
-          Kintore Note v1.0.0
+        <Text style={styles.versionText}>
+          {t('settings.version')}
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.xl,
+    fontWeight: 'bold',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.base,
+    gap: spacing.lg,
+  },
+  premiumCard: {
+    backgroundColor: colors.dark.accent.primary,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+  },
+  premiumContent: {
+    padding: spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  premiumTextContainer: {
+    gap: spacing.xs,
+    flex: 1,
+  },
+  premiumTitle: {
+    color: colors.white,
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'heavy',
+  },
+  premiumSubtitle: {
+    color: colors.dark.alpha.white80,
+    fontSize: typography.fontSize.sm,
+  },
+  sectionContainer: {
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    color: colors.dark.text.tertiary,
+    fontSize: typography.fontSize.xs,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    paddingHorizontal: spacing.xs,
+  },
+  sectionContent: {
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    gap: spacing.md,
+    borderBottomColor: colors.dark.border.subtle,
+  },
+  menuIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: colors.dark.bg.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuItemLabel: {
+    flex: 1,
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.base,
+  },
+  menuValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  menuItemValue: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.md,
+    borderWidth: 1,
+  },
+  signOutText: {
+    color: colors.dark.accent.primary,
+    fontWeight: 'bold',
+    fontSize: typography.fontSize.base,
+  },
+  versionText: {
+    color: colors.dark.text.tertiary,
+    fontSize: typography.fontSize.xs,
+    textAlign: 'center',
+    marginTop: spacing.xl,
+  },
+});
+

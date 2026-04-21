@@ -1,5 +1,5 @@
 import { Stack, router } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { Icon } from '@/components/Icon';
@@ -19,16 +19,7 @@ export default function TrainingLayout() {
           <Pressable 
             onPress={() => router.back()} 
             hitSlop={8} 
-            style={{ 
-              width: 36, 
-              height: 36, 
-              borderRadius: 18, 
-              borderWidth: 1, 
-              borderColor: colors.dark.border.default, 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              marginLeft: spacing.xs
-            }}
+            style={styles.backButton}
           >
             <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
           </Pressable>
@@ -37,3 +28,17 @@ export default function TrainingLayout() {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: spacing.xs,
+  },
+});
+

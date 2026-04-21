@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, SectionList, TextInput, ActivityIndicator, Pressable } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, SectionList, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -56,16 +56,12 @@ export default function ExerciseLibraryScreen() {
         throw error;
       }
       
-      console.log('Supabase exercises response info:');
-      console.log(`- Data length: ${data ? data.length : 0}`);
-      console.log('- First item sample: ', data && data.length > 0 ? JSON.stringify(data[0]) : 'NONE');
-
       return data as any as ExerciseRow[];
     }
   });
 
   // Group and format data for SectionList
-  const groupedData = React.useMemo(() => {
+  const groupedData = useMemo(() => {
     if (!exercises) return [];
 
     // Filter based on search query
@@ -116,27 +112,18 @@ export default function ExerciseLibraryScreen() {
   }, [exercises, searchQuery]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
+    <View style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: 'Exercise Library', 
           headerLargeTitle: false,
           headerTitleAlign: 'center',
-          headerBackVisible: true, // Ensure back button is active
+          headerBackVisible: true,
           headerLeft: () => (
             <Pressable 
               onPress={() => router.back()} 
               hitSlop={8} 
-              style={{ 
-                width: 36, 
-                height: 36, 
-                borderRadius: 18, 
-                borderWidth: 1, 
-                borderColor: colors.dark.border.default, 
-                justifyContent: 'center', 
-                alignItems: 'center',
-                marginLeft: spacing.xs
-              }}
+              style={styles.headerBackButton}
             >
               <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
             </Pressable>
@@ -144,23 +131,11 @@ export default function ExerciseLibraryScreen() {
         }} 
       />
       
-      <View style={{ padding: spacing.base, backgroundColor: colors.dark.bg.primary }}>
-        <View style={{ 
-          flexDirection: 'row', 
-          alignItems: 'center', 
-          backgroundColor: colors.dark.bg.elevated,
-          borderRadius: 10,
-          paddingHorizontal: spacing.sm,
-          height: 40
-        }}>
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
           <Icon name="search" size={16} color={colors.dark.text.secondary} />
           <TextInput
-            style={{ 
-              flex: 1, 
-              color: colors.dark.text.primary, 
-              marginLeft: spacing.sm,
-              fontSize: typography.fontSize.base,
-            }}
+            style={styles.searchInput}
             placeholder="Search exercises..."
             placeholderTextColor={colors.dark.text.secondary}
             value={searchQuery}
@@ -171,13 +146,13 @@ export default function ExerciseLibraryScreen() {
       </View>
 
       {isLoading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={colors.dark.accent.primary} />
         </View>
       ) : error ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: spacing.xl }}>
-          <Text style={{ color: colors.dark.accent.primary, textAlign: 'center' }}>Failed to load exercises.</Text>
-          <Text style={{ color: colors.dark.text.secondary, textAlign: 'center', marginTop: spacing.md }}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorTitle}>Failed to load exercises.</Text>
+          <Text style={styles.errorSubtitle}>
             {error instanceof Error ? error.message : JSON.stringify(error)}
           </Text>
         </View>
@@ -187,7 +162,7 @@ export default function ExerciseLibraryScreen() {
           sections={groupedData}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={{ paddingHorizontal: spacing.base, paddingVertical: spacing.xs }}>
+            <View style={styles.itemContainer}>
               <ExerciseCard 
                 exercise={item} 
                 onPress={() => handleSelectExercise(item.id, item.name)} 
@@ -195,23 +170,13 @@ export default function ExerciseLibraryScreen() {
             </View>
           )}
           renderSectionHeader={({ section: { title } }) => (
-            <View style={{ 
-              backgroundColor: colors.dark.bg.primary, 
-              paddingHorizontal: spacing.base, 
-              paddingVertical: spacing.sm,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.dark.border.subtle,
-            }}>
-              <Text style={{ 
-                color: colors.dark.text.primary, 
-                fontWeight: 'bold', 
-                fontSize: typography.fontSize.md 
-              }}>{title}</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{title}</Text>
             </View>
           )}
           ListEmptyComponent={
-            <View style={{ padding: spacing.xl, alignItems: 'center' }}>
-              <Text style={{ color: colors.dark.text.secondary }}>No exercises found.</Text>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No exercises found.</Text>
             </View>
           }
         />
@@ -219,3 +184,82 @@ export default function ExerciseLibraryScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  headerBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: spacing.xs,
+  },
+  searchContainer: {
+    padding: spacing.base,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.dark.bg.elevated,
+    borderRadius: 10,
+    paddingHorizontal: spacing.sm,
+    height: 40,
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.dark.text.primary,
+    marginLeft: spacing.sm,
+    fontSize: typography.fontSize.base,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  errorTitle: {
+    color: colors.dark.accent.primary,
+    textAlign: 'center',
+  },
+  errorSubtitle: {
+    color: colors.dark.text.secondary,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  itemContainer: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.xs,
+  },
+  sectionHeader: {
+    backgroundColor: colors.dark.bg.primary,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.subtle,
+  },
+  sectionTitle: {
+    color: colors.dark.text.primary,
+    fontWeight: 'bold',
+    fontSize: typography.fontSize.md,
+  },
+  emptyContainer: {
+    padding: spacing.xl,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: colors.dark.text.secondary,
+  },
+});
+

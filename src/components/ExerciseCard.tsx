@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Icon } from '@/components/Icon';
 import { colors } from '@/constants/colors';
@@ -20,22 +20,15 @@ export function ExerciseCard({ exercise, onPress }: { exercise: ExerciseProps, o
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        {
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: pressed ? colors.dark.bg.elevated : colors.dark.bg.secondary,
-          padding: spacing.md,
-          borderRadius: radius.md,
-          gap: spacing.md,
-          borderCurve: 'continuous',
-        }
+        styles.card,
+        pressed && styles.cardPressed
       ]}
     >
-      <View style={{ width: 60, height: 60, borderRadius: radius.sm, backgroundColor: colors.dark.bg.tertiary, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.imageContainer}>
         {exercise.thumbnailUrl ? (
           <Image 
             source={{ uri: exercise.thumbnailUrl }} 
-            style={{ width: '100%', height: '100%', borderRadius: radius.sm }} 
+            style={styles.thumbnail} 
             contentFit="cover" 
           />
         ) : (
@@ -43,11 +36,11 @@ export function ExerciseCard({ exercise, onPress }: { exercise: ExerciseProps, o
         )}
       </View>
       
-      <View style={{ flex: 1, gap: 4 }}>
-        <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.base, fontWeight: 'bold' }}>
+      <View style={styles.textContainer}>
+        <Text style={styles.name}>
           {exercise.name}
         </Text>
-        <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.sm }}>
+        <Text style={styles.muscleGroup}>
           {exercise.muscleGroup}
         </Text>
       </View>
@@ -66,3 +59,45 @@ export function ExerciseCard({ exercise, onPress }: { exercise: ExerciseProps, o
     </Link>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.dark.bg.secondary,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    gap: spacing.md,
+    borderCurve: 'continuous',
+  },
+  cardPressed: {
+    backgroundColor: colors.dark.bg.elevated,
+  },
+  imageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: radius.sm,
+    backgroundColor: colors.dark.bg.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+    borderRadius: radius.sm,
+  },
+  textContainer: {
+    flex: 1,
+    gap: 4,
+  },
+  name: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.base,
+    fontWeight: 'bold',
+  },
+  muscleGroup: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
+  },
+});
+

@@ -70,7 +70,7 @@ export function NumpadModal({ visible, onClose, type, initialValue, onSave }: Nu
             </View>
           </View>
 
-          <Button label="Save" iconName="checkmark" fullWidth onPress={handleSave} style={{ marginTop: spacing.xl }} />
+          <Button label="Save" iconName="checkmark" fullWidth onPress={handleSave} style={styles.saveButton} />
         </Pressable>
       </Pressable>
     </Modal>
@@ -80,7 +80,7 @@ export function NumpadModal({ visible, onClose, type, initialValue, onSave }: Nu
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.dark.alpha.black60,
     justifyContent: 'flex-end',
   },
   sheet: {
@@ -137,5 +137,8 @@ const styles = StyleSheet.create({
     color: colors.dark.text.primary,
     fontSize: typography.fontSize.md,
     fontWeight: 'bold',
-  }
+  },
+  saveButton: {
+    marginTop: spacing.xl,
+  },
 });

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, Alert } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
@@ -15,6 +15,9 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
+
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert('Thiếu thông tin', 'Hãy nhập đầy đủ thông tin để tạo tài khoản mới bạn nhé! ✨');
@@ -27,7 +30,7 @@ export default function RegisterScreen() {
     }
     
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -70,23 +73,15 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
+    <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       
       {/* Back Button */}
-      <View style={{ paddingHorizontal: spacing.xl, paddingTop: spacing.md }}>
+      <View style={styles.backButtonContainer}>
         <Pressable 
           onPress={() => router.back()} 
           hitSlop={12} 
-          style={{ 
-            width: 36, 
-            height: 36, 
-            borderRadius: 18, 
-            borderWidth: 1, 
-            borderColor: colors.dark.border.default, 
-            justifyContent: 'center', 
-            alignItems: 'center',
-          }}
+          style={styles.backButton}
         >
           <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
         </Pressable>
@@ -94,117 +89,115 @@ export default function RegisterScreen() {
 
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets={true}
       >
-        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: spacing.xl }}>
+        <View style={styles.container}>
           {/* Header */}
-          <View style={{ alignItems: 'center', marginBottom: spacing['2xl'] }}>
-            <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: colors.dark.accent.primary, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.md }}>
-              <Text style={{ fontSize: 36 }}>🏋️</Text>
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <Text style={styles.iconText}>🏋️</Text>
             </View>
-            <Text style={{ fontSize: typography.fontSize['3xl'], fontWeight: 'heavy', color: colors.dark.text.primary }}>
-              Create Account
-            </Text>
-            <Text style={{ fontSize: typography.fontSize.base, color: colors.dark.text.secondary, marginTop: spacing.xs }}>
-              Join Kintore Note and start lifting.
-            </Text>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join Kintore Note and start lifting.</Text>
           </View>
 
           {/* Form */}
-          <View style={{ gap: spacing.md }}>
+          <View style={styles.form}>
             <TextInput 
-              style={{
-                backgroundColor: colors.dark.bg.secondary,
-                color: colors.dark.text.primary,
-                padding: spacing.lg,
-                borderRadius: 12,
-                fontSize: typography.fontSize.md,
-                borderWidth: 1,
-                borderColor: colors.dark.border.subtle,
-              }}
+              style={styles.input}
               placeholder="Email address"
               placeholderTextColor={colors.dark.text.tertiary}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
-              keyboardType="email-address"
+              autoCorrect={false}
+              spellCheck={false}
+              keyboardType="default"
+              keyboardAppearance="dark"
+              textContentType="emailAddress"
+              autoComplete="email"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              blurOnSubmit={false}
             />
             <TextInput 
-              style={{
-                backgroundColor: colors.dark.bg.secondary,
-                color: colors.dark.text.primary,
-                padding: spacing.lg,
-                borderRadius: 12,
-                fontSize: typography.fontSize.md,
-                borderWidth: 1,
-                borderColor: colors.dark.border.subtle,
-              }}
+              ref={passwordRef}
+              style={styles.input}
               placeholder="Password"
               secureTextEntry
               placeholderTextColor={colors.dark.text.tertiary}
               value={password}
               onChangeText={setPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              keyboardType="default"
+              keyboardAppearance="dark"
+              textContentType="newPassword"
+              returnKeyType="next"
+              onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+              blurOnSubmit={false}
             />
             <TextInput 
-              style={{
-                backgroundColor: colors.dark.bg.secondary,
-                color: colors.dark.text.primary,
-                padding: spacing.lg,
-                borderRadius: 12,
-                fontSize: typography.fontSize.md,
-                borderWidth: 1,
-                borderColor: colors.dark.border.subtle,
-              }}
+              ref={confirmPasswordRef}
+              style={styles.input}
               placeholder="Confirm Password"
               secureTextEntry
               placeholderTextColor={colors.dark.text.tertiary}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              spellCheck={false}
+              keyboardType="default"
+              keyboardAppearance="dark"
+              textContentType="newPassword"
+              returnKeyType="done"
+              onSubmitEditing={handleRegister}
+              blurOnSubmit={false}
             />
             
             <Pressable 
-              style={{ 
-                backgroundColor: colors.dark.accent.primary, 
-                padding: spacing.lg, 
-                borderRadius: 12, 
-                alignItems: 'center', 
-                marginTop: spacing.xs, 
-                opacity: loading ? 0.7 : 1,
-              }}
+              style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleRegister}
               disabled={loading}
             >
-              <Text style={{ color: colors.dark.text.inverse, fontSize: typography.fontSize.md, fontWeight: 'bold' }}>
+              <Text style={styles.buttonText}>
                 {loading ? 'Creating Account...' : 'Continue'}
               </Text>
             </Pressable>
           </View>
 
           {/* Divider */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: spacing.lg }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: colors.dark.border.subtle }} />
-            <Text style={{ color: colors.dark.text.tertiary, paddingHorizontal: spacing.md, fontSize: typography.fontSize.sm }}>
-              OR CONTINUE WITH
-            </Text>
-            <View style={{ flex: 1, height: 1, backgroundColor: colors.dark.border.subtle }} />
+          <View style={styles.dividerContainer}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+            <View style={styles.dividerLine} />
           </View>
 
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
-            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-            cornerRadius={12}
-            style={{ width: '100%', height: 50 }}
+          <Pressable 
+            style={({ pressed }) => [
+              styles.appleButton, 
+              { opacity: pressed ? 0.9 : 1 }
+            ]} 
             onPress={handleAppleLogin}
-          />
+          >
+            <View style={styles.appleButtonContent}>
+              <Icon name="logo-apple" size={18} color={colors.black} />
+              <Text style={styles.appleButtonText}>Sign Up with Apple</Text>
+            </View>
+          </Pressable>
         </View>
         
-        <View style={{ alignItems: 'center', paddingBottom: spacing.xl }}>
+        <View style={styles.footer}>
           <Pressable 
-            style={{ padding: spacing.sm }}
+            style={styles.footerLink}
             onPress={() => router.back()}
           >
-            <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.base }}>
-              Already have an account? <Text style={{ color: colors.dark.accent.primary, fontWeight: 'bold' }}>Sign In</Text>
+            <Text style={styles.footerText}>
+              Already have an account? <Text style={styles.footerLinkBold}>Sign In</Text>
             </Text>
           </Pressable>
         </View>
@@ -212,3 +205,135 @@ export default function RegisterScreen() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  backButtonContainer: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    justifyContent: 'center',
+    paddingBottom: spacing.lg,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: spacing['2xl'],
+  },
+  iconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: colors.dark.accent.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  iconText: {
+    fontSize: 36,
+  },
+  title: {
+    fontSize: typography.fontSize['3xl'],
+    fontWeight: 'heavy',
+    color: colors.dark.text.primary,
+  },
+  subtitle: {
+    fontSize: typography.fontSize.base,
+    color: colors.dark.text.secondary,
+    marginTop: spacing.xs,
+  },
+  form: {
+    gap: spacing.md,
+  },
+  input: {
+    backgroundColor: colors.dark.bg.secondary,
+    color: colors.dark.text.primary,
+    paddingHorizontal: spacing.base,
+    padding: spacing.medium,
+    borderRadius: 12,
+    fontSize: typography.fontSize.md,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  button: {
+    backgroundColor: colors.dark.accent.primary,
+    padding: spacing.medium,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.xs,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonText: {
+    color: colors.dark.text.inverse,
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.dark.border.subtle,
+  },
+  dividerText: {
+    color: colors.dark.text.tertiary,
+    paddingHorizontal: spacing.md,
+    fontSize: typography.fontSize.sm,
+  },
+  appleButton: {
+    width: '100%',
+    height: 54,
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  appleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  appleButtonText: {
+    color: colors.black,
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingBottom: spacing.xl,
+  },
+  footerLink: {
+    padding: spacing.sm,
+  },
+  footerText: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.base,
+  },
+  footerLinkBold: {
+    color: colors.dark.accent.primary,
+    fontWeight: 'bold',
+  },
+});
