@@ -1,4 +1,5 @@
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing } from '@/constants/spacing';
@@ -7,10 +8,11 @@ import { Icon } from '@/components/Icon';
 
 export default function StatsScreen() {
   return (
-    <ScrollView 
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: spacing.base, gap: spacing.md }}
-    >
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView 
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.scrollContent}
+      >
       <Text style={{ fontSize: typography.fontSize['2xl'], fontWeight: 'heavy', color: colors.dark.text.primary, marginBottom: spacing.xs }}>
         Analytics
       </Text>
@@ -31,6 +33,19 @@ export default function StatsScreen() {
             <Text style={{ color: colors.dark.text.secondary, marginTop: spacing.md }}>Volume Chart Preview</Text>
          </Card>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  scrollContent: {
+    padding: spacing.base,
+    paddingBottom: spacing.xl * 2,
+    gap: spacing.md,
+  },
+});

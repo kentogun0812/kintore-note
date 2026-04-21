@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCallback } from 'react';
 import { Link, router, useFocusEffect } from 'expo-router';
 import { colors } from '@/constants/colors';
@@ -26,10 +27,11 @@ export default function RecordScreen() {
   };
 
   return (
-    <ScrollView 
-      contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: spacing.base, gap: spacing.md }}
-    >
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView 
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.scrollContent}
+      >
       <Text style={{ fontSize: typography.fontSize['2xl'], fontWeight: 'heavy', color: colors.dark.text.primary, marginBottom: spacing.xs }}>
         Training
       </Text>
@@ -112,5 +114,24 @@ export default function RecordScreen() {
         ))
       )}
     </ScrollView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  scrollContent: {
+    padding: spacing.base,
+    paddingBottom: spacing.xl * 2,
+    gap: spacing.md,
+  },
+  title: {
+    fontSize: typography.fontSize['2xl'],
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+    marginBottom: spacing.xs,
+  },
+});

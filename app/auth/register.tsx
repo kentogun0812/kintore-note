@@ -5,6 +5,7 @@ import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing } from '@/constants/spacing';
+import { Icon } from '@/components/Icon';
 import { supabase } from '@/lib/supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
 
@@ -71,6 +72,26 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
       <Stack.Screen options={{ headerShown: false }} />
+      
+      {/* Back Button */}
+      <View style={{ paddingHorizontal: spacing.xl, paddingTop: spacing.md }}>
+        <Pressable 
+          onPress={() => router.back()} 
+          hitSlop={12} 
+          style={{ 
+            width: 36, 
+            height: 36, 
+            borderRadius: 18, 
+            borderWidth: 1, 
+            borderColor: colors.dark.border.default, 
+            justifyContent: 'center', 
+            alignItems: 'center',
+          }}
+        >
+          <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
+        </Pressable>
+      </View>
+
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ flexGrow: 1 }}

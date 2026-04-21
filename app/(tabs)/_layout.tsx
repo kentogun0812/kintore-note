@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { Platform } from 'react-native';
 import { colors } from '@/constants/colors';
 import { Icon, IconName } from '@/components/Icon';
 
@@ -10,9 +11,14 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.dark.bg.primary },
-        headerTintColor: colors.dark.text.primary,
-        tabBarStyle: { backgroundColor: colors.dark.bg.primary, borderTopColor: colors.dark.border.subtle },
+        headerShown: false,
+        tabBarHideOnKeyboard: true,
+        tabBarStyle: { 
+          backgroundColor: colors.dark.bg.primary, 
+          borderTopColor: colors.dark.border.subtle,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 32 : 12,
+        },
         tabBarActiveTintColor: colors.dark.accent.primary,
         tabBarInactiveTintColor: colors.dark.text.secondary,
         sceneStyle: { backgroundColor: colors.dark.bg.primary },

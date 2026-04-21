@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
+import { View, Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as SystemUI from 'expo-system-ui';
+import * as SplashScreen from 'expo-splash-screen';
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/store/auth.store';
 import { useOfflineSync } from '@/hooks/use-offline-sync';
-import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
-// Create a client for React Query
 const queryClient = new QueryClient();
 
 function RootLayout() {
@@ -22,6 +22,10 @@ function RootLayout() {
 
   useEffect(() => {
     initialize();
+    // Set root view background color to match the theme (avoids black bars on Android)
+    if (Platform.OS === 'android') {
+      SystemUI.setBackgroundColorAsync(colors.dark.bg.primary);
+    }
   }, [initialize]);
 
   useEffect(() => {
@@ -46,24 +50,27 @@ function RootLayout() {
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.dark.bg.primary },
-          headerTintColor: colors.dark.text.primary,
-          contentStyle: { backgroundColor: colors.dark.bg.primary },
-          headerShadowVisible: false,
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="training" options={{ headerShown: false }} />
-        <Stack.Screen name="settings/index" options={{ headerShown: false }} />
-        <Stack.Screen name="camera/index" options={{ headerShown: false }} />
-        <Stack.Screen name="modals/hanko-stamp" options={{ presentation: 'fullScreenModal', headerShown: false }} />
-        <Stack.Screen name="modals/session-summary" options={{ presentation: 'formSheet', headerShown: false }} />
-      </Stack>
-    </QueryClientProvider>
+    <SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: colors.dark.bg.primary },
+            headerTintColor: colors.dark.text.primary,
+            contentStyle: { backgroundColor: colors.dark.bg.primary },
+            headerShadowVisible: false,
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="training" options={{ headerShown: false }} />
+          <Stack.Screen name="settings/index" options={{ headerShown: false }} />
+          <Stack.Screen name="camera/index" options={{ headerShown: false }} />
+          <Stack.Screen name="modals/hanko-stamp" options={{ presentation: 'fullScreenModal', headerShown: false }} />
+          <Stack.Screen name="modals/session-summary" options={{ presentation: 'formSheet', headerShown: false }} />
+        </Stack>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
 
