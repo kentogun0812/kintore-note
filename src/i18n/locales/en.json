@@ -102,5 +102,22 @@
     "noExercises": "No exercises added yet.",
     "saving": "Saving...",
     "saveMenu": "Save Menu"
+  },
+  "onboarding": {
+    "step1": {
+      "title": "Every Step Matters",
+      "subtitle": "A simple and mindful training log inspired by Japanese Hanko tradition.",
+      "button": "Get Started"
+    },
+    "step2": {
+      "title": "Your Progress, Your Way",
+      "subtitle": "Let's tailor the experience to your current training rhythm.",
+      "button": "Unlock My Journey"
+    },
+    "levels": {
+      "beginner": { "title": "Easy Start", "desc": "Take it slow and start your journey today" },
+      "intermediate": { "title": "Good Habit", "desc": "Keeping it steady and finding your rhythm" },
+      "advanced": { "title": "My Own Pace", "desc": "Consistency is key to finding your style" }
+    }
   }
 }
