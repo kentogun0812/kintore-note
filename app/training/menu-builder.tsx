@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import { Stack, Link, router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -16,10 +16,24 @@ export default function MenuBuilderScreen() {
   const [isSaving, setIsSaving] = React.useState(false);
   
   const handleSaveMenu = async () => {
-    setIsSaving(true);
-    await saveCurrentMenu();
-    setIsSaving(false);
-    router.replace('/(tabs)/record');
+    try {
+      setIsSaving(true);
+      await saveCurrentMenu();
+      setIsSaving(false);
+      router.replace('/(tabs)/record');
+    } catch (err: any) {
+      setIsSaving(false);
+      if (err.message === 'GUEST_LIMIT_REACHED') {
+        Alert.alert(
+          'Guest Limit',
+          'Guests can only create 1 training menu. Please login or register to create unlimited menus and sync them to the cloud! 🏋️‍♂️',
+          [
+            { text: 'Later', style: 'cancel' },
+            { text: 'Login / Register', onPress: () => router.push('/auth/login') }
+          ]
+        );
+      }
+    }
   };
 
   return (

@@ -3,20 +3,23 @@ import { AppState, AppStateStatus } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { syncWatermelonDB } from '@/infra/db/sync';
 import { supabase } from '@/infra/api/supabase.client';
+import { useAuthStore } from '@/store/auth.store';
 
 export function useOfflineSync() {
   const appState = useRef(AppState.currentState);
   const isSyncing = useRef(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
+  const { isGuest } = useAuthStore();
+
   const performSync = async () => {
     // Prevent overlapping sync operations
     if (isSyncing.current) return;
     
-    // Validate auth session exists before attempting sync
+    // Validate auth session exists and user is not a guest before attempting sync
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.log('Skipping sync: No active user session');
+    if (!session || isGuest) {
+      console.log('Skipping sync: No active user session or user is Guest');
       return; 
     }
 

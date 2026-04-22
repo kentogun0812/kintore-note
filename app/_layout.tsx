@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
-import { View, Platform } from 'react-native';
+import '@/i18n';
+import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SystemUI from 'expo-system-ui';
@@ -12,10 +13,16 @@ import { StatusBar } from 'expo-status-bar';
 
 const queryClient = new QueryClient();
 
+import { useSettingsStore } from '@/store/settings.store';
+import { useOnboardingStore } from '@/store/onboarding.store';
+import i18n from '@/i18n';
+
 function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
   const { session, isLoading, initialize } = useAuthStore();
+  const { hasCompletedOnboarding, hasSeenIntro } = useOnboardingStore();
+  const { language } = useSettingsStore();
 
   // Initialize offline sync behavior globally
   useOfflineSync();
@@ -28,22 +35,48 @@ function RootLayout() {
     }
   }, [initialize]);
 
+  // Sync saved language with i18n
+  useEffect(() => {
+    if (i18n.language !== language) {
+      i18n.changeLanguage(language);
+    }
+  }, [language]);
+
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === 'auth';
-    const isRegisteringLevel = segments.length > 1 && (segments as string[])[1] === 'onboarding';
+    const routeSegments = segments as string[];
+    const inAuthGroup = routeSegments[0] === 'auth';
+    const isIntro = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === 'intro';
+    const isOnboarding = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === 'onboarding';
 
-    if (!session && !inAuthGroup) {
-      router.replace('/auth/login');
-    } else if (session && inAuthGroup && !isRegisteringLevel) {
-      // Only redirect out of auth group if they are NOT in onboarding
-      router.replace('/(tabs)/home');
+    // 1. First time visitors see Intro
+    if (!hasSeenIntro && !isIntro) {
+      router.replace('/auth/intro');
+      SplashScreen.hideAsync();
+      return;
     }
 
-    // Hide splash screen after routing evaluation is done
+    // 2. If intro seen, handle Guest vs Auth
+    if (hasSeenIntro) {
+      if (!session) {
+        // Allow Guest to see Home, but redirect if they are stuck in Auth (except Intro/Login/Register)
+        if (inAuthGroup && !isIntro && routeSegments.length > 1 && routeSegments[1] !== 'login' && routeSegments[1] !== 'register') {
+          router.replace('/(tabs)/home');
+        }
+      } else {
+        // If logged in and in Auth group, move to Home (unless in Onboarding)
+        if (inAuthGroup && !isOnboarding) {
+          router.replace('/(tabs)/home');
+        }
+      }
+    }
+
     SplashScreen.hideAsync();
-  }, [session, segments, isLoading]);
+  }, [session, segments, isLoading, hasSeenIntro, hasCompletedOnboarding]);
+
+
+
 
   if (isLoading) {
     return null;

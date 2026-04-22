@@ -2,7 +2,7 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
-import { spacing } from '@/constants/spacing';
+import { radius, spacing } from '@/constants/spacing';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
@@ -10,10 +10,11 @@ import { HankoCalendar } from '@/components/HankoCalendar';
 import { Link, router } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
 import { useTranslation } from 'react-i18next';
+import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
+  const { user, isGuest } = useAuthStore();
   const currentDate = new Date();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -37,19 +38,24 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.welcomeText}>{t('home.welcome')}</Text>
-            <Text style={styles.nameText}>
-              {user?.email?.split('@')[0] || 'Lifter'}
-            </Text>
           </View>
-          <Pressable 
-            onPress={() => router.push('/settings')}
-            style={({ pressed }) => [
-              styles.avatar,
-              { opacity: pressed ? 0.7 : 1 }
-            ]}
-          >
-            <Text style={styles.avatarEmoji}>🧔‍♂️</Text>
-          </Pressable>
+          <View style={styles.headerRight}>
+            {isGuest && (
+              <Animated.View entering={FadeInRight.delay(800)} style={styles.loginSuggestion}>
+                <Text style={styles.suggestionText}>{t('home.loginToSync')}</Text>
+                <View style={styles.bubbleTail} />
+              </Animated.View>
+            )}
+            <Pressable 
+              onPress={() => router.push('/settings')}
+              style={({ pressed }) => [
+                styles.avatar,
+                { opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <Text style={styles.avatarEmoji}>🧔‍♂️</Text>
+            </Pressable>
+          </View>
         </View>
 
         <Card style={styles.streakCard}>
@@ -141,16 +147,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   welcomeText: {
-    color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.sm,
-  },
-  nameText: {
     color: colors.dark.text.primary,
-    fontSize: typography.fontSize.xl,
-    fontWeight: 'bold',
+    fontSize: typography.fontSize.base,
   },
   avatar: {
     width: 44,
@@ -164,6 +165,41 @@ const styles = StyleSheet.create({
   },
   avatarEmoji: {
     fontSize: 24,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  loginSuggestion: {
+    backgroundColor: colors.dark.accent.primary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderRadius: radius.md,
+    marginRight: spacing.xs,
+    // Add shadow to make the bubble pop
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  suggestionText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  bubbleTail: {
+    position: 'absolute',
+    right: -6,
+    width: 0,
+    height: 0,
+    borderTopWidth: 8,
+    borderTopColor: 'transparent',
+    borderBottomWidth: 6,
+    borderBottomColor: 'transparent',
+    borderLeftWidth: 15,
+    borderLeftColor: colors.dark.accent.primary,
   },
   streakCard: {
     padding: spacing.md,

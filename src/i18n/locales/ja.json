@@ -14,10 +14,11 @@
     "exercises": "種目"
   },
   "home": {
-    "welcome": "おはようございます、",
+    "welcome": "おはようございます",
     "streak": "{{count}}日連続！",
     "currentStreak": "現在の継続日数",
     "hankoCalendar": "ハンコカレンダー",
+    "loginToSync": "ログインして同期 ☁️",
     "todayMenu": "今日のメニュー",
     "startSession": "トレーニング開始"
   },
@@ -48,10 +49,12 @@
     "preferences": "基本設定",
     "language": "言語",
     "notifications": "通知",
+    "weightUnit": "重量単位",
     "legal": "規約・プライバシー",
     "privacyPolicy": "プライバシーポリシー",
     "termsOfUse": "利用規約",
     "signOut": "ログアウト",
+    "signIn": "ログイン / 新規登録",
     "upgradePro": "PROにアップグレード",
     "unlockStats": "高度な分析機能を解放",
     "version": "筋トレノート v1.0.0"
@@ -128,5 +131,24 @@
         "desc": "無理なく続けて、自分らしいスタイルへ"
       }
     }
+  },
+  "intro": {
+    "skip": "スキップ",
+    "next": "次へ",
+    "getStarted": "はじめる",
+    "slides": [
+      {
+        "title": "トレーニングを記録",
+        "description": "セット、レップ、重量を簡単に記録。成長に集中しましょう。"
+      },
+      {
+        "title": "進捗を可視化",
+        "description": "詳細なチャートと自己ベストで、自分の成長を実感できます。"
+      },
+      {
+        "title": "コミュニティに参加",
+        "description": "仲間とつながり、モチベーションを高め合いましょう。"
+      }
+    ]
   }
 }

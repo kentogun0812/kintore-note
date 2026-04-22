@@ -17,6 +17,7 @@ export const colors = {
       secondary: '#A0A0A0',       // Subtle text
       tertiary: '#666666',        // Disabled text
       inverse: '#0A0A0A',         // Text on light bg
+      logo: '#E54D42',           // Logo color
     },
     accent: {
       primary: '#E54D42',         // Hanko red (朱色)

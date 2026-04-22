@@ -14,10 +14,11 @@
     "exercises": "exercises"
   },
   "home": {
-    "welcome": "Good morning,",
+    "welcome": "Good morning",
     "streak": "{{count}} day streak!",
     "currentStreak": "Current Streak",
     "hankoCalendar": "Hanko Calendar",
+    "loginToSync": "Login to sync ☁️",
     "todayMenu": "Today's Menu",
     "startSession": "Start Session"
   },
@@ -48,10 +49,12 @@
     "preferences": "Preferences",
     "language": "Language",
     "notifications": "Notifications",
+    "weightUnit": "Weight Unit",
     "legal": "Legal",
     "privacyPolicy": "Privacy Policy",
     "termsOfUse": "Terms of Use",
     "signOut": "Sign Out",
+    "signIn": "Sign In / Register",
     "upgradePro": "Upgrade to PRO",
     "unlockStats": "Unlock advanced stats & analytics",
     "version": "Kintore Note v1.0.0"
@@ -119,5 +122,24 @@
       "intermediate": { "title": "Good Habit", "desc": "Keeping it steady and finding your rhythm" },
       "advanced": { "title": "My Own Pace", "desc": "Consistency is key to finding your style" }
     }
+  },
+  "intro": {
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get Started",
+    "slides": [
+      {
+        "title": "Track Your Workouts",
+        "description": "Log your sets, reps, and weights with ease. Stay focused on your gains."
+      },
+      {
+        "title": "Visualize Progress",
+        "description": "See your strength grow with detailed charts and personal records."
+      },
+      {
+        "title": "Join the Community",
+        "description": "Share your journey, get motivated, and celebrate with fellow lifters."
+      }
+    ]
   }
 }

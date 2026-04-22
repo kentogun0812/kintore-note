@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/infra/api/supabase.client';
 
 export interface MenuExercise {
@@ -25,114 +27,122 @@ interface MenuBuilderState {
   fetchSavedMenus: () => Promise<void>;
 }
 
-export const useMenuStore = create<MenuBuilderState>((set, get) => ({
-  menuName: '',
-  exercises: [],
-  savedMenus: [],
-  
-  setMenuName: (name) => set({ menuName: name }),
-  
-  addExerciseToMenu: (exercise) => set((state) => {
-    if (state.exercises.find(e => e.id === exercise.id)) return state;
-    return { exercises: [...state.exercises, exercise] };
-  }),
-  
-  removeExerciseFromMenu: (exerciseId) => set((state) => ({
-    exercises: state.exercises.filter(e => e.id !== exerciseId)
-  })),
-
-  clearMenuBuilder: () => set({
-    menuName: '',
-    exercises: []
-  }),
-
-  fetchSavedMenus: async () => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData.session?.user.id;
-    if (!userId) {
-       // Mock for now if no auth
-       return;
-    }
-
-    const { data, error } = await supabase
-      .from('training_menus')
-      .select(`
-        id, name, created_at,
-        menu_exercises (
-          sort_order,
-          exercises ( id, name_ja, name_en )
-        )
-      `)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      const parsed = data.map((m: any) => ({
-        id: m.id,
-        name: m.name,
-        createdAt: m.created_at,
-        exercises: 
-          m.menu_exercises
-            ?.sort((a: any, b: any) => a.sort_order - b.sort_order)
-            .map((me: any) => ({
-               id: me.exercises.id,
-               name: me.exercises.name_ja
-            })) || []
-      }));
-      set({ savedMenus: parsed });
-    }
-  },
-
-  saveCurrentMenu: async () => {
-    const { menuName, exercises } = get();
-    if (!menuName || exercises.length === 0) return;
-
-    // Save to Remote (Supabase) if authenticated
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
+export const useMenuStore = create<MenuBuilderState>()(
+  persist(
+    (set, get) => ({
+      menuName: '',
+      exercises: [],
+      savedMenus: [],
       
-      if (userId) {
-        // 1. Insert Menu
-        const { data: menuData, error: menuErr } = await supabase
+      setMenuName: (name) => set({ menuName: name }),
+      
+      addExerciseToMenu: (exercise) => set((state) => {
+        if (state.exercises.find(e => e.id === exercise.id)) return state;
+        return { exercises: [...state.exercises, exercise] };
+      }),
+      
+      removeExerciseFromMenu: (exerciseId) => set((state) => ({
+        exercises: state.exercises.filter(e => e.id !== exerciseId)
+      })),
+
+      clearMenuBuilder: () => set({
+        menuName: '',
+        exercises: []
+      }),
+
+      fetchSavedMenus: async () => {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user.id;
+        if (!userId) return;
+
+        const { data, error } = await supabase
           .from('training_menus')
-          .insert({ name: menuName, user_id: userId, is_template: false })
-          .select('id')
-          .single();
+          .select(`
+            id, name, created_at,
+            menu_exercises (
+              sort_order,
+              exercises ( id, name_ja, name_en )
+            )
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          const parsed = data.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            createdAt: m.created_at,
+            exercises: 
+              m.menu_exercises
+                ?.sort((a: any, b: any) => a.sort_order - b.sort_order)
+                .map((me: any) => ({
+                   id: me.exercises.id,
+                   name: me.exercises.name_ja
+                })) || []
+          }));
+          set({ savedMenus: parsed });
+        }
+      },
+
+      saveCurrentMenu: async () => {
+        const { menuName, exercises, savedMenus } = get();
+        if (!menuName || exercises.length === 0) return;
+
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const userId = sessionData.session?.user.id;
           
-        if (menuErr) throw menuErr;
+          if (userId) {
+            const { data: menuData, error: menuErr } = await supabase
+              .from('training_menus')
+              .insert({ name: menuName, user_id: userId, is_template: false })
+              .select('id')
+              .single();
+              
+            if (menuErr) throw menuErr;
 
-        // 2. Insert Menu Exercises
-        const mappedExercises = exercises.map((ex, index) => ({
-          menu_id: menuData.id,
-          exercise_id: ex.id,
-          sort_order: index,
-          target_sets: 3,
-          target_reps: 10
-        }));
+            const mappedExercises = exercises.map((ex, index) => ({
+              menu_id: menuData.id,
+              exercise_id: ex.id,
+              sort_order: index,
+              target_sets: 3,
+              target_reps: 10
+            }));
 
-        await supabase.from('menu_exercises').insert(mappedExercises);
-        
-        // Refresh menus from server
-        get().fetchSavedMenus();
-      } else {
-        // Fallback for UI if totally offline / logic test w/o auth
-        const newMenu: SavedMenu = {
-          id: Math.random().toString(),
-          name: menuName,
-          exercises: [...exercises],
-          createdAt: new Date().toISOString(),
-        };
+            await supabase.from('menu_exercises').insert(mappedExercises);
+            get().fetchSavedMenus();
+          } else {
+            if (savedMenus.length >= 1) {
+              throw new Error('GUEST_LIMIT_REACHED');
+            }
 
-        set((state) => ({
-          savedMenus: [newMenu, ...state.savedMenus]
-        }));
+            const newMenu: SavedMenu = {
+              id: Math.random().toString(),
+              name: menuName,
+              exercises: [...exercises],
+              createdAt: new Date().toISOString(),
+            };
+
+            set((state) => ({
+              savedMenus: [newMenu, ...state.savedMenus]
+            }));
+          }
+        } catch(err: any) {
+          if (err.message === 'GUEST_LIMIT_REACHED') {
+            throw err;
+          }
+          console.error('Failed to save menu:', err);
+        } finally {
+          // Clear only if success
+          if (userId || (!userId && savedMenus.length === 0)) {
+             set({ menuName: '', exercises: [] });
+          }
+        }
       }
-    } catch(err) {
-      console.error('Failed to save menu remotely:', err);
-    } finally {
-      // Clear builder
-      set({ menuName: '', exercises: [] });
+    }),
+    {
+      name: 'menu-storage',
+      storage: createJSONStorage(() => AsyncStorage),
     }
-  }
-}));
+  )
+);

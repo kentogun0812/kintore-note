@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, StyleSheet, Modal } from 'react-native';
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { Stack, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
-import { Icon, IconName } from '@/components/Icon';
+import { Icon } from '@/components/Icon';
 import { Card } from '@/components/Card';
 import { useAuthStore } from '@/store/auth.store';
 import { useTranslation } from 'react-i18next';
+import { useSettingsStore, WeightUnit, AppLanguage } from '@/store/settings.store';
+import React from 'react';
 
 interface MenuItem {
   label: string;
@@ -22,18 +24,45 @@ interface MenuItem {
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
-  const signOut = useAuthStore((s) => s.signOut);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const { signOut, isGuest } = useAuthStore();
+  const { 
+    notificationsEnabled, 
+    setNotificationsEnabled,
+    language,
+    setLanguage,
+    weightUnit,
+    setWeightUnit
+  } = useSettingsStore();
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace('/auth/login');
+  const handleAuthAction = async () => {
+    if (isGuest) {
+      router.push('/auth/login');
+    } else {
+      await signOut();
+      router.replace('/auth/login');
+    }
   };
 
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'ja' : 'en';
-    i18n.changeLanguage(newLang);
+  const [isModalVisible, setIsModalVisible] = React.useState(false);
+  const [modalType, setModalType] = React.useState<'language' | 'weightUnit' | null>(null);
+
+  const languageOptions = [
+    { label: 'English', value: 'en' },
+    { label: '日本語', value: 'ja' },
+  ];
+
+  const weightOptions = [
+    { label: 'Kg (Kilograms)', value: 'kg' },
+    { label: 'Lbs (Pounds)', value: 'lbs' },
+  ];
+
+  const openModal = (type: 'language' | 'weightUnit') => {
+    setModalType(type);
+    setIsModalVisible(true);
   };
+
+  const toggleLanguage = () => openModal('language');
+  const toggleWeightUnit = () => openModal('weightUnit');
 
   const menuSections: { title: string; items: MenuItem[] }[] = [
     {
@@ -41,9 +70,15 @@ export default function SettingsScreen() {
       items: [
         { 
           label: t('settings.language'), 
-          value: i18n.language === 'en' ? 'English' : '日本語',
+          value: language === 'en' ? 'English' : '日本語',
           icon: 'globe-outline', 
           onPress: toggleLanguage 
+        },
+        { 
+          label: t('settings.weightUnit'), 
+          value: weightUnit.toUpperCase(),
+          icon: 'barbell-outline', 
+          onPress: toggleWeightUnit 
         },
         { 
           label: t('settings.notifications'), 
@@ -66,21 +101,6 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable 
-          onPress={() => router.back()} 
-          hitSlop={12}
-          style={styles.backButton}
-        >
-          <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>
-          {t('settings.title')}
-        </Text>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -144,7 +164,7 @@ export default function SettingsScreen() {
         ))}
 
         <Pressable
-          onPress={handleSignOut}
+          onPress={handleAuthAction}
           style={({ pressed }) => [
             styles.signOutButton,
             {
@@ -153,16 +173,95 @@ export default function SettingsScreen() {
             }
           ]}
         >
-          <Icon name="log-out-outline" size={20} color={colors.dark.accent.primary} />
+          <Icon 
+            name={isGuest ? "log-in-outline" : "log-out-outline"} 
+            size={20} 
+            color={colors.dark.accent.primary} 
+          />
           <Text style={styles.signOutText}>
-            {t('settings.signOut')}
+            {isGuest ? t('settings.signIn') : t('settings.signOut')}
           </Text>
         </Pressable>
 
+      </ScrollView>
+
+      {/* Selection Modal */}
+      <Modal
+        visible={isModalVisible}
+        transparent
+        animationType="none"
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <Animated.View 
+          entering={FadeIn} 
+          exiting={FadeOut}
+          style={styles.modalOverlay}
+        >
+          <Pressable style={styles.modalOverlayClose} onPress={() => setIsModalVisible(false)} />
+        </Animated.View>
+        
+        <Animated.View 
+          entering={SlideInDown} 
+          exiting={SlideOutDown} 
+          style={styles.modalContent}
+        >
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderIndicator} />
+            <Text style={styles.modalTitle}>
+              {modalType === 'language' ? t('settings.language') : t('settings.weightUnit')}
+            </Text>
+            <Pressable 
+              onPress={() => setIsModalVisible(false)} 
+              style={styles.modalCloseButton}
+              hitSlop={12}
+            >
+              <Icon name="close" size={24} color={colors.dark.text.secondary} />
+            </Pressable>
+          </View>
+          
+          <View style={styles.modalOptions}>
+            {(modalType === 'language' ? languageOptions : weightOptions).map((option) => {
+              const isSelected = modalType === 'language' ? language === option.value : weightUnit === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => {
+                    if (modalType === 'language') {
+                      setLanguage(option.value as AppLanguage);
+                      i18n.changeLanguage(option.value);
+                    } else {
+                      setWeightUnit(option.value as WeightUnit);
+                    }
+                    setIsModalVisible(false);
+                  }}
+                  style={({ pressed }) => [
+                    styles.optionItem,
+                    { backgroundColor: pressed ? colors.dark.bg.elevated : 'transparent' }
+                  ]}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    isSelected && styles.optionTextSelected
+                  ]}>
+                    {option.label}
+                  </Text>
+                  {isSelected && (
+                    <Icon name="checkmark-circle" size={24} color={colors.dark.accent.primary} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+          
+
+        </Animated.View>
+      </Modal>
+
+      <View style={styles.footer}>
         <Text style={styles.versionText}>
           {t('settings.version')}
         </Text>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -173,13 +272,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.dark.bg.primary,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-  },
   backButton: {
     width: 36,
     height: 36,
@@ -188,11 +280,6 @@ const styles = StyleSheet.create({
     borderColor: colors.dark.border.default,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  headerTitle: {
-    color: colors.dark.text.primary,
-    fontSize: typography.fontSize.xl,
-    fontWeight: 'bold',
   },
   scrollView: {
     flex: 1,
@@ -232,7 +319,6 @@ const styles = StyleSheet.create({
     color: colors.dark.text.tertiary,
     fontSize: typography.fontSize.xs,
     fontWeight: 'bold',
-    textTransform: 'uppercase',
     paddingHorizontal: spacing.xs,
   },
   sectionContent: {
@@ -284,11 +370,75 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: typography.fontSize.base,
   },
+  footer: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingBottom: spacing.sm,
+  },
   versionText: {
-    color: colors.dark.text.tertiary,
+    color: colors.dark.text.secondary,
     fontSize: typography.fontSize.xs,
-    textAlign: 'center',
-    marginTop: spacing.xl,
+    opacity: 0.7,
+  },
+  // Modal Styles
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  modalOverlayClose: {
+    flex: 1,
+  },
+  modalContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.dark.bg.secondary,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.base,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  modalHeaderIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: colors.dark.border.default,
+    borderRadius: 2,
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+  },
+  modalOptions: {
+    gap: spacing.xs,
+    marginBottom: spacing.lg,
+  },
+  optionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: radius.lg,
+  },
+  optionText: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.md,
+  },
+  optionTextSelected: {
+    color: colors.dark.text.primary,
+    fontWeight: 'bold',
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    right: 0,
+    top: spacing.md,
+    padding: spacing.sm,
   },
 });
 
