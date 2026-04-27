@@ -8,8 +8,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/store/auth.store';
 import { useOfflineSync } from '@/hooks/use-offline-sync';
+import { useAppLock } from '@/hooks/use-app-lock';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { AppLockScreen } from '@/components/AppLockScreen';
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,7 @@ function RootLayout() {
   const { session, isLoading, initialize } = useAuthStore();
   const { hasCompletedOnboarding, hasSeenIntro } = useOnboardingStore();
   const { language } = useSettingsStore();
+  const { isLocked, unlock } = useAppLock();
 
   // Initialize offline sync behavior globally
   useOfflineSync();
@@ -102,6 +105,9 @@ function RootLayout() {
           <Stack.Screen name="modals/hanko-stamp" options={{ presentation: 'fullScreenModal', headerShown: false }} />
           <Stack.Screen name="modals/session-summary" options={{ presentation: 'formSheet', headerShown: false }} />
         </Stack>
+
+        {/* App Lock Overlay — only for logged-in users, renders on top of everything */}
+        {isLocked && !!session && <AppLockScreen onUnlock={unlock} />}
       </QueryClientProvider>
     </SafeAreaProvider>
   );

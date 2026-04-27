@@ -10,6 +10,10 @@ import { Card } from '@/components/Card';
 import { useAuthStore } from '@/store/auth.store';
 import { useTranslation } from 'react-i18next';
 import { useSettingsStore, WeightUnit, AppLanguage } from '@/store/settings.store';
+import { useAppLock } from '@/hooks/use-app-lock';
+import { DeleteAccountModal } from '@/components/DeleteAccountModal';
+import { deleteAccount } from '@/lib/delete-account';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 
 interface MenuItem {
@@ -20,6 +24,7 @@ interface MenuItem {
   isToggle?: boolean;
   toggleValue?: boolean;
   onToggle?: (val: boolean) => void;
+  isDestructive?: boolean;
 }
 
 export default function SettingsScreen() {
@@ -33,6 +38,16 @@ export default function SettingsScreen() {
     weightUnit,
     setWeightUnit
   } = useSettingsStore();
+  const { appLockEnabled, toggleAppLock } = useAppLock();
+
+  const handleAppLockToggle = async (value: boolean) => {
+    const success = await toggleAppLock(value);
+    if (success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
 
   const handleAuthAction = async () => {
     if (isGuest) {
@@ -45,6 +60,18 @@ export default function SettingsScreen() {
 
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [modalType, setModalType] = React.useState<'language' | 'weightUnit' | null>(null);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = React.useState(false);
+
+  const handleDeleteAccount = async () => {
+    const result = await deleteAccount();
+    if (result.success) {
+      // After deletion, the auth state is already cleared
+      // Navigate to intro/login screen
+      router.replace('/auth/intro');
+    } else {
+      throw new Error(result.error || 'Failed to delete account');
+    }
+  };
 
   const languageOptions = [
     { label: 'English', value: 'en' },
@@ -89,6 +116,19 @@ export default function SettingsScreen() {
         },
       ],
     },
+    // Security section — only visible for logged-in users
+    ...(!isGuest ? [{
+      title: t('settings.security'),
+      items: [
+        { 
+          label: t('settings.appLock'), 
+          icon: 'lock-closed-outline', 
+          isToggle: true,
+          toggleValue: appLockEnabled,
+          onToggle: handleAppLockToggle
+        },
+      ],
+    }] : []),
     {
       title: t('settings.legal'),
       items: [
@@ -96,6 +136,18 @@ export default function SettingsScreen() {
         { label: t('settings.termsOfUse'), icon: 'document-text-outline' },
       ],
     },
+    // Account section — only visible for logged-in users
+    ...(!isGuest ? [{
+      title: t('settings.account'),
+      items: [
+        { 
+          label: t('settings.deleteAccount'), 
+          icon: 'trash-outline', 
+          onPress: () => setIsDeleteModalVisible(true),
+          isDestructive: true
+        },
+      ],
+    }] : []),
   ];
 
   return (
@@ -137,10 +189,10 @@ export default function SettingsScreen() {
                     }
                   ]}
                 >
-                  <View style={styles.menuIconContainer}>
-                    <Icon name={item.icon as any} size={18} color={colors.dark.text.secondary} />
+                  <View style={[styles.menuIconContainer, item.isDestructive && { backgroundColor: 'rgba(255, 69, 58, 0.1)' }]}>
+                    <Icon name={item.icon as any} size={18} color={item.isDestructive ? colors.dark.accent.primary : colors.dark.text.secondary} />
                   </View>
-                  <Text style={styles.menuItemLabel}>{item.label}</Text>
+                  <Text style={[styles.menuItemLabel, item.isDestructive && { color: colors.dark.accent.primary }]}>{item.label}</Text>
                   
                   {item.isToggle ? (
                     <Switch 
@@ -262,6 +314,13 @@ export default function SettingsScreen() {
           {t('settings.version')}
         </Text>
       </View>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        visible={isDeleteModalVisible}
+        onClose={() => setIsDeleteModalVisible(false)}
+        onConfirm={handleDeleteAccount}
+      />
     </SafeAreaView>
   );
 }

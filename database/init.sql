@@ -298,7 +298,10 @@ ALTER TABLE public.training_menus ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.training_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.session_sets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hanko_stamps ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.muscle_groups ENABLE ROW LEVEL SECURITY;
 
+-- User-owned data policies
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can manage their own menus" ON public.training_menus FOR ALL USING (auth.uid() = user_id);
@@ -306,3 +309,7 @@ CREATE POLICY "Users can manage their own sessions" ON public.training_sessions 
 CREATE POLICY "Users can manage their own sets" ON public.session_sets FOR ALL USING (
     EXISTS (SELECT 1 FROM public.training_sessions WHERE id = session_id AND user_id = auth.uid())
 );
+
+-- Public read access (authenticated or anonymous)
+CREATE POLICY "Public can view exercises" ON public.exercises FOR SELECT USING (true);
+CREATE POLICY "Public can view muscle groups" ON public.muscle_groups FOR SELECT USING (true);

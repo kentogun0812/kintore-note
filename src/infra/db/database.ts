@@ -1,7 +1,7 @@
 import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import schema from './schema';
-import { MuscleGroup, Exercise, TrainingMenu, MenuExercise } from './models';
+import { MuscleGroup, Exercise, TrainingMenu, MenuExercise, BodyPhoto } from './models';
 
 let adapter;
 try {
@@ -24,6 +24,7 @@ export const database = adapter ? new Database({
     Exercise,
     TrainingMenu,
     MenuExercise,
+    BodyPhoto,
   ],
 }) : null;
 

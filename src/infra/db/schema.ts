@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 1,
+  version: 2,
   tables: [
     tableSchema({
       name: 'muscle_groups',
@@ -70,6 +70,17 @@ export default appSchema({
         { name: 'user_id', type: 'string', isIndexed: true },
         { name: 'stamp_date', type: 'string', isIndexed: true },
         { name: 'streak_count', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'body_photos',
+      columns: [
+        { name: 'user_id', type: 'string', isIndexed: true },
+        { name: 'file_path', type: 'string' },
+        { name: 'angle', type: 'string' },
+        { name: 'key_id', type: 'string' },
+        { name: 'taken_at', type: 'number' },
+        { name: 'created_at', type: 'number' },
       ],
     }),
   ],

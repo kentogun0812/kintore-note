@@ -18,7 +18,7 @@
     "streak": "{{count}} day streak!",
     "currentStreak": "Current Streak",
     "hankoCalendar": "Hanko Calendar",
-    "loginToSync": "Login to sync ☁️",
+    "loginToSync": "Sign in to keep your data in sync ☁️",
     "todayMenu": "Today's Menu",
     "startSession": "Start Session"
   },
@@ -50,14 +50,43 @@
     "language": "Language",
     "notifications": "Notifications",
     "weightUnit": "Weight Unit",
+    "security": "Security",
+    "appLock": "App Lock (Face ID / Touch ID)",
     "legal": "Legal",
     "privacyPolicy": "Privacy Policy",
     "termsOfUse": "Terms of Use",
+    "account": "Account",
+    "deleteAccount": "Delete Account",
     "signOut": "Sign Out",
     "signIn": "Sign In / Register",
     "upgradePro": "Upgrade to PRO",
     "unlockStats": "Unlock advanced stats & analytics",
     "version": "Kintore Note v1.0.0"
+  },
+  "deleteAccount": {
+    "title": "Delete Account",
+    "description": "This action is permanent and cannot be undone. All your data will be permanently deleted from our servers and your device.",
+    "willDelete": "This will permanently delete:",
+    "item1": "All training sessions & workout logs",
+    "item2": "Body progress photos & encryption keys",
+    "item3": "Hanko stamps & streak records",
+    "item4": "Your profile & account information",
+    "confirmLabel": "Type \"{{text}}\" to confirm",
+    "confirm": "Delete",
+    "error": "Failed to delete account. Please try again.",
+    "success": "Account deleted successfully"
+  },
+  "appLock": {
+    "subtitle": "Authenticate to access your training data",
+    "authPrompt": "Unlock Kintore Note",
+    "usePasscode": "Use Passcode",
+    "faceId": "Unlock with Face ID",
+    "touchId": "Unlock with Touch ID",
+    "tryAgain": "Try Again",
+    "cancelled": "Authentication cancelled",
+    "failed": "Authentication failed",
+    "error": "An error occurred",
+    "secured": "Protected by biometric authentication"
   },
   "premium": {
     "title": "Kintore Note PRO",
@@ -141,5 +170,32 @@
         "description": "Share your journey, get motivated, and celebrate with fellow lifters."
       }
     ]
+  },
+  "body": {
+    "title": "Body Records",
+    "encrypted": "E2E Encrypted",
+    "takePhoto": "Take Progress Photo",
+    "cameraDesc": "AES-256 encrypted · Self-timer · Never saved to Camera Roll",
+    "photos": "Photos",
+    "noPhotos": "No Progress Photos Yet",
+    "noPhotosDesc": "Start tracking your body transformation with encrypted, private photos.",
+    "noAnglePhotos": "No Photos for This Angle",
+    "noAnglePhotosDesc": "Take a photo from this angle to see your progress here.",
+    "takeFirst": "Take First Photo",
+    "loading": "Loading encrypted photos...",
+    "filterAll": "All",
+    "filterFront": "Front",
+    "filterSide": "Side",
+    "filterBack": "Back"
+  },
+  "camera": {
+    "permissionTitle": "Camera Access Required",
+    "permissionDesc": "Your photos are encrypted locally using AES-256 and never saved to your Camera Roll.",
+    "grantPermission": "Grant Permission",
+    "encrypting": "Encrypting...",
+    "decrypting": "Decrypting...",
+    "angleFront": "Front",
+    "angleSide": "Side",
+    "angleBack": "Back"
   }
 }

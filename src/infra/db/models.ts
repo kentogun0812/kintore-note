@@ -61,3 +61,14 @@ export class MenuExercise extends Model {
   @relation('training_menus', 'menu_id') menu!: any;
   @relation('exercises', 'exercise_id') exercise!: any;
 }
+
+export class BodyPhoto extends Model {
+  static table = 'body_photos';
+
+  @field('user_id') userId!: string;
+  @field('file_path') filePath!: string;
+  @field('angle') angle!: string; // 'front' | 'side' | 'back'
+  @field('key_id') keyId!: string;
+  @field('taken_at') takenAt!: number;
+  @readonly @date('created_at') createdAt!: Date;
+}

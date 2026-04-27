@@ -18,7 +18,7 @@
     "streak": "{{count}}日連続！",
     "currentStreak": "現在の継続日数",
     "hankoCalendar": "ハンコカレンダー",
-    "loginToSync": "ログインして同期 ☁️",
+    "loginToSync": "ログインするとデータを同期できます ☁️",
     "todayMenu": "今日のメニュー",
     "startSession": "トレーニング開始"
   },
@@ -50,14 +50,43 @@
     "language": "言語",
     "notifications": "通知",
     "weightUnit": "重量単位",
+    "security": "セキュリティ",
+    "appLock": "アプリロック (Face ID / Touch ID)",
     "legal": "規約・プライバシー",
     "privacyPolicy": "プライバシーポリシー",
     "termsOfUse": "利用規約",
+    "account": "アカウント",
+    "deleteAccount": "アカウント削除",
     "signOut": "ログアウト",
     "signIn": "ログイン / 新規登録",
     "upgradePro": "PROにアップグレード",
     "unlockStats": "高度な分析機能を解放",
     "version": "筋トレノート v1.0.0"
+  },
+  "deleteAccount": {
+    "title": "アカウントを削除",
+    "description": "この操作は取り消せません。すべてのデータがサーバーとデバイスから完全に削除されます。",
+    "willDelete": "以下のデータが完全に削除されます：",
+    "item1": "すべてのトレーニング記録・ワークアウトログ",
+    "item2": "ボディ写真・暗号化キー",
+    "item3": "ハンコスタンプ・連続記録",
+    "item4": "プロフィール・アカウント情報",
+    "confirmLabel": "確認のため「{{text}}」と入力してください",
+    "confirm": "削除する",
+    "error": "アカウントの削除に失敗しました。もう一度お試しください。",
+    "success": "アカウントが正常に削除されました"
+  },
+  "appLock": {
+    "subtitle": "トレーニングデータにアクセスするには認証が必要です",
+    "authPrompt": "筋トレノートのロック解除",
+    "usePasscode": "パスコードを使用",
+    "faceId": "Face IDで解除",
+    "touchId": "Touch IDで解除",
+    "tryAgain": "もう一度試す",
+    "cancelled": "認証がキャンセルされました",
+    "failed": "認証に失敗しました",
+    "error": "エラーが発生しました",
+    "secured": "生体認証で保護されています"
   },
   "premium": {
     "title": "筋トレノート PRO",
@@ -150,5 +179,32 @@
         "description": "仲間とつながり、モチベーションを高め合いましょう。"
       }
     ]
+  },
+  "body": {
+    "title": "ボディレコード",
+    "encrypted": "暗号化済み",
+    "takePhoto": "経過写真を撮影",
+    "cameraDesc": "AES-256暗号化 · セルフタイマー · カメラロールには保存されません",
+    "photos": "枚",
+    "noPhotos": "まだ写真がありません",
+    "noPhotosDesc": "暗号化された安全な写真で、体の変化を記録しましょう。",
+    "noAnglePhotos": "この角度の写真はありません",
+    "noAnglePhotosDesc": "この角度から写真を撮って、変化を確認しましょう。",
+    "takeFirst": "最初の写真を撮る",
+    "loading": "暗号化写真を読み込み中...",
+    "filterAll": "すべて",
+    "filterFront": "正面",
+    "filterSide": "側面",
+    "filterBack": "背面"
+  },
+  "camera": {
+    "permissionTitle": "カメラへのアクセスが必要です",
+    "permissionDesc": "写真はAES-256でローカル暗号化されます。カメラロールには保存されません。",
+    "grantPermission": "許可する",
+    "encrypting": "暗号化中...",
+    "decrypting": "復号中...",
+    "angleFront": "正面",
+    "angleSide": "側面",
+    "angleBack": "背面"
   }
 }
