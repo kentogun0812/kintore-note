@@ -13,6 +13,7 @@ export default function AuthLayout() {
         contentStyle: { backgroundColor: colors.dark.bg.primary },
         headerShadowVisible: false,
         headerBackVisible: false,
+        gestureEnabled: false,
         headerLeft: () => (
           <Pressable 
             onPress={() => router.back()} 
@@ -24,9 +25,10 @@ export default function AuthLayout() {
         ),
       }}
     >
-      <Stack.Screen name="login" options={{ title: 'Login', headerShown: false }} />
-      <Stack.Screen name="register" options={{ title: 'Register', headerTitle: '' }} />
-      <Stack.Screen name="onboarding" options={{ title: 'Welcome', headerShown: false }} />
+      <Stack.Screen name="intro" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="login" options={{ title: 'Login', headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="register" options={{ title: 'Register', headerTitle: '', gestureEnabled: false }} />
+      <Stack.Screen name="onboarding" options={{ title: 'Welcome', headerShown: false, gestureEnabled: false }} />
     </Stack>
   );
 }

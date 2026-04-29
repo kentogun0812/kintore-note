@@ -9,18 +9,20 @@ import { Icon } from '@/components/Icon';
 import { HankoCalendar } from '@/components/HankoCalendar';
 import { Link, router } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
+import { useOnboardingStore } from '@/store/onboarding.store';
 import { useTranslation } from 'react-i18next';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import { WelcomePopup } from '@/components/WelcomePopup';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
   const { user, isGuest } = useAuthStore();
+  const { showWelcome, dismissWelcome } = useOnboardingStore();
   const currentDate = new Date();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
   const monthName = currentDate.toLocaleString('default', { month: 'long' });
 
-  // Generate some dummy stamped dates (e.g., today minus 1, 2, 3 days to match 14 day streak idea)
   const dummyStampedDates = [];
   for (let i = 1; i <= 14; i++) {
     const d = new Date();
@@ -34,7 +36,6 @@ export default function HomeScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Home Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.welcomeText}>{t('home.welcome')}</Text>
@@ -129,6 +130,8 @@ export default function HomeScreen() {
           </Link>
         </Card>
       </ScrollView>
+
+      <WelcomePopup visible={showWelcome} onDismiss={dismissWelcome} />
     </SafeAreaView>
   );
 }
@@ -177,7 +180,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: radius.md,
     marginRight: spacing.xs,
-    // Add shadow to make the bubble pop
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,

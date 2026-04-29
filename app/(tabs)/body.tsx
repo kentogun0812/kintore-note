@@ -23,11 +23,11 @@ interface BodyPhotoItem {
   takenAt: number;
 }
 
-const ANGLE_FILTERS: { key: AngleFilter; label: string; icon: string }[] = [
-  { key: 'all', label: 'All', icon: 'grid-outline' },
-  { key: 'front', label: 'Front', icon: 'person-outline' },
-  { key: 'side', label: 'Side', icon: 'body-outline' },
-  { key: 'back', label: 'Back', icon: 'accessibility-outline' },
+const ANGLE_FILTERS: { key: AngleFilter; labelKey: string; icon: string }[] = [
+  { key: 'all', labelKey: 'body.filterAll', icon: 'grid-outline' },
+  { key: 'front', labelKey: 'body.filterFront', icon: 'person-outline' },
+  { key: 'side', labelKey: 'body.filterSide', icon: 'body-outline' },
+  { key: 'back', labelKey: 'body.filterBack', icon: 'accessibility-outline' },
 ];
 
 export default function BodyScreen() {
@@ -36,7 +36,6 @@ export default function BodyScreen() {
   const [activeFilter, setActiveFilter] = useState<AngleFilter>('all');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load photos whenever screen gains focus
   useFocusEffect(
     useCallback(() => {
       loadPhotos();
@@ -48,19 +47,16 @@ export default function BodyScreen() {
       setIsLoading(true);
       const filePaths = await listEncryptedPhotos();
       
-      // Parse photo metadata from file paths
-      // In production, this would query WatermelonDB for full metadata
       const photoItems: BodyPhotoItem[] = filePaths.map((fp, index) => {
         const filename = fp.split('/').pop()?.replace('.enc', '') || '';
         return {
           id: filename,
           filePath: fp,
           angle: (['front', 'side', 'back'] as const)[index % 3],
-          takenAt: Date.now() - (index * 86400000), // Simulated timestamps
+          takenAt: Date.now() - (index * 86400000),
         };
       });
 
-      // Sort by newest first
       photoItems.sort((a, b) => b.takenAt - a.takenAt);
       setPhotos(photoItems);
     } catch (error) {
@@ -74,7 +70,6 @@ export default function BodyScreen() {
     ? photos 
     : photos.filter(p => p.angle === activeFilter);
 
-  // Group photos by month for timeline
   const groupedPhotos = groupByMonth(filteredPhotos);
 
   const handleFilterChange = (filter: AngleFilter) => {
@@ -88,26 +83,24 @@ export default function BodyScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Body Records</Text>
+          <Text style={styles.title}>{t('body.title')}</Text>
           <View style={styles.headerBadge}>
             <Icon name="shield-checkmark" size={14} color={colors.dark.accent.success} />
-            <Text style={styles.headerBadgeText}>E2E Encrypted</Text>
+            <Text style={styles.headerBadgeText}>{t('body.encrypted')}</Text>
           </View>
         </View>
 
-        {/* Camera CTA */}
         <Animated.View entering={FadeInDown.delay(100)}>
           <Card style={styles.cameraCard}>
             <View style={styles.cameraCardContent}>
               <View style={styles.cameraCardInfo}>
                 <View style={styles.cameraCardHeader}>
                   <Icon name="camera" size={24} color={colors.dark.accent.primary} />
-                  <Text style={styles.cameraCardTitle}>Take Progress Photo</Text>
+                  <Text style={styles.cameraCardTitle}>{t('body.takePhoto')}</Text>
                 </View>
                 <Text style={styles.cameraCardDesc}>
-                  AES-256 encrypted · Self-timer · Never saved to Camera Roll
+                  {t('body.cameraDesc')}
                 </Text>
               </View>
               <Link href="/camera" asChild>
@@ -119,40 +112,38 @@ export default function BodyScreen() {
           </Card>
         </Animated.View>
 
-        {/* Stats Summary */}
         {photos.length > 0 && (
           <Animated.View entering={FadeInDown.delay(200)}>
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{photos.length}</Text>
-                <Text style={styles.statLabel}>Photos</Text>
+                <Text style={styles.statLabel}>{t('body.photos')}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {photos.filter(p => p.angle === 'front').length}
                 </Text>
-                <Text style={styles.statLabel}>Front</Text>
+                <Text style={styles.statLabel}>{t('body.filterFront')}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {photos.filter(p => p.angle === 'side').length}
                 </Text>
-                <Text style={styles.statLabel}>Side</Text>
+                <Text style={styles.statLabel}>{t('body.filterSide')}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {photos.filter(p => p.angle === 'back').length}
                 </Text>
-                <Text style={styles.statLabel}>Back</Text>
+                <Text style={styles.statLabel}>{t('body.filterBack')}</Text>
               </View>
             </View>
           </Animated.View>
         )}
 
-        {/* Angle Filter */}
         <Animated.View entering={FadeInDown.delay(300)}>
           <View style={styles.filterRow}>
             {ANGLE_FILTERS.map((filter) => (
@@ -173,35 +164,31 @@ export default function BodyScreen() {
                   styles.filterChipText,
                   activeFilter === filter.key && styles.filterChipTextActive,
                 ]}>
-                  {filter.label}
+                  {t(filter.labelKey)}
                 </Text>
               </Pressable>
             ))}
           </View>
         </Animated.View>
 
-        {/* Gallery */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <Icon name="lock-closed" size={32} color={colors.dark.text.tertiary} />
-            <Text style={styles.loadingText}>Loading encrypted photos...</Text>
+            <Text style={styles.loadingText}>{t('body.loading')}</Text>
           </View>
         ) : filteredPhotos.length === 0 ? (
           <Animated.View entering={FadeIn.delay(400)}>
             <Card style={styles.emptyCard}>
               <Icon name="images-outline" size={56} color={colors.dark.text.tertiary} />
               <Text style={styles.emptyTitle}>
-                {photos.length === 0 ? 'No Progress Photos Yet' : 'No Photos for This Angle'}
+                {photos.length === 0 ? t('body.noPhotos') : t('body.noAnglePhotos')}
               </Text>
               <Text style={styles.emptyDesc}>
-                {photos.length === 0 
-                  ? 'Start tracking your body transformation with encrypted, private photos.'
-                  : 'Take a photo from this angle to see your progress here.'
-                }
+                {photos.length === 0 ? t('body.noPhotosDesc') : t('body.noAnglePhotosDesc')}
               </Text>
               {photos.length === 0 && (
                 <Link href="/camera" asChild>
-                  <Button label="Take First Photo" iconName="camera" />
+                  <Button label={t('body.takeFirst')} iconName="camera" />
                 </Link>
               )}
             </Card>
@@ -217,7 +204,7 @@ export default function BodyScreen() {
               <View style={styles.monthHeader}>
                 <View style={styles.monthDot} />
                 <Text style={styles.monthTitle}>{month}</Text>
-                <Text style={styles.monthCount}>{items.length} photos</Text>
+                <Text style={styles.monthCount}>{items.length} {t('body.photos')}</Text>
               </View>
 
               <View style={styles.photoGrid}>
@@ -229,7 +216,6 @@ export default function BodyScreen() {
                       angle={photo.angle}
                       takenAt={photo.takenAt}
                       onPress={() => {
-                        // TODO: Open full-screen decrypted view
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       }}
                     />
@@ -271,7 +257,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl * 3,
     gap: spacing.md,
   },
-  // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -298,7 +283,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     fontWeight: 'bold',
   },
-  // Camera CTA
   cameraCard: {
     padding: spacing.md,
     backgroundColor: colors.dark.bg.elevated,
@@ -340,7 +324,6 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  // Stats
   statsRow: {
     flexDirection: 'row',
     backgroundColor: colors.dark.bg.secondary,
@@ -368,7 +351,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dark.border.default,
     marginVertical: spacing.xs,
   },
-  // Filter
   filterRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -397,7 +379,6 @@ const styles = StyleSheet.create({
     color: colors.dark.accent.primary,
     fontWeight: 'bold',
   },
-  // Loading
   loadingContainer: {
     paddingVertical: spacing.xxl,
     alignItems: 'center',
@@ -407,7 +388,6 @@ const styles = StyleSheet.create({
     color: colors.dark.text.tertiary,
     fontSize: typography.fontSize.sm,
   },
-  // Empty
   emptyCard: {
     padding: spacing.xl,
     alignItems: 'center',
@@ -430,7 +410,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: spacing.sm,
   },
-  // Month timeline
   monthSection: {
     gap: spacing.md,
   },
@@ -455,7 +434,6 @@ const styles = StyleSheet.create({
     color: colors.dark.text.tertiary,
     fontSize: typography.fontSize.xs,
   },
-  // Photo Grid
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

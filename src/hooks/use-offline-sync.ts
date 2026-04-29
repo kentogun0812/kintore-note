@@ -26,7 +26,7 @@ export function useOfflineSync() {
     try {
       isSyncing.current = true;
       console.log('Starting DB sync...');
-      await syncWatermelonDB();
+      await syncWatermelonDB(session.user.id);
       console.log('DB sync completed successfully.');
       setLastSyncedAt(new Date());
     } catch (error) {

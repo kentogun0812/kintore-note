@@ -90,7 +90,7 @@ export default function IntroScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       {/* Header đồng bộ */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>筋トレノート</Text>
+        <Text style={styles.headerTitle}>{t('auth.login.title')}</Text>
         <Pressable onPress={finishIntro} hitSlop={12}>
           <Text style={styles.skipText}>{t('intro.skip')}</Text>
         </Pressable>

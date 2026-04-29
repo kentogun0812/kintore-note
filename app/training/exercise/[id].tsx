@@ -7,12 +7,12 @@ import { spacing, radius } from '@/constants/spacing';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
 import { useMenuStore } from '@/store/menu.store';
+import { useTranslation } from 'react-i18next';
 
 export default function ExerciseDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const addExercise = useMenuStore((state) => state.addExerciseToMenu);
-  
-  // In a real app we'd fetch the exercise details using the ID from WatermelonDB or Supabase.
   
   const handleAddToMenu = () => {
     addExercise({ id: Array.isArray(id) ? id[0] : id, name: 'ベンチプレス (Bench Press)' });
@@ -24,7 +24,7 @@ export default function ExerciseDetailScreen() {
       contentInsetAdjustmentBehavior="automatic"
       style={styles.container}
     >
-      <Stack.Screen options={{ title: 'Details', headerLargeTitle: false }} />
+      <Stack.Screen options={{ title: t('exerciseDetail.title'), headerLargeTitle: false }} />
       
       <View style={styles.imagePlaceholder}>
         <Icon name="image-outline" size={48} color={colors.dark.text.tertiary} />
@@ -50,7 +50,7 @@ export default function ExerciseDetailScreen() {
         </View>
 
         <Button 
-          label="Add to Menu" 
+          label={t('exerciseDetail.addToMenu')} 
           iconName="add-circle"
           fullWidth
           style={styles.addButton}

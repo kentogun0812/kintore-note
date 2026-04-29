@@ -40,10 +40,16 @@ export const colors = {
       white80: 'rgba(255, 255, 255, 0.8)',
       white50: 'rgba(255, 255, 255, 0.5)',
       black80: 'rgba(0, 0, 0, 0.8)',
+      black70: 'rgba(0, 0, 0, 0.7)',
       black60: 'rgba(0, 0, 0, 0.6)',
       black50: 'rgba(0, 0, 0, 0.5)',
+      accent06: 'rgba(229, 77, 66, 0.06)',
       accent10: 'rgba(229, 77, 66, 0.1)',
+      accent12: 'rgba(229, 77, 66, 0.12)',
+      accent15: 'rgba(229, 77, 66, 0.15)',
       accent20: 'rgba(229, 77, 66, 0.2)',
+      warning10: 'rgba(255, 149, 0, 0.1)',
+      warning20: 'rgba(255, 149, 0, 0.2)',
     }
   },
   

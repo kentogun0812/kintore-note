@@ -24,7 +24,6 @@ export default function ActiveSessionScreen() {
     setId: string;
   }>({ visible: false, type: 'weight', value: '', exId: '', setId: '' });
 
-  // Rest Timer State
   const [restLeft, setRestLeft] = useState(0);
   
   useEffect(() => {
@@ -57,13 +56,11 @@ export default function ActiveSessionScreen() {
   const handleToggleComplete = (exId: string, setId: string, currentlyCompleted: boolean) => {
     toggleSetComplete(exId, setId);
     if (!currentlyCompleted && restLeft === 0) {
-      // Auto-start default rest of 60s when a set is completed
       startRest(60);
     }
   };
 
   useEffect(() => {
-    // Scaffold dummy data if empty just to show the UI
     if (exercises.length === 0) {
       startSession([{ id: '1', name: 'ベンチプレス (Bench Press)' }]);
     }
@@ -75,6 +72,7 @@ export default function ActiveSessionScreen() {
         options={{ 
           title: t('session.title'), 
           headerLargeTitle: false,
+          gestureEnabled: false,
           headerLeft: () => (
             <Pressable 
               onPress={() => router.back()} 
@@ -100,7 +98,7 @@ export default function ActiveSessionScreen() {
             <Card style={styles.exerciseCard}>
               <View style={styles.tableHeader}>
                 <Text style={styles.tableHeaderSet}>{t('session.sets')}</Text>
-                <Text style={styles.tableHeaderMain}>kg</Text>
+                <Text style={styles.tableHeaderMain}>{t('session.kg')}</Text>
                 <Text style={styles.tableHeaderMain}>{t('session.reps')}</Text>
                 <Text style={styles.tableHeaderCheck}>✓</Text>
               </View>
@@ -140,7 +138,7 @@ export default function ActiveSessionScreen() {
                         styles.checkCircle,
                         { backgroundColor: set.completed ? colors.dark.accent.success : colors.dark.bg.tertiary }
                       ]}>
-                       <Icon name={set.completed ? 'checkmark' : 'checkmark'} size={18} color={set.completed ? colors.dark.bg.primary : colors.dark.text.secondary} />
+                       <Icon name="checkmark" size={18} color={set.completed ? colors.dark.bg.primary : colors.dark.text.secondary} />
                     </Pressable>
                   </View>
                 </View>
@@ -166,7 +164,7 @@ export default function ActiveSessionScreen() {
               styles.timerLabel,
               { color: restLeft > 0 ? colors.dark.accent.info : colors.dark.text.secondary }
             ]}>
-              {restLeft > 0 ? formatRest(restLeft) : 'Rest Timer'}
+              {restLeft > 0 ? formatRest(restLeft) : t('session.restTimer')}
             </Text>
           </View>
           <View style={styles.timerPresets}>

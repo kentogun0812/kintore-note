@@ -11,7 +11,7 @@
  * 7. Sign out from Supabase auth
  */
 import { supabase } from '@/lib/supabase';
-import { database } from '@/db';
+import { getDatabase } from '@/db';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Paths, Directory } from 'expo-file-system';
@@ -54,7 +54,7 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
     }
 
     // Step 2: Wipe local WatermelonDB
-    await clearLocalDatabase();
+    await clearLocalDatabase(user.id);
 
     // Step 3: Clear encrypted photo files
     await clearEncryptedPhotos();
@@ -82,8 +82,9 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
  * Clear all WatermelonDB tables by performing a write batch.
  * This is safer than database.unsafeResetDatabase() which can cause schema issues.
  */
-async function clearLocalDatabase(): Promise<void> {
+async function clearLocalDatabase(userId: string): Promise<void> {
   try {
+    const database = getDatabase(userId);
     await database.write(async () => {
       const tables = ['training_sessions', 'session_sets', 'hanko_stamps'];
       for (const tableName of tables) {

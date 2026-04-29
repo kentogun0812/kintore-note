@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   View, Text, TextInput, StyleSheet, Pressable, 
   Modal, ActivityIndicator, KeyboardAvoidingView, Platform 
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: colors.dark.alpha.black70,
   },
   overlayClose: {
     flex: 1,
@@ -206,11 +206,11 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255, 69, 58, 0.12)',
+    backgroundColor: colors.dark.alpha.accent12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 69, 58, 0.2)',
+    borderColor: colors.dark.alpha.accent20,
   },
   title: {
     fontSize: typography.fontSize.xl,
@@ -227,10 +227,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   deletionList: {
-    backgroundColor: 'rgba(255, 69, 58, 0.06)',
+    backgroundColor: colors.dark.alpha.accent06,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 69, 58, 0.12)',
+    borderColor: colors.dark.alpha.accent12,
     padding: spacing.md,
     gap: spacing.sm,
     marginBottom: spacing.lg,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   confirmInputValid: {
     borderColor: colors.dark.accent.primary,
-    backgroundColor: 'rgba(255, 69, 58, 0.06)',
+    backgroundColor: colors.dark.alpha.accent06,
   },
   errorContainer: {
     flexDirection: 'row',

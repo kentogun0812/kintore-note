@@ -25,11 +25,11 @@ export default function MenuBuilderScreen() {
       setIsSaving(false);
       if (err.message === 'GUEST_LIMIT_REACHED') {
         Alert.alert(
-          'Guest Limit',
-          'Guests can only create 1 training menu. Please login or register to create unlimited menus and sync them to the cloud! 🏋️‍♂️',
+          t('menuBuilder.guestLimitTitle'),
+          t('menuBuilder.guestLimitDesc'),
           [
-            { text: 'Later', style: 'cancel' },
-            { text: 'Login / Register', onPress: () => router.push('/auth/login') }
+            { text: t('menuBuilder.later'), style: 'cancel' },
+            { text: t('menuBuilder.loginRegister'), onPress: () => router.push('/auth/login') }
           ]
         );
       }

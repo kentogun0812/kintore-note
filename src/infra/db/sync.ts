@@ -1,8 +1,14 @@
 import { synchronize } from '@nozbe/watermelondb/sync';
-import { database } from './database';
+import { getDatabase } from '@/db';
 import { supabase } from '../api/supabase.client';
 
-export async function syncWatermelonDB() {
+export async function syncWatermelonDB(userId: string) {
+  if (!userId) {
+    console.warn('Sync skipped: No user ID provided');
+    return;
+  }
+  
+  const database = getDatabase(userId);
   if (!database) {
     console.warn('Sync skipped: Database is not initialized (Running in Expo Go?)');
     return;

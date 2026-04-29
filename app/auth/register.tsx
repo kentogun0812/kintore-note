@@ -8,8 +8,11 @@ import { spacing } from '@/constants/spacing';
 import { Icon } from '@/components/Icon';
 import { supabase } from '@/lib/supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { useOnboardingStore } from '@/store/onboarding.store';
+import { useTranslation } from 'react-i18next';
 
 export default function RegisterScreen() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,26 +23,35 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert('Thiếu thông tin', 'Hãy nhập đầy đủ thông tin để tạo tài khoản mới bạn nhé! ✨');
+      Alert.alert(t('auth.register.errors.missingInfoTitle'), t('auth.register.errors.missingInfoDesc'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Mật khẩu không khớp', 'Mật khẩu và xác nhận mật khẩu phải giống nhau nhé! 🧐');
+      Alert.alert(t('auth.register.errors.passwordMismatchTitle'), t('auth.register.errors.passwordMismatchDesc'));
       return;
     }
     
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    
+    // Reset onboarding state for the new account so _layout doesn't redirect to Home
+    // (Only reset onboarding, keep hasSeenIntro = true)
+    useOnboardingStore.getState().resetOnboardingAccount();
+    
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
     });
     setLoading(false);
 
     if (error) {
-      Alert.alert('Lỗi đăng ký', 'Có chút trục trặc khi tạo tài khoản. Bạn kiểm tra lại email hoặc mật khẩu (tối thiểu 6 ký tự) nhé! 🛠️');
+      Alert.alert(t('auth.register.errors.registerErrorTitle'), t('auth.register.errors.registerErrorDesc'));
+    } else if (!data.session) {
+      Alert.alert(t('auth.register.errors.registerSuccessTitle'), t('auth.register.errors.registerSuccessDesc'));
+      router.replace('/auth/login');
     } else {
-      router.replace('/auth/onboarding');
+      // If session exists, _layout.tsx will automatically detect !hasCompletedOnboarding and route to /auth/onboarding
+      // We don't need to manually push, avoiding a race condition.
     }
   };
 
@@ -67,7 +79,7 @@ export default function RegisterScreen() {
     } catch (e: any) {
       setLoading(false);
       if (e.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Lỗi kết nối', 'Không thể kết nối với Apple lúc này. 🍎');
+        Alert.alert(t('auth.register.errors.connectionErrorTitle'), t('auth.register.errors.connectionErrorDesc'));
       }
     }
   };
@@ -76,7 +88,6 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.safeArea}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      {/* Back Button */}
       <View style={styles.backButtonContainer}>
         <Pressable 
           onPress={() => router.back()} 
@@ -94,20 +105,18 @@ export default function RegisterScreen() {
         automaticallyAdjustKeyboardInsets={true}
       >
         <View style={styles.container}>
-          {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <Text style={styles.iconText}>🏋️</Text>
             </View>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join Kintore Note and start lifting.</Text>
+            <Text style={styles.title}>{t('auth.register.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.register.subtitle')}</Text>
           </View>
 
-          {/* Form */}
           <View style={styles.form}>
             <TextInput 
               style={styles.input}
-              placeholder="Email address"
+              placeholder={t('auth.register.emailPlaceholder')}
               placeholderTextColor={colors.dark.text.tertiary}
               value={email}
               onChangeText={setEmail}
@@ -125,7 +134,7 @@ export default function RegisterScreen() {
             <TextInput 
               ref={passwordRef}
               style={styles.input}
-              placeholder="Password"
+              placeholder={t('auth.register.passwordPlaceholder')}
               secureTextEntry
               placeholderTextColor={colors.dark.text.tertiary}
               value={password}
@@ -143,7 +152,7 @@ export default function RegisterScreen() {
             <TextInput 
               ref={confirmPasswordRef}
               style={styles.input}
-              placeholder="Confirm Password"
+              placeholder={t('auth.register.confirmPasswordPlaceholder')}
               secureTextEntry
               placeholderTextColor={colors.dark.text.tertiary}
               value={confirmPassword}
@@ -165,15 +174,14 @@ export default function RegisterScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonText}>
-                {loading ? 'Creating Account...' : 'Continue'}
+                {loading ? t('auth.register.creating') : t('auth.register.continue')}
               </Text>
             </Pressable>
           </View>
 
-          {/* Divider */}
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+            <Text style={styles.dividerText}>{t('auth.register.orContinueWith')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -186,7 +194,7 @@ export default function RegisterScreen() {
           >
             <View style={styles.appleButtonContent}>
               <Icon name="logo-apple" size={18} color={colors.black} />
-              <Text style={styles.appleButtonText}>Sign Up with Apple</Text>
+              <Text style={styles.appleButtonText}>{t('auth.register.signUpApple')}</Text>
             </View>
           </Pressable>
         </View>
@@ -197,7 +205,7 @@ export default function RegisterScreen() {
             onPress={() => router.back()}
           >
             <Text style={styles.footerText}>
-              Already have an account? <Text style={styles.footerLinkBold}>Sign In</Text>
+              {t('auth.register.haveAccount')} <Text style={styles.footerLinkBold}>{t('auth.register.signIn')}</Text>
             </Text>
           </Pressable>
         </View>

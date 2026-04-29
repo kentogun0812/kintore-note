@@ -21,19 +21,21 @@ import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { generatePhotoKey } from '@/lib/key-manager';
 import { encryptAndSavePhoto } from '@/lib/photo-encryption';
+import { useTranslation } from 'react-i18next';
 
 type ShootingAngle = 'front' | 'side' | 'back';
 type TimerDuration = 0 | 3 | 5 | 10;
 
-const ANGLE_LABELS: Record<ShootingAngle, { label: string; icon: string }> = {
-  front: { label: 'Front', icon: 'person-outline' },
-  side: { label: 'Side', icon: 'body-outline' },
-  back: { label: 'Back', icon: 'accessibility-outline' },
+const ANGLE_CONFIGS: Record<ShootingAngle, string> = {
+  front: 'person-outline',
+  side: 'body-outline',
+  back: 'accessibility-outline',
 };
 
 const TIMER_OPTIONS: TimerDuration[] = [0, 3, 5, 10];
 
 export default function CameraScreen() {
+  const { t } = useTranslation();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const [facing, setFacing] = useState<'back' | 'front'>('front');
@@ -78,11 +80,11 @@ export default function CameraScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.permissionContent}>
           <Icon name="camera" size={64} color={colors.dark.accent.primary} />
-          <Text style={styles.permissionTitle}>Camera Access Required</Text>
+          <Text style={styles.permissionTitle}>{t('camera.permissionTitle')}</Text>
           <Text style={styles.permissionText}>
-            Your photos are encrypted locally using AES-256 and never saved to your Camera Roll.
+            {t('camera.permissionDesc')}
           </Text>
-          <Button label="Grant Permission" onPress={requestPermission} fullWidth />
+          <Button label={t('camera.grantPermission')} onPress={requestPermission} fullWidth />
         </View>
       </View>
     );
@@ -167,7 +169,6 @@ export default function CameraScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <CameraView ref={cameraRef} style={styles.camera} facing={facing}>
-        {/* Flash feedback overlay */}
         {flashFeedback && (
           <Animated.View 
             entering={FadeIn.duration(50)} 
@@ -176,7 +177,6 @@ export default function CameraScreen() {
           />
         )}
 
-        {/* Countdown overlay */}
         {countdown !== null && countdown > 0 && (
           <View style={styles.countdownOverlay}>
             <Animated.Text 
@@ -190,7 +190,6 @@ export default function CameraScreen() {
         )}
 
         <View style={styles.overlay}>
-          {/* Top Bar */}
           <View style={styles.topBar}>
             <Pressable 
               style={styles.closeButton} 
@@ -200,7 +199,6 @@ export default function CameraScreen() {
               <Icon name="close" size={24} color={colors.white} />
             </Pressable>
 
-            {/* Timer Selector */}
             <View style={styles.timerSelector}>
               {TIMER_OPTIONS.map((t) => (
                 <Pressable
@@ -231,10 +229,9 @@ export default function CameraScreen() {
             <View style={{ width: 40 }} />
           </View>
 
-          {/* Angle Selector */}
           <View style={styles.angleSelectorContainer}>
             <View style={styles.angleSelector}>
-              {(Object.entries(ANGLE_LABELS) as [ShootingAngle, typeof ANGLE_LABELS[ShootingAngle]][]).map(([key, val]) => (
+              {(Object.entries(ANGLE_CONFIGS) as [ShootingAngle, string][]).map(([key, icon]) => (
                 <Pressable
                   key={key}
                   onPress={() => {
@@ -247,7 +244,7 @@ export default function CameraScreen() {
                   ]}
                 >
                   <Icon 
-                    name={val.icon as any} 
+                    name={icon as any} 
                     size={16} 
                     color={angle === key ? colors.dark.accent.primary : colors.white} 
                   />
@@ -255,21 +252,18 @@ export default function CameraScreen() {
                     styles.angleOptionText,
                     angle === key && styles.angleOptionTextActive,
                   ]}>
-                    {val.label}
+                    {t(`camera.angle${key.charAt(0).toUpperCase() + key.slice(1)}`)}
                   </Text>
                 </Pressable>
               ))}
             </View>
           </View>
 
-          {/* Bottom Controls */}
           <View style={styles.bottomControls}>
-            {/* Flip Camera */}
             <Pressable style={styles.sideButton} onPress={toggleCameraFacing}>
               <Icon name="camera-reverse" size={24} color={colors.white} />
             </Pressable>
 
-            {/* Capture Button */}
             <Pressable 
               onPress={handleCapturePress} 
               disabled={isSaving}
@@ -283,18 +277,16 @@ export default function CameraScreen() {
               </Animated.View>
             </Pressable>
 
-            {/* Encryption Badge */}
             <View style={styles.sideButton}>
               <Icon name="lock-closed" size={20} color={colors.dark.accent.success} />
               <Text style={styles.encryptedLabel}>AES</Text>
             </View>
           </View>
 
-          {/* Saving indicator */}
           {isSaving && (
             <Animated.View entering={FadeIn} style={styles.savingOverlay}>
               <Icon name="shield-checkmark" size={32} color={colors.dark.accent.success} />
-              <Text style={styles.savingText}>Encrypting...</Text>
+              <Text style={styles.savingText}>{t('camera.encrypting')}</Text>
             </Animated.View>
           )}
         </View>
@@ -308,7 +300,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.black,
   },
-  // Permission screen
   permissionContainer: {
     flex: 1,
     backgroundColor: colors.dark.bg.primary,
@@ -332,7 +323,6 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.base,
     lineHeight: 22,
   },
-  // Camera
   camera: {
     flex: 1,
   },
@@ -340,16 +330,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
-  // Flash
   flashOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.white,
     zIndex: 100,
   },
-  // Countdown
   countdownOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.dark.alpha.black50,
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 50,
@@ -359,7 +347,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.white,
   },
-  // Top Bar
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -375,7 +362,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Timer
   timerSelector: {
     flexDirection: 'row',
     backgroundColor: colors.dark.alpha.black50,
@@ -402,7 +388,6 @@ const styles = StyleSheet.create({
   timerOptionTextActive: {
     color: colors.dark.accent.warning,
   },
-  // Angle Selector
   angleSelectorContainer: {
     alignItems: 'center',
   },
@@ -433,7 +418,6 @@ const styles = StyleSheet.create({
     color: colors.dark.accent.primary,
     fontWeight: 'bold',
   },
-  // Bottom Controls
   bottomControls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -476,10 +460,9 @@ const styles = StyleSheet.create({
     borderColor: colors.dark.accent.primary,
     backgroundColor: colors.dark.alpha.accent20,
   },
-  // Saving
   savingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.dark.alpha.black70,
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.md,

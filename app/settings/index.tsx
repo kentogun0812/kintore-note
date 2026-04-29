@@ -116,7 +116,6 @@ export default function SettingsScreen() {
         },
       ],
     },
-    // Security section — only visible for logged-in users
     ...(!isGuest ? [{
       title: t('settings.security'),
       items: [
@@ -136,7 +135,6 @@ export default function SettingsScreen() {
         { label: t('settings.termsOfUse'), icon: 'document-text-outline' },
       ],
     },
-    // Account section — only visible for logged-in users
     ...(!isGuest ? [{
       title: t('settings.account'),
       items: [
@@ -157,7 +155,6 @@ export default function SettingsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Premium Banner */}
         <Pressable onPress={() => router.push('/premium')}>
           <Card style={styles.premiumCard}>
             <View style={styles.premiumContent}>
@@ -189,7 +186,7 @@ export default function SettingsScreen() {
                     }
                   ]}
                 >
-                  <View style={[styles.menuIconContainer, item.isDestructive && { backgroundColor: 'rgba(255, 69, 58, 0.1)' }]}>
+                  <View style={[styles.menuIconContainer, item.isDestructive && { backgroundColor: colors.dark.alpha.accent10 }]}>
                     <Icon name={item.icon as any} size={18} color={item.isDestructive ? colors.dark.accent.primary : colors.dark.text.secondary} />
                   </View>
                   <Text style={[styles.menuItemLabel, item.isDestructive && { color: colors.dark.accent.primary }]}>{item.label}</Text>
@@ -237,7 +234,6 @@ export default function SettingsScreen() {
 
       </ScrollView>
 
-      {/* Selection Modal */}
       <Modal
         visible={isModalVisible}
         transparent
@@ -315,7 +311,6 @@ export default function SettingsScreen() {
         </Text>
       </View>
 
-      {/* Delete Account Modal */}
       <DeleteAccountModal
         visible={isDeleteModalVisible}
         onClose={() => setIsDeleteModalVisible(false)}
@@ -330,15 +325,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.dark.bg.primary,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.dark.border.default,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -439,10 +425,9 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     opacity: 0.7,
   },
-  // Modal Styles
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.dark.alpha.black70,
   },
   modalOverlayClose: {
     flex: 1,

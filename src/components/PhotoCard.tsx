@@ -7,6 +7,7 @@ import { spacing, radius } from '@/constants/spacing';
 import { Icon } from './Icon';
 import { decryptPhoto } from '@/lib/photo-encryption';
 import { getPhotoKey } from '@/lib/key-manager';
+import { useTranslation } from 'react-i18next';
 
 type ShootingAngle = 'front' | 'side' | 'back';
 
@@ -25,6 +26,7 @@ const ANGLE_CONFIG: Record<ShootingAngle, { label: string; icon: string; color: 
 };
 
 export function PhotoCard({ photoId, filePath, angle, takenAt, onPress }: PhotoCardProps) {
+  const { t } = useTranslation();
   const [thumbnailUri, setThumbnailUri] = useState<string | null>(null);
   const [isDecrypting, setIsDecrypting] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -63,17 +65,16 @@ export function PhotoCard({ photoId, filePath, angle, takenAt, onPress }: PhotoC
       styles.container,
       { opacity: pressed ? 0.85 : 1 },
     ]}>
-      {/* Photo Area */}
       <View style={styles.imageContainer}>
         {isDecrypting ? (
           <View style={styles.placeholder}>
             <Icon name="lock-closed" size={24} color={colors.dark.text.tertiary} />
-            <Text style={styles.placeholderText}>Decrypting...</Text>
+            <Text style={styles.placeholderText}>{t('body.decrypting')}</Text>
           </View>
         ) : hasError ? (
           <View style={styles.placeholder}>
             <Icon name="alert-circle" size={24} color={colors.dark.accent.warning} />
-            <Text style={styles.placeholderText}>Error</Text>
+            <Text style={styles.placeholderText}>{t('common.error')}</Text>
           </View>
         ) : thumbnailUri ? (
           <Animated.View entering={FadeIn.duration(300)} style={styles.imageWrapper}>
@@ -83,20 +84,17 @@ export function PhotoCard({ photoId, filePath, angle, takenAt, onPress }: PhotoC
               resizeMode="cover"
               blurRadius={2}
             />
-            {/* Privacy blur overlay */}
             <View style={styles.blurOverlay}>
               <Icon name="eye-outline" size={20} color={colors.white} />
             </View>
           </Animated.View>
         ) : null}
 
-        {/* Encryption indicator */}
         <View style={styles.encryptionBadge}>
           <Icon name="shield-checkmark" size={10} color={colors.dark.accent.success} />
         </View>
       </View>
 
-      {/* Info Area */}
       <View style={styles.infoContainer}>
         <View style={[styles.angleBadge, { backgroundColor: angleInfo.color + '20' }]}>
           <Icon name={angleInfo.icon as any} size={12} color={angleInfo.color} />
@@ -146,7 +144,7 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: colors.dark.alpha.black50,
     justifyContent: 'center',
     alignItems: 'center',
   },

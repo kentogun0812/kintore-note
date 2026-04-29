@@ -11,7 +11,8 @@
     "finished": "Finished!",
     "goodJob": "Good job!",
     "more": "more",
-    "exercises": "exercises"
+    "exercises": "exercises",
+    "error": "Error"
   },
   "home": {
     "welcome": "Good morning",
@@ -37,6 +38,24 @@
     "comingSoon": "Coming in Phase 2",
     "comingSoonDesc": "Detailed muscle heatmaps, volume progression charts, and PR celebrations are currently in development.",
     "preview": "Volume Chart Preview"
+  },
+  "body": {
+    "title": "Body Records",
+    "encrypted": "E2E Encrypted",
+    "takePhoto": "Take Progress Photo",
+    "cameraDesc": "AES-256 encrypted · Self-timer · Never saved to Camera Roll",
+    "photos": "Photos",
+    "filterAll": "All",
+    "filterFront": "Front",
+    "filterSide": "Side",
+    "filterBack": "Back",
+    "noPhotos": "No Progress Photos Yet",
+    "noAnglePhotos": "No Photos for This Angle",
+    "noPhotosDesc": "Start tracking your body transformation with encrypted, private photos.",
+    "noAnglePhotosDesc": "Take a photo from this angle to see your progress here.",
+    "takeFirst": "Take First Photo",
+    "loading": "Loading encrypted photos...",
+    "decrypting": "Decrypting..."
   },
   "circle": {
     "title": "Private Circle",
@@ -76,6 +95,11 @@
     "error": "Failed to delete account. Please try again.",
     "success": "Account deleted successfully"
   },
+  "welcome": {
+    "title": "Welcome to Kintore Note! 💪",
+    "subtitle": "Your training journey starts now. Let's build something great together!",
+    "button": "Let's Lift!"
+  },
   "appLock": {
     "subtitle": "Authenticate to access your training data",
     "authPrompt": "Unlock Kintore Note",
@@ -110,9 +134,20 @@
     "finish": "Finish",
     "addExercise": "Add Exercise",
     "sets": "SETS",
+    "kg": "kg",
     "weight": "WEIGHT",
     "reps": "REPS",
-    "status": "STATUS"
+    "status": "STATUS",
+    "restTimer": "Rest Timer",
+    "summary": {
+      "title": "Summary",
+      "workoutComplete": "Workout Complete",
+      "awesomeJob": "Awesome job!",
+      "totalVolume": "Total Volume",
+      "totalSets": "Total Sets",
+      "stampHanko": "Stamp Hanko",
+      "done": "Done"
+    }
   },
   "hanko": {
     "wellDone": "Well done!",
@@ -133,7 +168,30 @@
     "add": "Add",
     "noExercises": "No exercises added yet.",
     "saving": "Saving...",
-    "saveMenu": "Save Menu"
+    "saveMenu": "Save Menu",
+    "guestLimitTitle": "Guest Limit",
+    "guestLimitDesc": "Guests can only create 1 training menu. Please login or register to create unlimited menus and sync them to the cloud! 🏋️‍♂️",
+    "later": "Later",
+    "loginRegister": "Login / Register"
+  },
+  "library": {
+    "title": "Exercise Library",
+    "searchPlaceholder": "Search exercises...",
+    "loadError": "Failed to load exercises.",
+    "noResults": "No exercises found."
+  },
+  "exerciseDetail": {
+    "title": "Details",
+    "addToMenu": "Add to Menu"
+  },
+  "camera": {
+    "permissionTitle": "Camera Access Required",
+    "permissionDesc": "Your photos are encrypted locally using AES-256 and never saved to your Camera Roll.",
+    "grantPermission": "Grant Permission",
+    "angleFront": "Front",
+    "angleSide": "Side",
+    "angleBack": "Back",
+    "encrypting": "Encrypting..."
   },
   "onboarding": {
     "step1": {
@@ -170,6 +228,53 @@
         "description": "Share your journey, get motivated, and celebrate with fellow lifters."
       }
     ]
+  },
+  "auth": {
+    "login": {
+      "title": "Kintore Note",
+      "subtitle": "Welcome back, let's lift.",
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password",
+      "signIn": "Sign In",
+      "entering": "Entering...",
+      "orContinueWith": "OR CONTINUE WITH",
+      "signInApple": "Sign In with Apple",
+      "noAccount": "Don't have an account? ",
+      "register": "Register",
+      "errors": {
+        "missingInfoTitle": "Missing Information",
+        "missingInfoDesc": "Please enter both email and password! 💪",
+        "loginFailedTitle": "Login Failed",
+        "loginFailedDesc": "Incorrect email or password. Please try again! 🧐",
+        "connectionErrorTitle": "Connection Error",
+        "connectionErrorDesc": "Could not connect to Apple. Please try again later! 🍎"
+      }
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Join Kintore Note and start lifting.",
+      "emailPlaceholder": "Email address",
+      "passwordPlaceholder": "Password",
+      "confirmPasswordPlaceholder": "Confirm Password",
+      "continue": "Continue",
+      "creating": "Creating Account...",
+      "orContinueWith": "OR CONTINUE WITH",
+      "signUpApple": "Sign Up with Apple",
+      "haveAccount": "Already have an account? ",
+      "signIn": "Sign In",
+      "errors": {
+        "missingInfoTitle": "Missing Information",
+        "missingInfoDesc": "Please fill in all information to create a new account! ✨",
+        "passwordMismatchTitle": "Password Mismatch",
+        "passwordMismatchDesc": "Password and confirm password must match! 🧐",
+        "registerErrorTitle": "Registration Error",
+        "registerErrorDesc": "There was a problem creating your account. Please check your email or password (min 6 characters)! 🛠️",
+        "registerSuccessTitle": "Registration Successful",
+        "registerSuccessDesc": "Please check your email to verify your account! 📧",
+        "connectionErrorTitle": "Connection Error",
+        "connectionErrorDesc": "Could not connect to Apple right now. 🍎"
+      }
+    }
   },
   "body": {
     "title": "Body Records",

@@ -22,7 +22,6 @@ export default function PremiumScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      {/* Custom Header */}
       <View style={styles.header}>
         <Pressable 
           onPress={() => router.back()} 
@@ -34,7 +33,6 @@ export default function PremiumScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Hero */}
         <View style={styles.heroContainer}>
           <View style={styles.heroIconContainer}>
             <Icon name="diamond" size={40} color={colors.white} />
@@ -47,7 +45,6 @@ export default function PremiumScreen() {
           </Text>
         </View>
 
-        {/* Features */}
         <View style={styles.featuresList}>
           {features.map((f) => (
             <View key={f.title} style={styles.featureItem}>
@@ -62,7 +59,6 @@ export default function PremiumScreen() {
           ))}
         </View>
 
-        {/* Plans */}
         <View style={styles.plansContainer}>
           <Pressable style={styles.planCard}>
             <View>

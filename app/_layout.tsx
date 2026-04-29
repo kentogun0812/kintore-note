@@ -68,9 +68,16 @@ function RootLayout() {
           router.replace('/(tabs)/home');
         }
       } else {
-        // If logged in and in Auth group, move to Home (unless in Onboarding)
-        if (inAuthGroup && !isOnboarding) {
-          router.replace('/(tabs)/home');
+        // If logged in but hasn't completed onboarding, force them to onboarding
+        if (!hasCompletedOnboarding) {
+          if (!isOnboarding) {
+            router.replace('/auth/onboarding');
+          }
+        } else {
+          // If logged in and completed onboarding, keep them out of auth screens
+          if (inAuthGroup) {
+            router.replace('/(tabs)/home');
+          }
         }
       }
     }

@@ -184,7 +184,7 @@ export function AppLockScreen({ onUnlock }: AppLockScreenProps) {
         </Animated.View>
 
         {/* App Name */}
-        <Text style={styles.appName}>筋トレノート</Text>
+        <Text style={styles.appName}>{t('auth.login.title')}</Text>
         <Text style={styles.subtitle}>{t('appLock.subtitle')}</Text>
 
         {/* Error Message */}
@@ -277,12 +277,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    backgroundColor: colors.dark.alpha.warning10,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 149, 0, 0.2)',
+    borderColor: colors.dark.alpha.warning20,
   },
   errorText: {
     color: colors.dark.accent.warning,

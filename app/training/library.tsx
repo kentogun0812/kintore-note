@@ -9,6 +9,7 @@ import { Icon } from '@/components/Icon';
 import { supabase } from '@/infra/api/supabase.client';
 import { useQuery } from '@tanstack/react-query';
 import { useMenuStore } from '@/store/menu.store';
+import { useTranslation } from 'react-i18next';
 
 // Interface matching the joined query result
 interface ExerciseRow {
@@ -24,6 +25,7 @@ interface ExerciseRow {
 }
 
 export default function ExerciseLibraryScreen() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
   const { addExerciseToMenu } = useMenuStore();
@@ -64,7 +66,6 @@ export default function ExerciseLibraryScreen() {
   const groupedData = useMemo(() => {
     if (!exercises) return [];
 
-    // Filter based on search query
     const filtered = exercises.filter(ex => {
       const query = searchQuery.toLowerCase();
       return ex.name_en.toLowerCase().includes(query) || 
@@ -72,7 +73,6 @@ export default function ExerciseLibraryScreen() {
              ex.muscle_groups?.name_en.toLowerCase().includes(query);
     });
 
-    // Helper to map muscle groups to ionicons
     const getIconForGroup = (groupNameEn: string = '') => {
       const g = groupNameEn.toLowerCase();
       if (g.includes('chest')) return 'body';
@@ -84,7 +84,6 @@ export default function ExerciseLibraryScreen() {
       return 'barbell-outline';
     };
 
-    // Group by muscle group
     const groups: Record<string, { title: string, order: number, data: any[] }> = {};
     
     filtered.forEach(ex => {
@@ -104,7 +103,6 @@ export default function ExerciseLibraryScreen() {
       });
     });
 
-    // Convert to array and sort by muscle group order
     return Object.values(groups)
       .sort((a, b) => a.order - b.order)
       .map(group => ({ title: group.title, data: group.data }));
@@ -115,7 +113,7 @@ export default function ExerciseLibraryScreen() {
     <View style={styles.container}>
       <Stack.Screen 
         options={{ 
-          title: 'Exercise Library', 
+          title: t('library.title'), 
           headerLargeTitle: false,
           headerTitleAlign: 'center',
           headerBackVisible: true,
@@ -136,7 +134,7 @@ export default function ExerciseLibraryScreen() {
           <Icon name="search" size={16} color={colors.dark.text.secondary} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search exercises..."
+            placeholder={t('library.searchPlaceholder')}
             placeholderTextColor={colors.dark.text.secondary}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -151,7 +149,7 @@ export default function ExerciseLibraryScreen() {
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorTitle}>Failed to load exercises.</Text>
+          <Text style={styles.errorTitle}>{t('library.loadError')}</Text>
           <Text style={styles.errorSubtitle}>
             {error instanceof Error ? error.message : JSON.stringify(error)}
           </Text>
@@ -176,7 +174,7 @@ export default function ExerciseLibraryScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No exercises found.</Text>
+              <Text style={styles.emptyText}>{t('library.noResults')}</Text>
             </View>
           }
         />

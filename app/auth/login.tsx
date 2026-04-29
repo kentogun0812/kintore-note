@@ -8,8 +8,10 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Icon } from '@/components/Icon';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginScreen() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,7 +19,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Thiếu thông tin', 'Bạn vui lòng nhập đầy đủ email và mật khẩu nhé! 💪');
+      Alert.alert(t('auth.login.errors.missingInfoTitle'), t('auth.login.errors.missingInfoDesc'));
       return;
     }
     
@@ -29,7 +31,7 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Đăng nhập không thành công', 'Email hoặc mật khẩu chưa chính xác. Bạn thử kiểm tra lại xem sao nhé! 🧐');
+      Alert.alert(t('auth.login.errors.loginFailedTitle'), t('auth.login.errors.loginFailedDesc'));
     } else {
       router.replace('/(tabs)/home');
     }
@@ -59,7 +61,7 @@ export default function LoginScreen() {
     } catch (e: any) {
       setLoading(false);
       if (e.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert('Lỗi kết nối', 'Không thể kết nối với Apple lúc này. Bạn thử lại sau nhé! 🍎');
+        Alert.alert(t('auth.login.errors.connectionErrorTitle'), t('auth.login.errors.connectionErrorDesc'));
       }
     }
   };
@@ -73,20 +75,18 @@ export default function LoginScreen() {
         automaticallyAdjustKeyboardInsets={true}
       >
         <View style={styles.container}>
-          {/* Header */}
           <View style={styles.header}>
             <View style={styles.iconContainer}>
               <Text style={styles.iconText}>🏋️</Text>
             </View>
-            <Text style={styles.title}>Kintore Note</Text>
-            <Text style={styles.subtitle}>Welcome back, let's lift.</Text>
+            <Text style={styles.title}>{t('auth.login.title')}</Text>
+            <Text style={styles.subtitle}>{t('auth.login.subtitle')}</Text>
           </View>
 
-          {/* Form */}
           <View style={styles.form}>
             <TextInput 
               style={styles.input}
-              placeholder="Email address"
+              placeholder={t('auth.login.emailPlaceholder')}
               placeholderTextColor={colors.dark.text.tertiary}
               value={email}
               onChangeText={setEmail}
@@ -99,7 +99,7 @@ export default function LoginScreen() {
             <TextInput 
               ref={passwordRef}
               style={styles.input}
-              placeholder="Password"
+              placeholder={t('auth.login.passwordPlaceholder')}
               secureTextEntry
               placeholderTextColor={colors.dark.text.tertiary}
               value={password}
@@ -116,19 +116,17 @@ export default function LoginScreen() {
               disabled={loading}
             >
               <Text style={styles.buttonText}>
-                {loading ? 'Entering...' : 'Sign In'}
+                {loading ? t('auth.login.entering') : t('auth.login.signIn')}
               </Text>
             </Pressable>
           </View>
 
-          {/* Divider */}
           <View style={styles.dividerContainer}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR CONTINUE WITH</Text>
+            <Text style={styles.dividerText}>{t('auth.login.orContinueWith')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
-          {/* Social Login */}
           <Pressable 
             style={({ pressed }) => [
               styles.appleButton, 
@@ -138,19 +136,18 @@ export default function LoginScreen() {
           >
             <View style={styles.appleButtonContent}>
               <Icon name="logo-apple" size={18} color={colors.black} />
-              <Text style={styles.appleButtonText}>Sign In with Apple</Text>
+              <Text style={styles.appleButtonText}>{t('auth.login.signInApple')}</Text>
             </View>
           </Pressable>
         </View>
 
-        {/* Bottom Footer */}
         <View style={styles.footer}>
           <Pressable 
             style={styles.footerLink}
             onPress={() => router.push('/auth/register')}
           >
             <Text style={styles.footerText}>
-              Don't have an account? <Text style={styles.footerLinkBold}>Register</Text>
+              {t('auth.login.noAccount')} <Text style={styles.footerLinkBold}>{t('auth.login.register')}</Text>
             </Text>
           </Pressable>
         </View>

@@ -7,11 +7,12 @@ import { spacing } from '@/constants/spacing';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { useTrainingStore } from '@/store/training.store';
+import { useTranslation } from 'react-i18next';
 
 export default function SessionSummaryModal() {
+  const { t } = useTranslation();
   const { exercises, endSession } = useTrainingStore();
   
-  // Calculate total volume (weight * reps) across all completed sets
   let totalVolume = 0;
   let totalSets = 0;
   
@@ -33,39 +34,39 @@ export default function SessionSummaryModal() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Summary', presentation: 'formSheet', headerShown: false }} />
+      <Stack.Screen options={{ title: t('session.summary.title'), presentation: 'formSheet', headerShown: false }} />
       
       <View style={styles.header}>
         <Icon name="checkmark-circle" size={80} color={colors.dark.accent.success} />
         <Text style={styles.title}>
-          Workout Complete
+          {t('session.summary.workoutComplete')}
         </Text>
         <Text style={styles.subtitle}>
-          Awesome job!
+          {t('session.summary.awesomeJob')}
         </Text>
       </View>
       
       <View style={styles.statsContainer}>
         <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Total Volume</Text>
-          <Text style={styles.statValue}>{totalVolume} kg</Text>
+          <Text style={styles.statLabel}>{t('session.summary.totalVolume')}</Text>
+          <Text style={styles.statValue}>{totalVolume} {t('session.kg')}</Text>
         </View>
         <View style={styles.divider} />
         <View style={styles.statItem}>
-          <Text style={styles.statLabel}>Total Sets</Text>
+          <Text style={styles.statLabel}>{t('session.summary.totalSets')}</Text>
           <Text style={styles.statValue}>{totalSets}</Text>
         </View>
       </View>
 
       <Button 
-        label="Stamp Hanko" 
+        label={t('session.summary.stampHanko')} 
         iconName="checkmark-done"
         fullWidth
         onPress={handleFinish}
         style={styles.finishButton}
       />
       <Button 
-        label="Done" 
+        label={t('session.summary.done')} 
         variant="secondary"
         fullWidth
         onPress={() => {
