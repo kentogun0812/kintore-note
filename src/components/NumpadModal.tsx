@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, Modal, StyleSheet } from 'react-native';
+import { View, Text, Pressable, Modal, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
@@ -38,41 +38,44 @@ export function NumpadModal({ visible, onClose, type, initialValue, onSave }: Nu
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Pressable style={styles.backdrop} onPress={onClose}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
           <View style={styles.header}>
             <Text style={styles.title}>Edit {type === 'weight' ? 'Weight' : 'Reps'}</Text>
-            <Pressable onPress={onClose} hitSlop={8}>
-              <Icon name="close-circle" size={24} color={colors.dark.text.tertiary} />
+            <Pressable onPress={onClose} hitSlop={12}>
+              <Icon name="close-circle" size={32} color={colors.dark.text.tertiary} />
             </Pressable>
           </View>
 
-          <View style={styles.displayContainer}>
-            <Text style={styles.displayValue}>
-              {value} {type === 'weight' ? 'kg' : ''}
-            </Text>
-          </View>
+          <View style={styles.inputRow}>
+            <Pressable style={styles.adjustButton} onPress={() => handleIncrement(-1)}>
+              <Icon name="remove" size={28} color={colors.dark.text.primary} />
+            </Pressable>
+            
+            <View style={styles.textInputContainer}>
+              <TextInput
+                style={styles.textInput}
+                value={value}
+                onChangeText={setValue}
+                keyboardType={type === 'weight' ? 'decimal-pad' : 'number-pad'}
+                autoFocus
+                selectTextOnFocus
+                returnKeyType="done"
+                onSubmitEditing={handleSave}
+              />
+              <Text style={styles.unitText}>{type === 'weight' ? 'kg' : 'reps'}</Text>
+            </View>
 
-          <View style={styles.buttonsContainer}>
-            <View style={styles.buttonRow}>
-              {increments.filter(i => i < 0).map(inc => (
-                <Pressable key={inc} style={styles.incButton} onPress={() => handleIncrement(inc)}>
-                  <Text style={styles.incText}>{inc}</Text>
-                </Pressable>
-              ))}
-            </View>
-            <View style={styles.buttonRow}>
-              {increments.filter(i => i > 0).map(inc => (
-                <Pressable key={inc} style={styles.incButton} onPress={() => handleIncrement(inc)}>
-                  <Text style={styles.incText}>+{inc}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <Pressable style={styles.adjustButton} onPress={() => handleIncrement(1)}>
+              <Icon name="add" size={28} color={colors.dark.text.primary} />
+            </Pressable>
           </View>
 
           <Button label="Save" iconName="checkmark" fullWidth onPress={handleSave} style={styles.saveButton} />
         </Pressable>
       </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -80,7 +83,6 @@ export function NumpadModal({ visible, onClose, type, initialValue, onSave }: Nu
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: colors.dark.alpha.black60,
     justifyContent: 'flex-end',
   },
   sheet: {
@@ -89,6 +91,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.xl,
     padding: spacing.xl,
     paddingBottom: spacing['3xl'],
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border.subtle,
   },
   header: {
     flexDirection: 'row',
@@ -101,44 +105,52 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
   },
-  displayContainer: {
-    backgroundColor: colors.dark.bg.primary,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
+  inputRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  adjustButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.dark.bg.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.dark.border.subtle,
   },
-  displayValue: {
+  textInputContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.dark.border.focus,
+  },
+  textInput: {
     color: colors.dark.text.primary,
-    fontSize: typography.fontSize['3xl'],
+    fontSize: typography.fontSize['4xl'],
     fontWeight: 'heavy',
     fontVariant: ['tabular-nums'],
+    textAlign: 'center',
+    minWidth: 80,
+    padding: 0,
   },
-  buttonsContainer: {
-    gap: spacing.sm,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  incButton: {
-    flex: 1,
-    backgroundColor: colors.dark.bg.secondary,
-    paddingVertical: spacing.md,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.dark.border.subtle,
-  },
-  incText: {
-    color: colors.dark.text.primary,
-    fontSize: typography.fontSize.md,
+  unitText: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
+    marginBottom: 6,
+    marginLeft: spacing.xs,
   },
   saveButton: {
-    marginTop: spacing.xl,
+    marginTop: spacing.sm,
   },
 });

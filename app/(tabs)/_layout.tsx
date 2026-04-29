@@ -5,7 +5,7 @@ import { Icon, IconName } from '@/components/Icon';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/auth.store';
 
-function TabIcon({ name, color, focused }: { name: IconName; color: string; focused: boolean }) {
+function TabIcon({ name, color }: { name: IconName; color: string; focused: boolean }) {
   return <Icon name={name} size={24} color={color} />;
 }
 
@@ -25,12 +25,19 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
         tabBarHideOnKeyboard: true,
         tabBarStyle: { 
           backgroundColor: colors.dark.bg.primary, 
           borderTopColor: colors.dark.border.subtle,
-          height: Platform.OS === 'ios' ? 68 : 52,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+          marginTop: 4,
         },
         tabBarActiveTintColor: colors.dark.accent.primary,
         tabBarInactiveTintColor: colors.dark.text.secondary,
@@ -45,9 +52,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="record"
+        name="training"
         options={{
-          title: t('tabs.record'),
+          title: t('tabs.training'),
           tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'barbell' : 'barbell-outline'} color={color} focused={focused} />,
         }}
       />
@@ -62,10 +69,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="circle"
         options={{
-          title: t('tabs.circle'),
-          tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'people' : 'people-outline'} color={color} focused={focused} />,
+          href: null,
         }}
-        listeners={{ tabPress: guestGuard }}
       />
       <Tabs.Screen
         name="stats"
@@ -74,6 +79,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'stats-chart' : 'stats-chart-outline'} color={color} focused={focused} />,
         }}
         listeners={{ tabPress: guestGuard }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: t('tabs.settings', 'Settings'),
+          tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'settings' : 'settings-outline'} color={color} focused={focused} />,
+        }}
       />
     </Tabs>
   );

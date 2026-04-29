@@ -1,6 +1,6 @@
-import { View, Text, ScrollView, Pressable, Switch, StyleSheet, Modal } from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch, StyleSheet, Modal, ImageBackground } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
-import { Stack, router } from 'expo-router';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -150,21 +150,26 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ headerShown: false }} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
       >
         <Pressable onPress={() => router.push('/premium')}>
-          <Card style={styles.premiumCard}>
+          <ImageBackground 
+            source={require('../../assets/images/premium_banner.png')}
+            style={styles.premiumCard}
+            imageStyle={styles.premiumCardImage}
+          >
             <View style={styles.premiumContent}>
+               <View style={styles.premiumIconContainer}>
+                 <Icon name="diamond" size={28} color={colors.white} />
+               </View>
                <View style={styles.premiumTextContainer}>
                  <Text style={styles.premiumTitle}>{t('settings.upgradePro')}</Text>
                  <Text style={styles.premiumSubtitle}>{t('settings.unlockStats')}</Text>
                </View>
-               <Icon name="diamond" size={40} color={colors.white} />
             </View>
-          </Card>
+          </ImageBackground>
         </Pressable>
 
         {menuSections.map((section) => (
@@ -334,28 +339,47 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   premiumCard: {
-    backgroundColor: colors.dark.accent.primary,
+    borderRadius: radius.xl,
     borderCurve: 'continuous',
     overflow: 'hidden',
+    shadowColor: colors.dark.accent.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  premiumCardImage: {
+    resizeMode: 'cover',
   },
   premiumContent: {
-    padding: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: 32,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.lg,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  premiumIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   premiumTextContainer: {
-    gap: spacing.xs,
     flex: 1,
+    gap: 4,
   },
   premiumTitle: {
     color: colors.white,
     fontSize: typography.fontSize.lg,
-    fontWeight: 'heavy',
+    fontWeight: 'bold',
   },
   premiumSubtitle: {
     color: colors.dark.alpha.white80,
     fontSize: typography.fontSize.sm,
+    lineHeight: 18,
   },
   sectionContainer: {
     gap: spacing.sm,
@@ -418,7 +442,6 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: 'center',
     gap: spacing.xs,
-    paddingBottom: spacing.sm,
   },
   versionText: {
     color: colors.dark.text.secondary,

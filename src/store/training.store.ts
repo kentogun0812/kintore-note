@@ -22,6 +22,7 @@ interface activeSessionState {
   endSession: () => void;
   updateSet: (exerciseId: string, setId: string, updates: Partial<SetRecord>) => void;
   addSet: (exerciseId: string) => void;
+  removeSet: (exerciseId: string, setId: string) => void;
   toggleSetComplete: (exerciseId: string, setId: string) => void;
 }
 
@@ -82,6 +83,16 @@ export const useTrainingStore = create<activeSessionState>((set) => ({
       return {
         ...ex,
         sets: ex.sets.map(s => s.id === setId ? { ...s, completed: !s.completed } : s)
+      };
+    })
+  })),
+
+  removeSet: (exerciseId, setId) => set((state) => ({
+    exercises: state.exercises.map(ex => {
+      if (ex.id !== exerciseId) return ex;
+      return {
+        ...ex,
+        sets: ex.sets.filter(s => s.id !== setId)
       };
     })
   }))

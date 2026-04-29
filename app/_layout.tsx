@@ -1,5 +1,5 @@
 import '@/i18n';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -27,18 +27,15 @@ function RootLayout() {
   const { language } = useSettingsStore();
   const { isLocked, unlock } = useAppLock();
 
-  // Initialize offline sync behavior globally
   useOfflineSync();
 
   useEffect(() => {
     initialize();
-    // Set root view background color to match the theme (avoids black bars on Android)
     if (Platform.OS === 'android') {
       SystemUI.setBackgroundColorAsync(colors.dark.bg.primary);
     }
   }, [initialize]);
 
-  // Sync saved language with i18n
   useEffect(() => {
     if (i18n.language !== language) {
       i18n.changeLanguage(language);
@@ -53,28 +50,22 @@ function RootLayout() {
     const isIntro = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === 'intro';
     const isOnboarding = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === 'onboarding';
 
-    // 1. First time visitors see Intro
     if (!hasSeenIntro && !isIntro) {
       router.replace('/auth/intro');
       SplashScreen.hideAsync();
       return;
     }
-
-    // 2. If intro seen, handle Guest vs Auth
     if (hasSeenIntro) {
       if (!session) {
-        // Allow Guest to see Home, but redirect if they are stuck in Auth (except Intro/Login/Register)
         if (inAuthGroup && !isIntro && routeSegments.length > 1 && routeSegments[1] !== 'login' && routeSegments[1] !== 'register') {
           router.replace('/(tabs)/home');
         }
       } else {
-        // If logged in but hasn't completed onboarding, force them to onboarding
         if (!hasCompletedOnboarding) {
           if (!isOnboarding) {
             router.replace('/auth/onboarding');
           }
         } else {
-          // If logged in and completed onboarding, keep them out of auth screens
           if (inAuthGroup) {
             router.replace('/(tabs)/home');
           }
@@ -84,9 +75,6 @@ function RootLayout() {
 
     SplashScreen.hideAsync();
   }, [session, segments, isLoading, hasSeenIntro, hasCompletedOnboarding]);
-
-
-
 
   if (isLoading) {
     return null;
@@ -104,8 +92,8 @@ function RootLayout() {
             headerShadowVisible: false,
           }}
         >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="auth" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="auth" options={{ headerShown: false, gestureEnabled: false }} />
           <Stack.Screen name="training" options={{ headerShown: false }} />
           <Stack.Screen name="settings/index" options={{ headerShown: false }} />
           <Stack.Screen name="camera/index" options={{ headerShown: false }} />

@@ -25,6 +25,10 @@
   },
   "home": {
     "welcome": "おはようございます",
+    "welcomeUser": "ようこそ、{{name}}さん！",
+    "welcomeGuest": "ようこそ、ゲストさん！",
+    "guestWelcome": "ようこそ！",
+    "guestWarning": "ゲストとして体験中です。データは同期されず、失われる可能性があります。記録を保護するためにログインしてください！",
     "streak": "{{count}}日連続！",
     "currentStreak": "現在の継続日数",
     "hankoCalendar": "ハンコカレンダー",
@@ -168,7 +172,7 @@
   },
   "tabs": {
     "home": "ホーム",
-    "record": "トレーニング",
+    "training": "トレーニング",
     "body": "記録",
     "circle": "サークル",
     "stats": "分析"
@@ -263,6 +267,7 @@
       "signInApple": "Appleでサインイン",
       "noAccount": "アカウントを持っていませんか？ ",
       "register": "新規登録",
+      "continueAsGuest": "ゲストとして続ける",
       "errors": {
         "missingInfoTitle": "情報が不足しています",
         "missingInfoDesc": "メールアドレスとパスワードを両方入力してください！💪",

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
@@ -11,14 +11,49 @@ import { HankoCalendar } from '@/components/HankoCalendar';
 import { Link, router } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
 import { useOnboardingStore } from '@/store/onboarding.store';
+import { useTrainingStore } from '@/store/training.store';
 import { useTranslation } from 'react-i18next';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 import { WelcomePopup } from '@/components/WelcomePopup';
+import { APP_NAME } from '@/constants/app';
 
 export default function HomeScreen() {
   const { t, i18n } = useTranslation();
   const { user, isGuest } = useAuthStore();
-  const { showWelcome, dismissWelcome } = useOnboardingStore();
+  const { startSession } = useTrainingStore();
+
+  const logoScale = useSharedValue(1);
+  const logoRotate = useSharedValue(0);
+
+  useEffect(() => {
+    logoScale.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 500 }),
+        withTiming(1, { duration: 500 })
+      ),
+      -1,
+      true
+    );
+    logoRotate.value = withRepeat(
+      withSequence(
+        withTiming(10, { duration: 200 }),
+        withTiming(-10, { duration: 400 }),
+        withTiming(0, { duration: 200 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const animatedLogoStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: logoScale.value },
+      { rotate: `${logoRotate.value}deg` }
+    ],
+  }));
+
+  const userName = user?.user_metadata?.username || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+
   const currentDate = new Date();
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -76,29 +111,14 @@ export default function HomeScreen() {
         <View style={styles.premiumHeader}>
           <View style={styles.headerLeft}>
             <View style={styles.logoRow}>
-              <Icon name="barbell" size={24} color={colors.dark.accent.primary} />
-              <Text style={styles.logoKanji}>筋</Text>
-            </View>
-            <Text style={styles.appName}>筋トレノート</Text>
-            <Text style={styles.appSubtitle}>毎日少しずつ。</Text>
-          </View>
-
-          <View style={styles.avatarWrapper}>
-            {isGuest && (
-              <Animated.View entering={FadeInRight.delay(800)} style={styles.loginSuggestion}>
-                <Text style={styles.suggestionText}>{t('home.loginToSync')}</Text>
-                <View style={styles.bubbleTail} />
+              <Text style={styles.appName}>{APP_NAME}</Text>
+              <Animated.View style={animatedLogoStyle}>
+                <Icon name="barbell" size={24} color={colors.dark.accent.primary} />
               </Animated.View>
-            )}
-            <Pressable 
-              onPress={() => router.push('/settings')}
-              style={({ pressed }) => [
-                styles.premiumAvatarContainer,
-                { opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Text style={styles.avatarEmoji}>🧔‍♂️</Text>
-            </Pressable>
+            </View>
+            <Text style={styles.welcomeText}>
+              {!isGuest ? t('home.welcomeUser', { name: userName }) : t('home.welcomeGuest')}
+            </Text>
           </View>
         </View>
         
@@ -160,14 +180,23 @@ export default function HomeScreen() {
           </View>
 
           {isTodaySelected && (
-            <Link href="/training/session" asChild>
-              <Button label={t('home.startSession')} iconName="play" fullWidth />
-            </Link>
+            <Button 
+              label={t('home.startSession')} 
+              iconName="play" 
+              fullWidth 
+              onPress={() => {
+                const sessionExercises = activeMenu.map((m, idx) => ({
+                  id: Math.random().toString(),
+                  name: m.name
+                }));
+                startSession(sessionExercises);
+                router.push('/training/session');
+              }}
+            />
           )}
         </Card>
       </ScrollView>
-
-      <WelcomePopup visible={showWelcome} onDismiss={dismissWelcome} />
+      <WelcomePopup />
     </SafeAreaView>
   );
 }
@@ -185,19 +214,23 @@ const styles = StyleSheet.create({
   premiumHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.lg,
+    paddingBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   headerLeft: {
-    gap: 2,
+    gap: 4,
+  },
+  welcomeText: {
+    color: colors.dark.accent.primary,
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
+    gap: 6,
   },
   logoKanji: {
     color: colors.dark.accent.primary,
@@ -207,72 +240,19 @@ const styles = StyleSheet.create({
   },
   appName: {
     color: colors.white,
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '900',
     fontFamily: 'serif',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
+    textShadowColor: colors.dark.accent.primary,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   appSubtitle: {
     color: colors.dark.text.secondary,
     fontSize: typography.fontSize.xs,
     letterSpacing: 1,
     marginTop: 2,
-  },
-  avatarWrapper: {
-    position: 'relative',
-  },
-  premiumAvatarContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.dark.bg.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#D4AF37',
-    shadowColor: '#D4AF37',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  avatarEmoji: {
-    fontSize: 24,
-  },
-  loginSuggestion: {
-    position: 'absolute',
-    top: -40,
-    right: 10,
-    backgroundColor: colors.dark.accent.primary,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-    zIndex: 10,
-    width: 140,
-  },
-  suggestionText: {
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  bubbleTail: {
-    position: 'absolute',
-    bottom: -6,
-    right: 15,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 6,
-    borderLeftColor: 'transparent',
-    borderRightWidth: 6,
-    borderRightColor: 'transparent',
-    borderTopWidth: 8,
-    borderTopColor: colors.dark.accent.primary,
   },
   sectionCard: {
     padding: spacing.md,

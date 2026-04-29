@@ -124,7 +124,6 @@ export default function RegisterScreen() {
               autoCorrect={false}
               spellCheck={false}
               keyboardType="default"
-              keyboardAppearance="dark"
               textContentType="emailAddress"
               autoComplete="email"
               returnKeyType="next"
@@ -143,7 +142,6 @@ export default function RegisterScreen() {
               autoCorrect={false}
               spellCheck={false}
               keyboardType="default"
-              keyboardAppearance="dark"
               textContentType="newPassword"
               returnKeyType="next"
               onSubmitEditing={() => confirmPasswordRef.current?.focus()}
@@ -161,7 +159,6 @@ export default function RegisterScreen() {
               autoCorrect={false}
               spellCheck={false}
               keyboardType="default"
-              keyboardAppearance="dark"
               textContentType="newPassword"
               returnKeyType="done"
               onSubmitEditing={handleRegister}
@@ -195,6 +192,19 @@ export default function RegisterScreen() {
             <View style={styles.appleButtonContent}>
               <Icon name="logo-apple" size={18} color={colors.black} />
               <Text style={styles.appleButtonText}>{t('auth.register.signUpApple')}</Text>
+            </View>
+          </Pressable>
+
+          <Pressable 
+            style={({ pressed }) => [
+              styles.guestButton, 
+              { opacity: pressed ? 0.7 : 1 }
+            ]} 
+            onPress={() => router.replace('/(tabs)/home')}
+          >
+            <View style={styles.guestButtonContent}>
+              <Icon name="person-outline" size={18} color={colors.dark.text.secondary} />
+              <Text style={styles.guestButtonText}>{t('auth.login.continueAsGuest')}</Text>
             </View>
           </Pressable>
         </View>
@@ -343,5 +353,26 @@ const styles = StyleSheet.create({
   footerLinkBold: {
     color: colors.dark.accent.primary,
     fontWeight: 'bold',
+  },
+  guestButton: {
+    width: '100%',
+    height: 54,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  guestButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  guestButtonText: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
   },
 });

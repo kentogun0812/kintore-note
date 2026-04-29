@@ -20,7 +20,7 @@ export default function MenuBuilderScreen() {
       setIsSaving(true);
       await saveCurrentMenu();
       setIsSaving(false);
-      router.replace('/(tabs)/record');
+      router.replace('/(tabs)/training');
     } catch (err: any) {
       setIsSaving(false);
       if (err.message === 'GUEST_LIMIT_REACHED') {

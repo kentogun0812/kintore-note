@@ -25,6 +25,10 @@
   },
   "home": {
     "welcome": "Good morning",
+    "welcomeUser": "Welcome, {{name}}!",
+    "welcomeGuest": "Welcome, Guest!",
+    "guestWelcome": "Welcome!",
+    "guestWarning": "You are experiencing the app as a Guest. Data will not be synced and may be lost. Please log in to protect your progress!",
     "streak": "{{count}} day streak!",
     "currentStreak": "Current Streak",
     "hankoCalendar": "Hanko Calendar",
@@ -168,7 +172,7 @@
   },
   "tabs": {
     "home": "Home",
-    "record": "Record",
+    "training": "Training",
     "body": "Body",
     "circle": "Circle",
     "stats": "Stats"
@@ -254,6 +258,7 @@
       "signInApple": "Sign In with Apple",
       "noAccount": "Don't have an account? ",
       "register": "Register",
+      "continueAsGuest": "Continue as Guest",
       "errors": {
         "missingInfoTitle": "Missing Information",
         "missingInfoDesc": "Please enter both email and password! 💪",

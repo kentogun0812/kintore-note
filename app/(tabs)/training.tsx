@@ -12,7 +12,7 @@ import { useMenuStore } from '@/store/menu.store';
 import { useTrainingStore } from '@/store/training.store';
 import { useTranslation } from 'react-i18next';
 
-export default function RecordScreen() {
+export default function TrainingScreen() {
   const { t } = useTranslation();
   const { savedMenus, fetchSavedMenus } = useMenuStore();
   const { startSession } = useTrainingStore();

@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import Animated, { 
-  FadeIn, FadeOut, SlideInDown, SlideOutDown,
+  FadeIn, FadeOut, FadeInDown, FadeOutDown,
   useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence, withDelay
 } from 'react-native-reanimated';
 import { colors } from '@/constants/colors';
@@ -10,13 +10,37 @@ import { spacing, radius } from '@/constants/spacing';
 import { Icon } from './Icon';
 import { useTranslation } from 'react-i18next';
 
-interface WelcomePopupProps {
-  visible: boolean;
-  onDismiss: () => void;
-}
+import { useAuthStore } from '@/store/auth.store';
+import { useOnboardingStore } from '@/store/onboarding.store';
 
-export function WelcomePopup({ visible, onDismiss }: WelcomePopupProps) {
+let guestWarningShownThisSession = false;
+
+export function WelcomePopup() {
   const { t } = useTranslation();
+  const { isGuest } = useAuthStore();
+  const { showWelcome, dismissWelcome } = useOnboardingStore();
+  const [showGuestWarning, setShowGuestWarning] = useState(false);
+
+  useEffect(() => {
+    if (isGuest && !showWelcome && !guestWarningShownThisSession) {
+      setShowGuestWarning(true);
+      guestWarningShownThisSession = true;
+    }
+  }, [isGuest, showWelcome]);
+
+  const visible = showWelcome || showGuestWarning;
+  const isWarning = !showWelcome && showGuestWarning;
+  const title = isWarning ? t('home.guestWelcome') : t('welcome.title');
+  const subtitle = isWarning ? t('home.guestWarning') : t('welcome.subtitle');
+  const autoDismiss = !isWarning;
+
+  const onDismiss = () => {
+    if (showWelcome) {
+      dismissWelcome();
+    } else if (showGuestWarning) {
+      setShowGuestWarning(false);
+    }
+  };
   const confettiScale = useSharedValue(1);
   
   useEffect(() => {
@@ -29,9 +53,10 @@ export function WelcomePopup({ visible, onDismiss }: WelcomePopupProps) {
         3,
         true
       );
-      // Auto-dismiss after 4 seconds
-      const timer = setTimeout(onDismiss, 4000);
-      return () => clearTimeout(timer);
+      if (autoDismiss) {
+        const timer = setTimeout(onDismiss, 4000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [visible]);
 
@@ -44,13 +69,13 @@ export function WelcomePopup({ visible, onDismiss }: WelcomePopupProps) {
   return (
     <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(200)} style={styles.overlay}>
       <Pressable style={styles.overlayTouch} onPress={onDismiss} />
-      <Animated.View entering={SlideInDown.springify().damping(15)} exiting={SlideOutDown} style={styles.popup}>
-        <Animated.View style={[styles.emojiContainer, pulseStyle]}>
-          <Text style={styles.emoji}>🎉</Text>
+      <Animated.View entering={FadeInDown.duration(300)} exiting={FadeOutDown.duration(200)} style={styles.popup}>
+        <Animated.View style={[styles.emojiContainer, !isWarning && pulseStyle, isWarning && { backgroundColor: colors.dark.alpha.accent15 }]}>
+          <Text style={styles.emoji}>{isWarning ? '⚠️' : '🎉'}</Text>
         </Animated.View>
         
-        <Text style={styles.title}>{t('welcome.title')}</Text>
-        <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
+        <Text style={styles.title}>{title || t('welcome.title')}</Text>
+        <Text style={styles.subtitle}>{subtitle || t('welcome.subtitle')}</Text>
         
         <Pressable 
           style={({ pressed }) => [styles.button, { opacity: pressed ? 0.8 : 1 }]} 
@@ -78,7 +103,7 @@ const styles = StyleSheet.create({
   popup: {
     backgroundColor: colors.dark.bg.secondary,
     borderRadius: radius.xl,
-    padding: spacing.xxl,
+    padding: spacing.xl,
     marginHorizontal: spacing.xl,
     alignItems: 'center',
     gap: spacing.md,
@@ -92,41 +117,41 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   emojiContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: colors.dark.alpha.accent15,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
   emoji: {
-    fontSize: 40,
+    fontSize: 32,
   },
   title: {
-    fontSize: typography.fontSize['2xl'],
+    fontSize: typography.fontSize.xl,
     fontWeight: 'bold',
     color: colors.dark.text.primary,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.sm,
     color: colors.dark.text.secondary,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   button: {
     flexDirection: 'row',
     backgroundColor: colors.dark.accent.primary,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xxl,
+    paddingHorizontal: spacing.xl,
     borderRadius: radius.lg,
     alignItems: 'center',
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
   },
   buttonText: {
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.sm,
     fontWeight: 'bold',
     color: colors.white,
   },

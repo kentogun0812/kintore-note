@@ -93,8 +93,12 @@ export default function LoginScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               spellCheck={false}
-              keyboardType="email-address"
+              keyboardType="default"
+              textContentType="emailAddress"
+              autoComplete="email"
+              returnKeyType="next"
               onSubmitEditing={() => passwordRef.current?.focus()}
+              blurOnSubmit={false}
             />
             <TextInput 
               ref={passwordRef}
@@ -137,6 +141,19 @@ export default function LoginScreen() {
             <View style={styles.appleButtonContent}>
               <Icon name="logo-apple" size={18} color={colors.black} />
               <Text style={styles.appleButtonText}>{t('auth.login.signInApple')}</Text>
+            </View>
+          </Pressable>
+
+          <Pressable 
+            style={({ pressed }) => [
+              styles.guestButton, 
+              { opacity: pressed ? 0.7 : 1 }
+            ]} 
+            onPress={() => router.replace('/(tabs)/home')}
+          >
+            <View style={styles.guestButtonContent}>
+              <Icon name="person-outline" size={18} color={colors.dark.text.secondary} />
+              <Text style={styles.guestButtonText}>{t('auth.login.continueAsGuest')}</Text>
             </View>
           </Pressable>
         </View>
@@ -271,5 +288,26 @@ const styles = StyleSheet.create({
   footerLinkBold: {
     color: colors.dark.accent.primary,
     fontWeight: 'bold',
+  },
+  guestButton: {
+    width: '100%',
+    height: 54,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  guestButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  guestButtonText: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.base,
+    fontWeight: '600',
   },
 });
