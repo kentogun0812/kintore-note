@@ -2,13 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
-import { spacing, radius } from '@/constants/spacing';
-import { Icon } from '@/components/Icon';
+import { spacing } from '@/constants/spacing';
+import { useTranslation } from 'react-i18next';
 
 interface HankoCalendarProps {
   year: number;
   month: number;
-  stampedDates: string[]; // Array of 'YYYY-MM-DD'
+  stampedDates: string[];
+  selectedDate?: string;
+  onDatePress?: (dateString: string) => void;
 }
 
 const getDaysInMonth = (year: number, month: number) => {
@@ -19,25 +21,28 @@ const getFirstDayOfMonth = (year: number, month: number) => {
   return new Date(year, month - 1, 1).getDay();
 };
 
-export function HankoCalendar({ year, month, stampedDates }: HankoCalendarProps) {
+export function HankoCalendar({ year, month, stampedDates, selectedDate, onDatePress }: HankoCalendarProps) {
+  const { t } = useTranslation();
   const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDayOfMonth(year, month); // 0 = Sunday, 1 = Monday...
-  
+  const firstDay = getFirstDayOfMonth(year, month); 
   const days = [];
-  // Empty slots for days before the 1st of the month
   for (let i = 0; i < firstDay; i++) {
     days.push(null);
   }
-  // Actual days
   for (let i = 1; i <= daysInMonth; i++) {
     days.push(i);
   }
-
-  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
+  const weekdays = [
+    t('common.weekdays.sun'),
+    t('common.weekdays.mon'),
+    t('common.weekdays.tue'),
+    t('common.weekdays.wed'),
+    t('common.weekdays.thu'),
+    t('common.weekdays.fri'),
+    t('common.weekdays.sat'),
+  ];
   return (
     <View style={styles.container}>
-      {/* Weekday Headers */}
       <View style={styles.row}>
         {weekdays.map((day, index) => (
           <Text key={index} style={styles.weekdayText}>
@@ -46,7 +51,6 @@ export function HankoCalendar({ year, month, stampedDates }: HankoCalendarProps)
         ))}
       </View>
 
-      {/* Calendar Grid */}
       <View style={styles.grid}>
         {days.map((day, index) => {
           if (day === null) {
@@ -56,18 +60,29 @@ export function HankoCalendar({ year, month, stampedDates }: HankoCalendarProps)
           const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isStamped = stampedDates.includes(dateString);
           const isToday = new Date().toISOString().startsWith(dateString);
+          const isSelected = selectedDate === dateString;
 
           return (
             <View key={dateString} style={styles.dayCell}>
-               <View style={[styles.dayCircle, isToday && styles.todayCircle]}>
+               <View 
+                  onTouchEnd={() => onDatePress && onDatePress(dateString)}
+                  style={[
+                    styles.dayCircle, 
+                    isToday && styles.todayCircle,
+                    isSelected && styles.selectedCircle
+                  ]}
+                >
                   {isStamped ? (
-                     // The Hanko stamp visual
                      <View style={styles.hankoStampContainer}>
                        <Text style={styles.hankoText}>済</Text>
                        <View style={styles.hankoRing} />
                      </View>
                   ) : (
-                     <Text style={[styles.dayText, isToday && styles.todayText]}>{day}</Text>
+                     <Text style={[
+                       styles.dayText, 
+                       isToday && styles.todayText,
+                       isSelected && styles.selectedDayText
+                     ]}>{day}</Text>
                   )}
                </View>
             </View>
@@ -126,6 +141,13 @@ const styles = StyleSheet.create({
   },
   todayText: {
     color: colors.dark.accent.info,
+    fontWeight: 'bold',
+  },
+  selectedCircle: {
+    backgroundColor: colors.dark.alpha.accent20,
+  },
+  selectedDayText: {
+    color: colors.dark.accent.primary,
     fontWeight: 'bold',
   },
   hankoStampContainer: {

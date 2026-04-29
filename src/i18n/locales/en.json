@@ -12,7 +12,16 @@
     "goodJob": "Good job!",
     "more": "more",
     "exercises": "exercises",
-    "error": "Error"
+    "error": "Error",
+    "weekdays": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    }
   },
   "home": {
     "welcome": "Good morning",
@@ -21,7 +30,11 @@
     "hankoCalendar": "Hanko Calendar",
     "loginToSync": "Sign in to keep your data in sync ☁️",
     "todayMenu": "Today's Menu",
-    "startSession": "Start Session"
+    "startSession": "Start Session",
+    "weeklyGoal": "This Week's Goal",
+    "weeklyTarget": "/ {{target}} days",
+    "consistencyMessage": "Great consistency! 🔥",
+    "noTraining": "No training recorded"
   },
   "record": {
     "title": "Training",

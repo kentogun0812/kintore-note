@@ -12,7 +12,16 @@
     "goodJob": "お疲れ様でした！",
     "more": "件以上",
     "exercises": "種目",
-    "error": "エラー"
+    "error": "エラー",
+    "weekdays": {
+      "sun": "日",
+      "mon": "月",
+      "tue": "火",
+      "wed": "水",
+      "thu": "木",
+      "fri": "金",
+      "sat": "土"
+    }
   },
   "home": {
     "welcome": "おはようございます",
@@ -21,7 +30,11 @@
     "hankoCalendar": "ハンコカレンダー",
     "loginToSync": "ログインするとデータを同期できます ☁️",
     "todayMenu": "今日のメニュー",
-    "startSession": "トレーニング開始"
+    "startSession": "トレーニング開始",
+    "weeklyGoal": "今週の目標",
+    "weeklyTarget": "/ {{target}}日",
+    "consistencyMessage": "継続は力なり！ 🔥",
+    "noTraining": "トレーニング記録なし"
   },
   "record": {
     "title": "トレーニング",
