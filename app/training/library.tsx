@@ -54,8 +54,8 @@ export default function ExerciseLibraryScreen() {
         `);
       
       if (error) {
-        console.error('Supabase fetch error (exercises):', error);
-        throw error;
+        console.log('[Library] Supabase fetch error (exercises):', error);
+        return Promise.reject(error);
       }
       
       return data as any as ExerciseRow[];

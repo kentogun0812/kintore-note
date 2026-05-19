@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function ActiveSessionScreen() {
   const { t } = useTranslation();
-  const { exercises, startSession, addSet, removeSet, updateSet, toggleSetComplete } = useTrainingStore();
+  const { exercises, startSession, addSet, removeSet, updateSet, toggleSetComplete, updateExerciseNote, removeExercise, reorderSessionExercises } = useTrainingStore();
 
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
 
@@ -77,7 +77,7 @@ export default function ActiveSessionScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-        {exercises.map((ex) => (
+        {exercises.map((ex, index) => (
           <View key={ex.id} style={styles.exerciseSection}>
             <View style={styles.exerciseSectionHeader}>
               <View style={styles.exerciseSectionHeaderLeft}>
@@ -86,10 +86,32 @@ export default function ActiveSessionScreen() {
                 </View>
                 <Text style={styles.exerciseName}>{ex.name}</Text>
               </View>
-              <Pressable hitSlop={8}>
-                <Icon name="ellipsis-horizontal" size={20} color={colors.dark.text.secondary} />
-              </Pressable>
+              
+              <View style={styles.exerciseActions}>
+                {index > 0 && (
+                  <Pressable hitSlop={8} onPress={() => reorderSessionExercises(index, index - 1)}>
+                    <Icon name="chevron-up" size={20} color={colors.dark.text.secondary} />
+                  </Pressable>
+                )}
+                {index < exercises.length - 1 && (
+                  <Pressable hitSlop={8} onPress={() => reorderSessionExercises(index, index + 1)}>
+                    <Icon name="chevron-down" size={20} color={colors.dark.text.secondary} />
+                  </Pressable>
+                )}
+                <Pressable hitSlop={8} onPress={() => removeExercise(ex.id)} style={{ marginLeft: 8 }}>
+                  <Icon name="trash-outline" size={20} color={colors.dark.accent.primary} />
+                </Pressable>
+              </View>
             </View>
+            
+            <TextInput
+              style={styles.notesInput}
+              placeholder={t('session.addNotes', 'Add notes for this exercise...')}
+              placeholderTextColor={colors.dark.text.tertiary}
+              value={ex.notes || ''}
+              onChangeText={(text) => updateExerciseNote(ex.id, text)}
+              multiline
+            />
             
             <Card style={styles.exerciseCard}>
               <View style={styles.tableHeader}>
@@ -303,6 +325,19 @@ const styles = StyleSheet.create({
     color: colors.dark.text.primary,
     fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
+  },
+  exerciseActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  notesInput: {
+    backgroundColor: colors.dark.bg.tertiary,
+    color: colors.dark.text.primary,
+    padding: spacing.sm,
+    borderRadius: radius.md,
+    fontSize: typography.fontSize.sm,
+    minHeight: 40,
   },
   exerciseCard: {
     padding: 0,

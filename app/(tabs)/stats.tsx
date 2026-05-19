@@ -6,9 +6,50 @@ import { spacing } from '@/constants/spacing';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
 import { useTranslation } from 'react-i18next';
+import { useAnalyticsStore, TimeRange } from '@/store/analytics.store';
+import { MuscleHeatmap } from '@/components/charts/MuscleHeatmap';
+import { VolumeChart } from '@/components/charts/VolumeChart';
+import { supabase } from '@/infra/api/supabase.client';
+import { useState, useEffect } from 'react';
 
 export default function StatsScreen() {
   const { t } = useTranslation();
+  const { 
+    heatmapData, 
+    chartData, 
+    isLoadingHeatmap, 
+    isLoadingChart, 
+    fetchHeatmapData, 
+    fetchVolumeChartData 
+  } = useAnalyticsStore();
+
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [exercises, setExercises] = useState<{ id: string, name: string }[]>([]);
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
+
+  // Load Heatmap data
+  useEffect(() => {
+    fetchHeatmapData(timeRange);
+  }, [timeRange]);
+
+  // Load Exercises for the chart picker
+  useEffect(() => {
+    const loadExercises = async () => {
+      const { data } = await supabase.from('exercises').select('id, name_en').limit(10);
+      if (data && data.length > 0) {
+        setExercises(data.map((ex: any) => ({ id: ex.id, name: ex.name_en })));
+        setSelectedExercise(data[0].id);
+      }
+    };
+    loadExercises();
+  }, []);
+
+  // Load Chart data
+  useEffect(() => {
+    if (selectedExercise) {
+      fetchVolumeChartData(selectedExercise, timeRange);
+    }
+  }, [selectedExercise, timeRange]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -16,26 +57,53 @@ export default function StatsScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-      <Text style={styles.screenTitle}>
-        {t('stats.title')}
-      </Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.screenTitle}>{t('stats.title', 'Analytics')}</Text>
+          <View style={styles.rangeSelector}>
+            {(['7d', '30d', 'all'] as TimeRange[]).map((r) => (
+              <Text 
+                key={r}
+                style={[styles.rangeOption, timeRange === r && styles.rangeOptionActive]}
+                onPress={() => setTimeRange(r)}
+              >
+                {r.toUpperCase()}
+              </Text>
+            ))}
+          </View>
+        </View>
 
-      <Card style={styles.comingSoonCard}>
-        <Icon name="lock-closed" size={32} color={colors.dark.text.tertiary} />
-        <Text style={styles.comingSoonTitle}>
-          {t('stats.comingSoon')}
-        </Text>
-        <Text style={styles.comingSoonSubtitle}>
-          {t('stats.comingSoonDesc')}
-        </Text>
-      </Card>
-      
-      <View style={styles.previewContainer}>
-         <Card style={styles.previewCard}>
-            <Icon name="bar-chart-outline" size={48} color={colors.dark.text.tertiary} />
-            <Text style={styles.previewText}>{t('stats.preview')}</Text>
-         </Card>
-      </View>
+        <Card style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>{t('stats.muscleHeatmap', 'Muscle Heatmap')}</Text>
+          {isLoadingHeatmap ? (
+            <Text style={styles.loadingText}>Loading...</Text>
+          ) : (
+            <MuscleHeatmap data={heatmapData} />
+          )}
+        </Card>
+        
+        <Card style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>{t('stats.volumeTrend', 'Volume Trend')}</Text>
+          
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.exerciseSelector}>
+            {exercises.map(ex => (
+              <Text 
+                key={ex.id} 
+                style={[styles.exercisePill, selectedExercise === ex.id && styles.exercisePillActive]}
+                onPress={() => setSelectedExercise(ex.id)}
+              >
+                {ex.name}
+              </Text>
+            ))}
+          </ScrollView>
+
+          {isLoadingChart ? (
+            <Text style={styles.loadingText}>Loading...</Text>
+          ) : selectedExercise ? (
+            <VolumeChart data={chartData} />
+          ) : (
+            <Text style={styles.emptyText}>No exercise selected.</Text>
+          )}
+        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -58,38 +126,67 @@ const styles = StyleSheet.create({
     color: colors.dark.text.primary,
     marginBottom: spacing.xs,
   },
-  comingSoonCard: {
-    padding: spacing.xl,
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.dark.bg.tertiary,
-    borderStyle: 'dashed',
-    borderWidth: 1,
-    borderColor: colors.dark.border.subtle,
-    gap: spacing.md,
-    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
-  comingSoonTitle: {
-    color: colors.dark.text.primary,
-    fontSize: typography.fontSize.lg,
+  rangeSelector: {
+    flexDirection: 'row',
+    backgroundColor: colors.dark.bg.tertiary,
+    borderRadius: 8,
+    padding: 4,
+  },
+  rangeOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
     fontWeight: 'bold',
   },
-  comingSoonSubtitle: {
+  rangeOptionActive: {
+    color: colors.dark.text.primary,
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  sectionCard: {
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+  },
+  loadingText: {
     color: colors.dark.text.secondary,
     textAlign: 'center',
+    marginVertical: spacing.xl,
   },
-  previewContainer: {
-    opacity: 0.5,
-    gap: spacing.md,
-    marginTop: spacing.xl,
+  emptyText: {
+    color: colors.dark.text.tertiary,
+    textAlign: 'center',
+    marginVertical: spacing.xl,
   },
-  previewCard: {
-    padding: spacing.md,
-    height: 200,
-    justifyContent: 'center',
-    alignItems: 'center',
+  exerciseSelector: {
+    flexDirection: 'row',
+    marginBottom: spacing.sm,
   },
-  previewText: {
+  exercisePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.dark.bg.tertiary,
     color: colors.dark.text.secondary,
-    marginTop: spacing.md,
+    borderRadius: 16,
+    marginRight: 8,
+    fontSize: typography.fontSize.xs,
+    fontWeight: 'bold',
+    overflow: 'hidden',
   },
+  exercisePillActive: {
+    backgroundColor: colors.dark.accent.primary,
+    color: colors.white,
+  }
 });

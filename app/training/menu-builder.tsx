@@ -12,18 +12,16 @@ import { useTranslation } from 'react-i18next';
 
 export default function MenuBuilderScreen() {
   const { t } = useTranslation();
-  const { menuName, setMenuName, exercises, removeExerciseFromMenu, saveCurrentMenu } = useMenuStore();
+  const { menuName, setMenuName, exercises, removeExerciseFromMenu, reorderExercises, saveCurrentMenu } = useMenuStore();
   const [isSaving, setIsSaving] = React.useState(false);
   
   const handleSaveMenu = async () => {
-    try {
-      setIsSaving(true);
-      await saveCurrentMenu();
-      setIsSaving(false);
-      router.replace('/(tabs)/training');
-    } catch (err: any) {
-      setIsSaving(false);
-      if (err.message === 'GUEST_LIMIT_REACHED') {
+    setIsSaving(true);
+    const result = await saveCurrentMenu();
+    setIsSaving(false);
+    
+    if (result && !result.success) {
+      if (result.error === 'GUEST_LIMIT_REACHED') {
         Alert.alert(
           t('menuBuilder.guestLimitTitle'),
           t('menuBuilder.guestLimitDesc'),
@@ -33,7 +31,10 @@ export default function MenuBuilderScreen() {
           ]
         );
       }
+      return;
     }
+    
+    router.replace('/(tabs)/training');
   };
 
   return (
@@ -99,9 +100,21 @@ export default function MenuBuilderScreen() {
                   <Text style={styles.exerciseName}>
                     {ex.name}
                   </Text>
-                  <Pressable onPress={() => removeExerciseFromMenu(ex.id)} style={styles.removeButton}>
-                    <Icon name="trash-outline" size={18} color={colors.dark.accent.primary} />
-                  </Pressable>
+                  <View style={styles.exerciseActions}>
+                    {index > 0 && (
+                      <Pressable onPress={() => reorderExercises(index, index - 1)} style={styles.actionButton}>
+                        <Icon name="chevron-up" size={20} color={colors.dark.text.secondary} />
+                      </Pressable>
+                    )}
+                    {index < exercises.length - 1 && (
+                      <Pressable onPress={() => reorderExercises(index, index + 1)} style={styles.actionButton}>
+                        <Icon name="chevron-down" size={20} color={colors.dark.text.secondary} />
+                      </Pressable>
+                    )}
+                    <Pressable onPress={() => removeExerciseFromMenu(ex.id)} style={[styles.actionButton, { marginLeft: spacing.sm }]}>
+                      <Icon name="trash-outline" size={18} color={colors.dark.accent.primary} />
+                    </Pressable>
+                  </View>
                 </Card>
               ))}
             </View>
@@ -189,8 +202,12 @@ const styles = StyleSheet.create({
     color: colors.dark.text.primary,
     fontWeight: 'bold',
   },
-  removeButton: {
-    padding: spacing.sm,
+  exerciseActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: spacing.xs,
   },
   footer: {
     padding: spacing.base,

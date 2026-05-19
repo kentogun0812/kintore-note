@@ -69,7 +69,7 @@ export default function SettingsScreen() {
       // Navigate to intro/login screen
       router.replace('/auth/intro');
     } else {
-      throw new Error(result.error || 'Failed to delete account');
+      console.log('[Settings] Failed to delete account:', result.error);
     }
   };
 

@@ -62,6 +62,14 @@ export default function TrainingScreen() {
             </Card>
           </Pressable>
         </Link>
+        <Link href="/training/program-builder" asChild>
+          <Pressable style={styles.toolItem}>
+            <Card style={styles.toolCard}>
+              <Icon name="calendar-outline" size={32} color={colors.dark.accent.secondary} />
+              <Text style={styles.toolText} numberOfLines={1} adjustsFontSizeToFit>{t('program.builder', 'Program')}</Text>
+            </Card>
+          </Pressable>
+        </Link>
         <Link href="/training/library" asChild>
           <Pressable style={styles.toolItem}>
             <Card style={styles.toolCard}>
@@ -158,7 +166,7 @@ const styles = StyleSheet.create({
   },
   toolsRow: {
     flexDirection: 'row',
-    gap: spacing.base,
+    gap: spacing.sm,
     marginTop: spacing.xs,
   },
   toolItem: {

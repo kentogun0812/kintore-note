@@ -45,6 +45,7 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (error) {
+      console.error('[Register] Supabase signUp error:', JSON.stringify(error, null, 2));
       Alert.alert(t('auth.register.errors.registerErrorTitle'), t('auth.register.errors.registerErrorDesc'));
     } else if (!data.session) {
       Alert.alert(t('auth.register.errors.registerSuccessTitle'), t('auth.register.errors.registerSuccessDesc'));
@@ -71,13 +72,21 @@ export default function RegisterScreen() {
           token: credential.identityToken,
         });
         setLoading(false);
-        if (error) throw error;
+        if (error) {
+          console.log('[Register] Supabase Apple Auth error:', JSON.stringify(error, null, 2));
+          Alert.alert(t('auth.register.errors.connectionErrorTitle'), t('auth.register.errors.connectionErrorDesc'));
+          return;
+        }
         router.replace('/(tabs)/home');
       } else {
-        throw new Error('No identity token.');
+        setLoading(false);
+        console.log('[Register] No identity token.');
+        Alert.alert(t('auth.register.errors.connectionErrorTitle'), t('auth.register.errors.connectionErrorDesc'));
+        return;
       }
     } catch (e: any) {
       setLoading(false);
+      console.log('[Register] Apple Login Exception:', e);
       if (e.code !== 'ERR_REQUEST_CANCELED') {
         Alert.alert(t('auth.register.errors.connectionErrorTitle'), t('auth.register.errors.connectionErrorDesc'));
       }

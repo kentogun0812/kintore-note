@@ -11,6 +11,7 @@ interface ExerciseRecord {
   id: string;
   exerciseId: string;
   name: string;
+  notes?: string;
   sets: SetRecord[];
 }
 
@@ -24,6 +25,9 @@ interface activeSessionState {
   addSet: (exerciseId: string) => void;
   removeSet: (exerciseId: string, setId: string) => void;
   toggleSetComplete: (exerciseId: string, setId: string) => void;
+  updateExerciseNote: (exerciseId: string, note: string) => void;
+  removeExercise: (exerciseId: string) => void;
+  reorderSessionExercises: (fromIndex: number, toIndex: number) => void;
 }
 
 export const useTrainingStore = create<activeSessionState>((set) => ({
@@ -95,5 +99,23 @@ export const useTrainingStore = create<activeSessionState>((set) => ({
         sets: ex.sets.filter(s => s.id !== setId)
       };
     })
-  }))
+  })),
+
+  updateExerciseNote: (exerciseId, note) => set((state) => ({
+    exercises: state.exercises.map(ex => {
+      if (ex.id !== exerciseId) return ex;
+      return { ...ex, notes: note };
+    })
+  })),
+
+  removeExercise: (exerciseId) => set((state) => ({
+    exercises: state.exercises.filter(ex => ex.id !== exerciseId)
+  })),
+
+  reorderSessionExercises: (fromIndex, toIndex) => set((state) => {
+    const newExercises = [...state.exercises];
+    const [moved] = newExercises.splice(fromIndex, 1);
+    newExercises.splice(toIndex, 0, moved);
+    return { exercises: newExercises };
+  })
 }));

@@ -125,7 +125,8 @@ export default function CameraScreen() {
       });
 
       if (!photo?.base64) {
-        throw new Error('Failed to capture photo');
+        console.log('[Camera] Failed to capture photo: no base64');
+        return;
       }
 
       // Flash feedback animation
@@ -158,7 +159,7 @@ export default function CameraScreen() {
       }, 500);
 
     } catch (error) {
-      console.error('Failed to capture/encrypt photo:', error);
+      console.log('[Camera] Failed to capture/encrypt photo:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsSaving(false);

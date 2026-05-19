@@ -22,6 +22,7 @@ interface MenuBuilderState {
   setMenuName: (name: string) => void;
   addExerciseToMenu: (exercise: MenuExercise) => void;
   removeExerciseFromMenu: (exerciseId: string) => void;
+  reorderExercises: (fromIndex: number, toIndex: number) => void;
   clearMenuBuilder: () => void;
   saveCurrentMenu: () => Promise<void>;
   fetchSavedMenus: () => Promise<void>;
@@ -44,6 +45,13 @@ export const useMenuStore = create<MenuBuilderState>()(
       removeExerciseFromMenu: (exerciseId) => set((state) => ({
         exercises: state.exercises.filter(e => e.id !== exerciseId)
       })),
+
+      reorderExercises: (fromIndex, toIndex) => set((state) => {
+        const newExercises = [...state.exercises];
+        const [moved] = newExercises.splice(fromIndex, 1);
+        newExercises.splice(toIndex, 0, moved);
+        return { exercises: newExercises };
+      }),
 
       clearMenuBuilder: () => set({
         menuName: '',
@@ -88,6 +96,7 @@ export const useMenuStore = create<MenuBuilderState>()(
         const { menuName, exercises, savedMenus } = get();
         if (!menuName || exercises.length === 0) return;
 
+        let isSuccess = false;
         try {
           const { data: sessionData } = await supabase.auth.getSession();
           const userId = sessionData.session?.user.id;
@@ -99,7 +108,10 @@ export const useMenuStore = create<MenuBuilderState>()(
               .select('id')
               .single();
               
-            if (menuErr) throw menuErr;
+            if (menuErr) {
+              console.log('[MenuStore] DB Error:', menuErr);
+              return { success: false, error: 'DB_ERROR' };
+            }
 
             const mappedExercises = exercises.map((ex, index) => ({
               menu_id: menuData.id,
@@ -113,7 +125,7 @@ export const useMenuStore = create<MenuBuilderState>()(
             get().fetchSavedMenus();
           } else {
             if (savedMenus.length >= 1) {
-              throw new Error('GUEST_LIMIT_REACHED');
+              return { success: false, error: 'GUEST_LIMIT_REACHED' };
             }
 
             const newMenu: SavedMenu = {
@@ -127,16 +139,16 @@ export const useMenuStore = create<MenuBuilderState>()(
               savedMenus: [newMenu, ...state.savedMenus]
             }));
           }
+          isSuccess = true;
         } catch(err: any) {
-          if (err.message === 'GUEST_LIMIT_REACHED') {
-            throw err;
-          }
-          console.error('Failed to save menu:', err);
+          console.log('[MenuStore] Failed to save menu:', err);
+          return { success: false, error: err.message };
         } finally {
           // Clear only if success
-          if (userId || (!userId && savedMenus.length === 0)) {
+          if (isSuccess) {
              set({ menuName: '', exercises: [] });
           }
+          return { success: isSuccess };
         }
       }
     }),

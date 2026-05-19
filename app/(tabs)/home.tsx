@@ -12,6 +12,7 @@ import { Link, router } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
 import { useOnboardingStore } from '@/store/onboarding.store';
 import { useTrainingStore } from '@/store/training.store';
+import { useProgramStore } from '@/store/program.store';
 import { useTranslation } from 'react-i18next';
 import Animated, { FadeInDown, FadeInRight, useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 import { WelcomePopup } from '@/components/WelcomePopup';
@@ -21,9 +22,21 @@ export default function HomeScreen() {
   const { t, i18n } = useTranslation();
   const { user, isGuest } = useAuthStore();
   const { startSession } = useTrainingStore();
+  const { activeProgram, fetchPrograms, fetchProgramMenus } = useProgramStore();
+  const [programMenus, setProgramMenus] = useState<any[]>([]);
 
   const logoScale = useSharedValue(1);
   const logoRotate = useSharedValue(0);
+
+  useEffect(() => {
+    fetchPrograms();
+  }, []);
+
+  useEffect(() => {
+    if (activeProgram) {
+      fetchProgramMenus(activeProgram.id).then(setProgramMenus);
+    }
+  }, [activeProgram]);
 
   useEffect(() => {
     logoScale.value = withRepeat(
@@ -102,6 +115,21 @@ export default function HomeScreen() {
   // Format the selected date for display
   const formattedSelectedDate = new Date(selectedDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
 
+  // Calculate current week for active program
+  const getCurrentWeek = () => {
+    if (!activeProgram || !activeProgram.start_date) return 1;
+    const start = new Date(activeProgram.start_date);
+    const now = new Date();
+    const diffTime = now.getTime() - start.getTime();
+    if (diffTime < 0) return 1; // Not started yet
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    const currentWeek = Math.ceil(diffDays / 7) || 1;
+    return Math.min(Math.max(currentWeek, 1), activeProgram.total_weeks);
+  };
+
+  const currentWeek = getCurrentWeek();
+  const currentWeekMenu = programMenus.find(m => m.program_week === currentWeek);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
@@ -121,6 +149,43 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
+
+        {activeProgram && (
+          <Card style={styles.programCard}>
+             <View style={styles.programHeader}>
+               <Icon name="fitness-outline" size={20} color={colors.dark.accent.primary} />
+               <Text style={styles.programTitle}>{activeProgram.name}</Text>
+             </View>
+             <Text style={styles.programDetails}>
+               {t('program.weekN', { n: currentWeek, defaultValue: `Week ${currentWeek}` })} / {activeProgram.total_weeks}
+             </Text>
+             {currentWeekMenu ? (
+               <View style={styles.programMenu}>
+                  <Text style={styles.programMenuName}>{currentWeekMenu.name}</Text>
+                  <Button 
+                    label={t('home.startSession')} 
+                    size="sm" 
+                    iconName="play" 
+                    onPress={() => {
+                      // Note: in a real app we'd load the full menu exercises here
+                      const sessionExercises = [{ id: Math.random().toString(), name: 'Placeholder for ' + currentWeekMenu.name }];
+                      startSession(sessionExercises);
+                      router.push('/training/session');
+                    }} 
+                  />
+               </View>
+             ) : (
+               <Text style={styles.programDetails}>{t('program.noMenuThisWeek', 'No menu assigned for this week.')}</Text>
+             )}
+             
+             <Link href={`/training/program/${activeProgram.id}`} asChild>
+                <Pressable style={styles.viewProgramButton}>
+                   <Text style={styles.viewProgramText}>{t('program.viewSchedule', 'View Schedule')}</Text>
+                   <Icon name="arrow-forward" size={16} color={colors.dark.accent.primary} />
+                </Pressable>
+             </Link>
+          </Card>
+        )}
         
         <Card style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
@@ -253,6 +318,53 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.xs,
     letterSpacing: 1,
     marginTop: 2,
+  },
+  programCard: {
+    padding: spacing.md,
+    gap: spacing.sm,
+    backgroundColor: colors.dark.bg.tertiary,
+    borderWidth: 1,
+    borderColor: colors.dark.accent.primary + '50',
+  },
+  programHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  programTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+  },
+  programDetails: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
+  },
+  programMenu: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.dark.bg.primary,
+    padding: spacing.sm,
+    borderRadius: radius.sm,
+    marginTop: spacing.xs,
+  },
+  programMenuName: {
+    color: colors.dark.text.primary,
+    fontWeight: 'bold',
+    flex: 1,
+  },
+  viewProgramButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  viewProgramText: {
+    color: colors.dark.accent.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: 'bold',
   },
   sectionCard: {
     padding: spacing.md,

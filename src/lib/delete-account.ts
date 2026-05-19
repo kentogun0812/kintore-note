@@ -85,6 +85,7 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
 async function clearLocalDatabase(userId: string): Promise<void> {
   try {
     const database = getDatabase(userId);
+    if (!database) return;
     await database.write(async () => {
       const tables = ['training_sessions', 'session_sets', 'hanko_stamps'];
       for (const tableName of tables) {

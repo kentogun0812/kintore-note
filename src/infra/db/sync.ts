@@ -34,8 +34,8 @@ export async function syncWatermelonDB(userId: string) {
         .gt('updated_at', lastPulledISO);
 
       if (error) {
-        console.error('Failed to pull changes from Supabase', error);
-        throw new Error(error.message);
+        console.log('[Sync] Failed to pull changes from Supabase', error);
+        return Promise.reject(new Error(error.message));
       }
 
       // Format changes for WatermelonDB consumption
@@ -78,7 +78,7 @@ export async function syncWatermelonDB(userId: string) {
         }));
 
         const { error } = await supabase.from('training_menus').insert(newRecords);
-        if (error) throw new Error(`Push Create Error: ${error.message}`);
+        if (error) return Promise.reject(new Error(`Push Create Error: ${error.message}`));
       }
 
       // 2. Handle Updates
@@ -93,7 +93,7 @@ export async function syncWatermelonDB(userId: string) {
             })
             .eq('id', record.id);
           
-          if (error) throw new Error(`Push Update Error: ${error.message}`);
+          if (error) return Promise.reject(new Error(`Push Update Error: ${error.message}`));
         }
       }
 
@@ -104,7 +104,7 @@ export async function syncWatermelonDB(userId: string) {
           .delete()
           .in('id', deleted);
         
-        if (error) throw new Error(`Push Delete Error: ${error.message}`);
+        if (error) return Promise.reject(new Error(`Push Delete Error: ${error.message}`));
       }
 
       // Add push logic for other tables similarly

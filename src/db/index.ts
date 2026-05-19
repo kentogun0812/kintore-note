@@ -20,7 +20,8 @@ const dbInstances = new Map<string, Database>();
  */
 export function getDatabase(userId: string): Database {
   if (!userId) {
-    throw new Error('userId is required to initialize a user-specific database');
+    console.log('[DB] userId is required to initialize a user-specific database');
+    return undefined as any as Database;
   }
 
   if (dbInstances.has(userId)) {

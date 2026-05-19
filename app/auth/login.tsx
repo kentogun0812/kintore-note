@@ -31,6 +31,7 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
+      console.log('[Login] Supabase signIn error:', JSON.stringify(error, null, 2));
       Alert.alert(t('auth.login.errors.loginFailedTitle'), t('auth.login.errors.loginFailedDesc'));
     } else {
       router.replace('/(tabs)/home');
@@ -53,13 +54,21 @@ export default function LoginScreen() {
           token: credential.identityToken,
         });
         setLoading(false);
-        if (error) throw error;
+        if (error) {
+          console.log('[Login] Supabase Apple Auth error:', JSON.stringify(error, null, 2));
+          Alert.alert(t('auth.login.errors.connectionErrorTitle'), t('auth.login.errors.connectionErrorDesc'));
+          return;
+        }
         router.replace('/(tabs)/home');
       } else {
-        throw new Error('No identity token.');
+        setLoading(false);
+        console.log('[Login] No identity token.');
+        Alert.alert(t('auth.login.errors.connectionErrorTitle'), t('auth.login.errors.connectionErrorDesc'));
+        return;
       }
     } catch (e: any) {
       setLoading(false);
+      console.log('[Login] Apple Login Exception:', e);
       if (e.code !== 'ERR_REQUEST_CANCELED') {
         Alert.alert(t('auth.login.errors.connectionErrorTitle'), t('auth.login.errors.connectionErrorDesc'));
       }
