@@ -58,20 +58,16 @@ export default function TrainingScreen() {
         <Link href="/training/weekly-plans" asChild>
           <Pressable style={styles.toolItem}>
             <Card style={styles.toolCard}>
-              <View style={styles.toolIconWatermark}>
-                  <Icon name="calendar-outline" size={54} color={colors.dark.accent.primary} />
-              </View>
-                <Text style={styles.toolText} numberOfLines={2}>{t('record.weeklyPlans')}</Text>
+              <Icon name="calendar-outline" size={32} color={colors.dark.accent.primary} />
+              <Text style={styles.toolText} numberOfLines={1}>{t('record.weeklyPlans')}</Text>
             </Card>
           </Pressable>
         </Link>
         <Link href="/training/library" asChild>
           <Pressable style={styles.toolItem}>
             <Card style={styles.toolCard}>
-              <View style={styles.toolIconWatermark}>
-                  <Icon name="library" size={54} color={colors.dark.accent.primary} />
-              </View>
-              <Text style={styles.toolText} numberOfLines={2}>{t('record.exerciseLibrary')}</Text>
+              <Icon name="library-outline" size={32} color={colors.dark.accent.primary} />
+              <Text style={styles.toolText} numberOfLines={1}>{t('record.exerciseLibrary')}</Text>
             </Card>
           </Pressable>
         </Link>
@@ -100,8 +96,8 @@ export default function TrainingScreen() {
             </View>
             
             <View style={styles.modernExerciseList}>
-              {routine.exercises.slice(0, 4).map((ex, index) => {
-                const showBorder = index < Math.min(routine.exercises.length, 4) - 1 || routine.exercises.length > 4;
+              {routine.exercises.slice(0, 3).map((ex, index) => {
+                const showBorder = index < Math.min(routine.exercises.length, 3) - 1 || routine.exercises.length > 3;
                 return (
                   <View key={ex.id} style={[styles.modernExerciseItem, showBorder && styles.modernExerciseItemBorder]}>
                     <View style={styles.modernExerciseInfo}>
@@ -115,7 +111,7 @@ export default function TrainingScreen() {
                   </View>
                 );
               })}
-              {routine.exercises.length > 4 && (
+              {routine.exercises.length > 3 && (
                 <View style={styles.modernExerciseItem}>
                   <View style={styles.modernExerciseInfo}>
                     <View style={[styles.modernExerciseIconContainer, { backgroundColor: 'transparent' }]}>
@@ -129,12 +125,32 @@ export default function TrainingScreen() {
               )}
             </View>
 
-            <Button 
-              label={t('home.startSession')} 
-              variant="outline" 
-              size="md" 
-              onPress={() => handleStartRoutine(routine)} 
-            />
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <Button 
+                label={t('common.edit')} 
+                variant="outline" 
+                size="md" 
+                onPress={() => router.push({ pathname: '/training/template/[id]', params: { id: routine.id } })} 
+                style={(state) => ({ 
+                  flex: 1,
+                  borderWidth: 0.5,
+                  borderColor: colors.dark.border.light,
+                  backgroundColor: state.pressed ? colors.dark.bg.secondary : colors.dark.bg.tertiary
+                })}
+              />
+              <Button 
+                label={t('home.startSession')} 
+                variant="outline" 
+                size="md" 
+                onPress={() => handleStartRoutine(routine)} 
+                style={(state) => ({
+                  flex: 1,
+                  borderWidth: 0.5,
+                  borderColor: colors.dark.border.light,
+                  backgroundColor: state.pressed ? colors.dark.bg.secondary : colors.dark.bg.tertiary
+                })}
+              />
+            </View>
           </Card>
         ))
       )}
@@ -189,30 +205,17 @@ const styles = StyleSheet.create({
   },
   toolCard: {
     padding: spacing.md,
-    height: 100,
+    height: 90,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: colors.dark.border.light,
     backgroundColor: colors.dark.bg.tertiary,
-  },
-  toolIconWatermark: {
-    position: 'absolute',
-    opacity: 0.45,
-    top: 0,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    gap: spacing.xs,
   },
   toolText: {
     color: colors.dark.text.primary,
-    fontWeight: 'bold',
+    fontWeight: '600',
     textAlign: 'center',
-    zIndex: 1,
-    fontSize: typography.fontSize.md,
+    fontSize: typography.fontSize.base,
   },
   sectionHeader: {
     flexDirection: 'row',

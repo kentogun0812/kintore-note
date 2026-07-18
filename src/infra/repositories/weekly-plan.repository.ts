@@ -9,6 +9,7 @@ export interface WeeklyPlanModel {
   start_date?: string;
   is_active: boolean; // converted from 0 or 1
   created_at: string;
+  assigned_templates?: { id: string | null; name: string | null; plan_week: number; day_of_week: number; is_rest_day: boolean }[];
 }
 
 export const WeeklyPlanRepository = {
@@ -23,15 +24,30 @@ export const WeeklyPlanRepository = {
       [userId]
     );
 
-    return records.map(r => ({
-      id: r.id,
-      name: r.name,
-      description: r.description || undefined,
-      total_weeks: r.total_weeks,
-      start_date: r.start_date || undefined,
-      is_active: r.is_active === 1,
-      created_at: r.createdAt
-    }));
+    return records.map(r => {
+      const templates = queryAll<{ id: string | null; name: string | null; plan_week: number; day_of_week: number; is_rest_day: number }>(
+        `SELECT t.id, t.name, a.plan_week, a.day_of_week, a.is_rest_day 
+         FROM weekly_plan_assigned_templates a
+         LEFT JOIN workout_templates t ON a.workout_template_id = t.id
+         WHERE a.weekly_plan_id = ? AND a.syncStatus != 'deleted' AND (t.syncStatus != 'deleted' OR t.id IS NULL)
+         ORDER BY a.plan_week ASC, a.day_of_week ASC`,
+        [r.id]
+      );
+
+      return {
+        id: r.id,
+        name: r.name,
+        description: r.description || undefined,
+        total_weeks: r.total_weeks,
+        start_date: r.start_date || undefined,
+        is_active: r.is_active === 1,
+        created_at: r.createdAt,
+        assigned_templates: templates.map(t => ({
+          ...t,
+          is_rest_day: t.is_rest_day === 1
+        }))
+      };
+    });
   },
 
   /**
@@ -76,29 +92,89 @@ export const WeeklyPlanRepository = {
   },
 
   /**
-   * Assign a Workout Template to a specific week in a weekly plan
+   * Assign a Workout Template or Rest Day to a specific day in a weekly plan
    */
-  assignTemplateToWeek(planId: string, templateId: string, week: number): void {
+  assignToDay(planId: string, templateId: string | null, week: number, dayOfWeek: number, isRestDay: boolean = false): void {
+    const db = getSqliteDb();
     const now = new Date().toISOString();
-    runExecute(
-      `UPDATE workout_templates 
-       SET weekly_plan_id = ?, plan_week = ?, syncStatus = 'pending', updatedAt = ? 
-       WHERE id = ?`,
-      [planId, week, now, templateId]
-    );
+    const id = Crypto.randomUUID();
+
+    db.withTransactionSync(() => {
+      // 1. Delete old assignment for this day in this plan
+      db.runSync(
+        `DELETE FROM weekly_plan_assigned_templates 
+         WHERE weekly_plan_id = ? AND plan_week = ? AND day_of_week = ?`,
+        [planId, week, dayOfWeek]
+      );
+      
+      // 2. Insert new assignment
+      db.runSync(
+        `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, plan_week, day_of_week, workout_template_id, is_rest_day, syncStatus, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        [id, planId, week, dayOfWeek, templateId, isRestDay ? 1 : 0, now, now]
+      );
+    });
   },
 
   /**
    * Fetch all workout templates assigned to a weekly plan
    */
-  fetchPlanTemplates(planId: string): { id: string; name: string; plan_week: number }[] {
-    const records = queryAll<{ id: string; name: string; plan_week: number }>(
-      `SELECT id, name, plan_week 
-       FROM workout_templates 
-       WHERE weekly_plan_id = ? AND plan_week IS NOT NULL AND syncStatus != 'deleted'
-       ORDER BY plan_week ASC`,
+  fetchPlanTemplates(planId: string): { id: string | null; name: string | null; plan_week: number; day_of_week: number; is_rest_day: boolean }[] {
+    const records = queryAll<{ id: string | null; name: string | null; plan_week: number; day_of_week: number; is_rest_day: number }>(
+      `SELECT t.id, t.name, a.plan_week, a.day_of_week, a.is_rest_day 
+       FROM weekly_plan_assigned_templates a
+       LEFT JOIN workout_templates t ON a.workout_template_id = t.id
+       WHERE a.weekly_plan_id = ? AND a.syncStatus != 'deleted' AND (t.syncStatus != 'deleted' OR t.id IS NULL)
+       ORDER BY a.plan_week ASC, a.day_of_week ASC`,
       [planId]
     );
-    return records;
+    return records.map(r => ({
+      ...r,
+      is_rest_day: r.is_rest_day === 1
+    }));
+  },
+
+  /**
+   * Update a weekly plan locally
+   */
+  updateWeeklyPlan(planId: string, name: string, totalWeeks: number, startDate?: string): void {
+    const db = getSqliteDb();
+    const now = new Date().toISOString();
+
+    db.withTransactionSync(() => {
+      // 1. Update the plan
+      db.runSync(
+        `UPDATE weekly_plans 
+         SET name = ?, total_weeks = ?, start_date = ?, syncStatus = 'pending', updatedAt = ? 
+         WHERE id = ?`,
+        [name, totalWeeks, startDate || null, now, planId]
+      );
+      
+      // 2. Delete assigned templates for weeks greater than the new totalWeeks
+      db.runSync(
+        `DELETE FROM weekly_plan_assigned_templates 
+         WHERE weekly_plan_id = ? AND plan_week > ?`,
+        [planId, totalWeeks]
+      );
+    });
+  },
+
+  /**
+   * Soft delete a weekly plan and its assignments
+   */
+  deleteWeeklyPlan(planId: string): void {
+    const db = getSqliteDb();
+    const now = new Date().toISOString();
+    
+    db.withTransactionSync(() => {
+      db.runSync(
+        `UPDATE weekly_plans SET syncStatus = 'deleted', updatedAt = ? WHERE id = ?`,
+        [now, planId]
+      );
+      db.runSync(
+        `UPDATE weekly_plan_assigned_templates SET syncStatus = 'deleted', updatedAt = ? WHERE weekly_plan_id = ?`,
+        [now, planId]
+      );
+    });
   }
 };

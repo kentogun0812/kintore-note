@@ -273,7 +273,7 @@ export const styles = StyleSheet.create({
     color: colors.dark.text.primary,
   },
   selectListContent: {
-    paddingBottom: 120, // Leave room for sticky submit button
+    paddingBottom: spacing.base,
     gap: spacing.sm,
   },
   exerciseSelectItem: {
@@ -320,15 +320,11 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
   submitButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    padding: spacing.base,
+    paddingBottom: spacing.xl,
     backgroundColor: colors.dark.bg.primary,
-    padding: spacing.medium,
     borderTopWidth: 1,
     borderTopColor: colors.dark.border.subtle,
-    gap: spacing.sm,
   },
   cancelEditBtn: {
     alignItems: 'center',

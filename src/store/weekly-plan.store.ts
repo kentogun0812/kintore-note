@@ -10,6 +10,7 @@ export interface WeeklyPlan {
   start_date?: string;
   is_active: boolean;
   created_at: string;
+  assigned_templates?: { id: string | null; name: string | null; plan_week: number; day_of_week: number; is_rest_day: boolean }[];
 }
 
 interface WeeklyPlanState {
@@ -17,8 +18,10 @@ interface WeeklyPlanState {
   activeWeeklyPlan: WeeklyPlan | null;
   fetchWeeklyPlans: () => Promise<void>;
   createWeeklyPlan: (name: string, total_weeks: number, start_date?: string) => Promise<string | null>;
+  updateWeeklyPlan: (planId: string, name: string, total_weeks: number, start_date?: string) => Promise<void>;
   activateWeeklyPlan: (planId: string) => Promise<void>;
-  assignTemplateToWeek: (planId: string, templateId: string, week: number) => Promise<void>;
+  deleteWeeklyPlan: (planId: string) => Promise<void>;
+  assignToDay: (planId: string, templateId: string | null, week: number, dayOfWeek: number, isRestDay?: boolean) => Promise<void>;
   fetchPlanTemplates: (planId: string) => Promise<any[]>;
 }
 
@@ -49,6 +52,15 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
     }
   },
 
+  updateWeeklyPlan: async (planId, name, total_weeks, start_date) => {
+    try {
+      WeeklyPlanRepository.updateWeeklyPlan(planId, name, total_weeks, start_date);
+      await get().fetchWeeklyPlans();
+    } catch (error) {
+      console.error('[WeeklyPlanStore] Error updating plan:', error);
+    }
+  },
+
   activateWeeklyPlan: async (planId) => {
     const userId = useAuthStore.getState().user?.id || 'guest';
     try {
@@ -59,11 +71,20 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
     }
   },
 
-  assignTemplateToWeek: async (planId, templateId, week) => {
+  deleteWeeklyPlan: async (planId) => {
     try {
-      WeeklyPlanRepository.assignTemplateToWeek(planId, templateId, week);
+      WeeklyPlanRepository.deleteWeeklyPlan(planId);
+      await get().fetchWeeklyPlans();
     } catch (error) {
-      console.error('[WeeklyPlanStore] Error assigning template to week:', error);
+      console.error('[WeeklyPlanStore] Error deleting plan:', error);
+    }
+  },
+
+  assignToDay: async (planId, templateId, week, dayOfWeek, isRestDay = false) => {
+    try {
+      WeeklyPlanRepository.assignToDay(planId, templateId, week, dayOfWeek, isRestDay);
+    } catch (error) {
+      console.error('[WeeklyPlanStore] Error assigning template to day:', error);
     }
   },
 

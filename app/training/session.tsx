@@ -16,35 +16,21 @@ import { CreateCustomExerciseModal } from '@/features/training/components/Create
 import { SaveWorkoutTemplateModal } from '@/features/training/components/SaveWorkoutTemplateModal';
 import { styles } from '@/features/training/session.styles';
 import { ExerciseSection } from '@/features/training/components/ExerciseSection';
-import { MuscleGroupIcon } from '@/components/MuscleGroupIcon';
+import { ExercisePicker } from '@/features/training/components/ExercisePicker';
 
 export default function SessionScreen() {
   const {
     // States
     exercises,
     isEditingTemplate,
-    selectedExerciseIds,
-    selectedMuscleGroupId,
     focusedInput,
     restLeft,
     restTotal,
-    toastMessage,
-    showCreateCustomMGModal,
-    showCreateCustomExerciseModal,
     showSaveTemplateModal,
     templateName,
     showTimerPresets,
     selectedRestIndex,
-    newMGNameJa,
-    newMGNameEn,
-    newExNameJa,
-    newExNameEn,
-    newExMGId,
-    allMuscleGroups,
-    filteredExercises,
     allExercisesDone,
-    isLoading,
-    error,
     // Refs & Animations
     pan,
     scrollY,
@@ -52,19 +38,11 @@ export default function SessionScreen() {
     panResponder,
     // State Setters
     setIsEditingTemplate,
-    setSelectedMuscleGroupId,
     setFocusedInput,
-    setShowCreateCustomMGModal,
-    setShowCreateCustomExerciseModal,
     setShowSaveTemplateModal,
     setTemplateName,
     setShowTimerPresets,
     setSelectedRestIndex,
-    setNewMGNameJa,
-    setNewMGNameEn,
-    setNewExNameJa,
-    setNewExNameEn,
-    setNewExMGId,
     // Actions
     addSet,
     removeSet,
@@ -75,15 +53,10 @@ export default function SessionScreen() {
     cancelRest,
     formatRest,
     handleToggleExercise,
-    handleToggleSelectExercise,
     handleConfirmTemplate,
-    handleCreateCustomMuscleGroup,
-    handleCreateCustomExercise,
-    handleDeleteCustomMuscleGroup,
-    handleDeleteCustomExercise,
-    getMuscleGroupColor,
     handleConfirmSaveTemplate,
     handleFinishSession,
+    picker,
     t,
     i18n,
     width,
@@ -125,18 +98,14 @@ export default function SessionScreen() {
   }, [focusedInput, handleToggleExercise, t, addSet, removeSet, updateSet, removeExercise]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <View style={{ flex: 1 }}>
         <Stack.Screen
           options={{
             headerShown: false,
             gestureEnabled: false,
           }}
         />
-
         <View style={styles.customHeader}>
           <Pressable
             onPress={() => {
@@ -157,185 +126,15 @@ export default function SessionScreen() {
 
         {isEditingTemplate ? (
           <>
-            <View style={styles.selectionContainer}>
-              <Text style={styles.selectionTitle}>
-                {t('session.selectMuscleGroup')}
-              </Text>
-
-              {isLoading ? (
-                <View style={styles.centerContainer}>
-                  <ActivityIndicator size="large" color={colors.dark.accent.primary} />
-                </View>
-              ) : error ? (
-                <View style={styles.centerContainer}>
-                  <Text style={{ color: colors.dark.text.secondary }}>
-                    {t('library.loadError')}
-                  </Text>
-                </View>
-              ) : (
-                <View style={{ flex: 1 }}>
-                  {/* Muscle Groups Section */}
-                  <View style={styles.muscleGroupsSection}>
-                    <View style={styles.muscleGroupGrid}>
-                      {allMuscleGroups.map(mg => {
-                        if (mg.id === 'mg-other') {
-                          return (
-                            <View key={mg.id} style={[styles.muscleGroupItemWrapper, { width: itemWidth }]}>
-                              <Pressable
-                                style={[
-                                  styles.muscleGroupItem,
-                                  {
-                                    backgroundColor: colors.dark.bg.tertiary,
-                                    borderColor: colors.dark.border.subtle,
-                                    borderStyle: 'dashed'
-                                  }
-                                ]}
-                                onPress={() => {
-                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                  setShowCreateCustomMGModal(true);
-                                }}
-                              >
-                                <Ionicons name="add" size={24} color={colors.dark.text.secondary} />
-                              </Pressable>
-                            </View>
-                          );
-                        }
-
-                        const isSelected = selectedMuscleGroupId === mg.id;
-                        const softColor = getMuscleGroupColor(mg.id);
-                        return (
-                          <View key={mg.id} style={[styles.muscleGroupItemWrapper, { width: itemWidth }]}>
-                            <Pressable
-                              style={[
-                                styles.muscleGroupItem,
-                                {
-                                  backgroundColor: isSelected ? softColor.selectedBg : softColor.bg,
-                                  borderColor: isSelected ? softColor.border : colors.dark.border.subtle
-                                }
-                              ]}
-                              onPress={() => {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                setSelectedMuscleGroupId(mg.id);
-                              }}
-                            >
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <MuscleGroupIcon
-                                  id={mg.id}
-                                  size={20}
-                                  color={isSelected ? colors.white : colors.dark.text.primary}
-                                />
-                                <Text style={[
-                                  styles.muscleGroupText,
-                                  { color: isSelected ? colors.white : colors.dark.text.primary }
-                                ]}>
-                                  {i18n.language === 'ja' ? mg.name_ja : mg.name_en}
-                                </Text>
-                              </View>
-                              {mg.id.startsWith('mg-custom') && (
-                                <Pressable
-                                  onPress={() => handleDeleteCustomMuscleGroup(mg.id)}
-                                  hitSlop={15}
-                                  style={styles.deleteBadge}
-                                >
-                                  <Ionicons name="close" size={12} color={colors.white} />
-                                </Pressable>
-                              )}
-                            </Pressable>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  </View>
-
-                  {/* Selected Muscle Group's Exercises List */}
-                  {selectedMuscleGroupId ? (
-                    <View style={{ flex: 1, marginTop: spacing.md }}>
-                      <View style={styles.exercisesHeaderRow}>
-                        <Text style={styles.exercisesListTitle}>
-                          {t('session.exercises')}
-                        </Text>
-                      </View>
-
-                      <FlatList
-                        data={filteredExercises}
-                        keyExtractor={(item) => item.id}
-                        showsVerticalScrollIndicator={false}
-                        renderItem={({ item }) => {
-                          const name = i18n.language === 'ja' ? item.name_ja : item.name_en;
-                          const isChecked = selectedExerciseIds.includes(item.id);
-                          return (
-                            <Pressable
-                              style={[
-                                styles.exerciseSelectItem,
-                                isChecked && styles.exerciseSelectItemChecked
-                              ]}
-                              onPress={() => handleToggleSelectExercise(item.id)}
-                            >
-                              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                                <Text style={[styles.exerciseSelectName, { flexShrink: 1 }]}>{name}</Text>
-                                {item.id.startsWith('ex-custom') && (
-                                  <Pressable onPress={() => handleDeleteCustomExercise(item.id)} hitSlop={12} style={{ padding: 4 }}>
-                                    <Ionicons name="close-circle" size={20} color={colors.dark.accent.warning} />
-                                  </Pressable>
-                                )}
-                              </View>
-                              <View style={[
-                                styles.checkboxCircle,
-                                isChecked && styles.checkboxCircleChecked
-                              ]}>
-                                {isChecked && <Ionicons name="checkmark" size={14} color={colors.white} />}
-                              </View>
-                            </Pressable>
-                          );
-                        }}
-                        contentContainerStyle={styles.selectListContent}
-                        style={{ flex: 1 }}
-                        bounces={false}
-                        ListEmptyComponent={
-                          <View style={styles.emptyExercisesContainer}>
-                            <Text style={styles.emptyExercisesText}>
-                              {t('session.noExercisesCreate')}
-                            </Text>
-                          </View>
-                        }
-                        ListFooterComponent={
-                          <Pressable
-                            style={[
-                              styles.exerciseSelectItem,
-                              {
-                                justifyContent: 'center',
-                                backgroundColor: colors.dark.bg.tertiary,
-                                borderStyle: 'dashed',
-                                marginTop: 0,
-                                marginBottom: spacing.md
-                              }
-                            ]}
-                            onPress={() => setShowCreateCustomExerciseModal(true)}
-                          >
-                            <Ionicons name="add" size={24} color={colors.dark.text.primary} />
-                          </Pressable>
-                        }
-                      />
-                    </View>
-                  ) : (
-                    <View style={styles.emptyExercisesContainer}>
-                      <Text style={styles.emptyExercisesText}>
-                        {t('session.selectMuscleGroupView')}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-            </View>
+            <ExercisePicker picker={picker} />
 
             {/* Sticky Submit Button */}
-            {selectedExerciseIds.length > 0 && (
+            {picker.selectedExerciseIds.length > 0 && (
               <View style={styles.submitButtonContainer}>
                 <Button
                   label={exercises.length > 0
                     ? t('session.saveWorkoutTemplate')
                     : t('session.createWorkoutTemplate')}
-                  iconName="checkmark-done"
                   fullWidth
                   onPress={handleConfirmTemplate}
                 />
@@ -356,9 +155,9 @@ export default function SessionScreen() {
                 setIsEditingTemplate(true);
               }}
             >
-              <Ionicons name="pencil-sharp" size={18} color={colors.dark.text.primary} style={{ marginRight: spacing.xs }} />
+              <Ionicons name="add" size={20} color={colors.dark.text.primary} style={{ marginRight: spacing.xs }} />
               <Text style={styles.globalAddExerciseText}>
-                {t('session.editWorkoutTemplate')}
+                {t('session.addExercise')}
               </Text>
             </Pressable>
             <DraggableFlatList
@@ -366,11 +165,10 @@ export default function SessionScreen() {
               keyExtractor={(item) => item.id}
               onDragEnd={({ data }) => updateExercises(data)}
               renderItem={renderItem}
-              contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
+              contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.base }]}
               containerStyle={{ flex: 1 }}
               style={{ flex: 1 }}
               showsVerticalScrollIndicator={false}
-              bounces={false}
             />
           </View>
         )}
@@ -379,7 +177,6 @@ export default function SessionScreen() {
           <View style={styles.submitButtonContainer}>
             <Button
               label={t('session.finish')}
-              iconName="checkmark-done"
               fullWidth
               onPress={handleFinishSession}
               style={!allExercisesDone && { opacity: 0.4 }}
@@ -419,28 +216,28 @@ export default function SessionScreen() {
         />
 
         <CreateCustomMGModal
-          visible={showCreateCustomMGModal}
-          onRequestClose={() => setShowCreateCustomMGModal(false)}
-          newMGNameJa={newMGNameJa}
-          setNewMGNameJa={setNewMGNameJa}
-          newMGNameEn={newMGNameEn}
-          setNewMGNameEn={setNewMGNameEn}
-          handleCreateCustomMuscleGroup={handleCreateCustomMuscleGroup}
+          visible={picker.showCreateCustomMGModal}
+          onRequestClose={() => picker.setShowCreateCustomMGModal(false)}
+          newMGNameJa={picker.newMGNameJa}
+          setNewMGNameJa={picker.setNewMGNameJa}
+          newMGNameEn={picker.newMGNameEn}
+          setNewMGNameEn={picker.setNewMGNameEn}
+          handleCreateCustomMuscleGroup={picker.handleCreateCustomMuscleGroup}
           t={t}
         />
 
         <CreateCustomExerciseModal
-          visible={showCreateCustomExerciseModal}
-          onRequestClose={() => setShowCreateCustomExerciseModal(false)}
-          newExNameJa={newExNameJa}
-          setNewExNameJa={setNewExNameJa}
-          newExNameEn={newExNameEn}
-          setNewExNameEn={setNewExNameEn}
-          newExMGId={newExMGId}
-          setNewExMGId={setNewExMGId}
-          allMuscleGroups={allMuscleGroups}
-          selectedMuscleGroupId={selectedMuscleGroupId}
-          handleCreateCustomExercise={handleCreateCustomExercise}
+          visible={picker.showCreateCustomExerciseModal}
+          onRequestClose={() => picker.setShowCreateCustomExerciseModal(false)}
+          newExNameJa={picker.newExNameJa}
+          setNewExNameJa={picker.setNewExNameJa}
+          newExNameEn={picker.newExNameEn}
+          setNewExNameEn={picker.setNewExNameEn}
+          newExMGId={picker.newExMGId}
+          setNewExMGId={picker.setNewExMGId}
+          allMuscleGroups={picker.allMuscleGroups}
+          selectedMuscleGroupId={picker.selectedMuscleGroupId}
+          handleCreateCustomExercise={picker.handleCreateCustomExercise}
           t={t}
           i18n={i18n}
         />
@@ -454,13 +251,13 @@ export default function SessionScreen() {
           t={t}
         />
 
-        {toastMessage && (
+        {picker.toastMessage && (
           <View style={styles.toastContainer}>
             <Icon name="alert-circle-outline" size={20} color={colors.dark.accent.warning} />
-            <Text style={styles.toastText}>{toastMessage}</Text>
+            <Text style={styles.toastText}>{picker.toastMessage}</Text>
           </View>
         )}
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }

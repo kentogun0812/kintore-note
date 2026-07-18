@@ -14,8 +14,6 @@ import { useAuthStore } from '@/store/auth.store';
 import { useTrainingStore } from '@/store/training.store';
 import { WorkoutRepository } from '@/infra/repositories/workout.repository';
 import { useTranslation } from 'react-i18next';
-import { useWeeklyPlanStore } from '@/store/weekly-plan.store';
-import { useWorkoutStore } from '@/store/workout.store';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, withSequence } from 'react-native-reanimated';
 import { WelcomePopup } from '@/components/WelcomePopup';
 import { APP_NAME } from '@/constants/app';
@@ -81,90 +79,15 @@ export default function HomeScreen() {
     enabled: !!selectedDate,
   });
 
-  const { activeWeeklyPlan } = useWeeklyPlanStore();
-  const { savedWorkouts } = useWorkoutStore();
-  const [scheduledTemplate, setScheduledTemplate] = useState<any>(null);
-
-  useEffect(() => {
-    async function loadScheduled() {
-      if (!activeWeeklyPlan || !activeWeeklyPlan.start_date) {
-        setScheduledTemplate(null);
-        return;
-      }
-      
-      const startStr = activeWeeklyPlan.start_date;
-      const start = new Date(startStr + 'T00:00:00');
-      const current = new Date(selectedDate + 'T00:00:00');
-      
-      const diffTime = current.getTime() - start.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays < 0) {
-        setScheduledTemplate(null);
-        return;
-      }
-      
-      const planWeek = Math.floor(diffDays / 7) + 1;
-      const dayOfWeek = (diffDays % 7) + 1;
-      
-      if (planWeek > activeWeeklyPlan.total_weeks) {
-        setScheduledTemplate(null);
-        return;
-      }
-      
-      const templates = await useWeeklyPlanStore.getState().fetchPlanTemplates(activeWeeklyPlan.id);
-      const todayTemplate = templates.find(t => t.plan_week === planWeek && t.day_of_week === dayOfWeek);
-      
-      setScheduledTemplate(todayTemplate || null);
-    }
-    
-    loadScheduled();
-  }, [activeWeeklyPlan, selectedDate]);
-
-  const displayRoutine = useMemo(() => {
-    const planName = scheduledTemplate ? activeWeeklyPlan?.name : undefined;
-    if (exercisesForDate && exercisesForDate.length > 0) {
-      return {
-        type: 'completed',
-        planName,
-        data: exercisesForDate.map(ex => ({
-          id: ex.id,
-          name: i18n.language === 'ja' ? ex.name_ja : ex.name_en,
-          muscleGroupId: ex.muscle_group_id,
-          sets: ex.setsCount,
-        }))
-      };
-    }
-    
-    if (scheduledTemplate) {
-      if (scheduledTemplate.is_rest_day) {
-        return { type: 'rest', planName, data: [] };
-      }
-      
-      const fullTemplate = savedWorkouts.find(w => w.id === scheduledTemplate.id);
-      if (fullTemplate && fullTemplate.exercises) {
-        return {
-          type: 'planned',
-          name: scheduledTemplate.name,
-          planName,
-          data: fullTemplate.exercises.map(ex => ({
-            id: ex.id,
-            name: i18n.language === 'ja' ? ex.name_ja : ex.name_en,
-            muscleGroupId: 'chest', // fallback
-            sets: 3,
-          }))
-        };
-      }
-      return {
-        type: 'planned_basic',
-        name: scheduledTemplate.name,
-        planName,
-        data: []
-      }
-    }
-    
-    return { type: 'empty', data: [] };
-  }, [exercisesForDate, scheduledTemplate, savedWorkouts, activeWeeklyPlan?.name, i18n.language]);
+  const activeRoutine = useMemo(() => {
+    if (!exercisesForDate) return [];
+    return exercisesForDate.map(ex => ({
+      id: ex.id,
+      name: i18n.language === 'ja' ? ex.name_ja : ex.name_en,
+      muscleGroupId: ex.muscle_group_id,
+      sets: ex.setsCount,
+    }));
+  }, [exercisesForDate, i18n.language]);
 
   const isTodaySelected = selectedDate === todayDateString;
   const formattedSelectedDate = new Date(selectedDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
@@ -241,63 +164,38 @@ export default function HomeScreen() {
                 {isTodaySelected ? t('home.todayRoutine') : formattedSelectedDate}
               </Text>
             </View>
-            {displayRoutine.planName && (
-              <View style={styles.planNameBadge}>
-                <Text style={styles.planNameText} numberOfLines={1}>
-                  {displayRoutine.planName}
-                </Text>
-              </View>
-            )}
           </View>
 
           <View style={styles.modernRoutineList}>
-            {displayRoutine.type === 'rest' && (
-              <View style={[styles.emptyRoutineContainer, { backgroundColor: colors.dark.bg.tertiary, borderColor: 'transparent' }]}>
-                <Icon name="cafe-outline" size={32} color={colors.dark.text.secondary} />
-                <Text style={[styles.emptyRoutineText, { color: colors.dark.text.secondary }]}>{t('weeklyPlan.restDay', 'Rest Day')}</Text>
-              </View>
-            )}
-            
-            {displayRoutine.type === 'empty' && (
+            {activeRoutine.length > 0 ? (
+              activeRoutine.map((item, index) => {
+                const isLast = index === activeRoutine.length - 1;
+                return (
+                  <View key={index} style={[styles.modernRoutineItem, !isLast && styles.modernRoutineItemBorder]}>
+                    <View style={styles.modernRoutineInfo}>
+                      <View style={styles.modernRoutineIconContainer}>
+                        <MuscleGroupIcon id={item.muscleGroupId} size={22} color={colors.dark.accent.primary} />
+                      </View>
+                      <Text style={styles.modernRoutineName} numberOfLines={1}>{item.name}</Text>
+                    </View>
+                    <Text style={styles.modernRoutineSets}>{item.sets} {t('common.sets')}</Text>
+                  </View>
+                );
+              })
+            ) : (
               <View style={styles.emptyRoutineContainer}>
                 <Icon name="calendar-outline" size={32} color={colors.dark.text.tertiary} />
                 <Text style={styles.emptyRoutineText}>{t('home.noTraining')}</Text>
               </View>
             )}
-
-            {(displayRoutine.type === 'completed' || displayRoutine.type === 'planned') && displayRoutine.data.map((item: any, index: number) => {
-              const isLast = index === displayRoutine.data.length - 1;
-              return (
-                <View key={index} style={[styles.modernRoutineItem, !isLast && styles.modernRoutineItemBorder]}>
-                  <View style={styles.modernRoutineInfo}>
-                    <View style={styles.modernRoutineIconContainer}>
-                      <MuscleGroupIcon id={item.muscleGroupId} size={22} color={colors.dark.accent.primary} />
-                    </View>
-                    <Text style={styles.modernRoutineName} numberOfLines={1}>{item.name}</Text>
-                  </View>
-                  <Text style={styles.modernRoutineSets}>{item.sets} {t('common.sets')}</Text>
-                </View>
-              );
-            })}
-            
-            {displayRoutine.type === 'planned_basic' && (
-               <View style={styles.modernRoutineItem}>
-                  <View style={styles.modernRoutineInfo}>
-                    <View style={styles.modernRoutineIconContainer}>
-                      <Icon name="document-text" size={22} color={colors.dark.accent.primary} />
-                    </View>
-                    <Text style={styles.modernRoutineName} numberOfLines={1}>{displayRoutine.name}</Text>
-                  </View>
-               </View>
-            )}
           </View>
 
-          {isTodaySelected && displayRoutine.type !== 'rest' && (
+          {isTodaySelected && (
             <Button
-              label={displayRoutine.type === 'completed' ? t('home.startSession') : (displayRoutine.name ? `Start "${displayRoutine.name}"` : t('home.startSession'))}
+              label={t('home.startSession')}
               fullWidth
               onPress={() => {
-                const sessionExercises = displayRoutine.data.map((m: any) => ({
+                const sessionExercises = activeRoutine.map((m, idx) => ({
                   id: Math.random().toString(),
                   name: m.name
                 }));
@@ -444,17 +342,5 @@ const styles = StyleSheet.create({
   emptyRoutineText: {
     color: colors.dark.text.secondary,
     fontSize: typography.fontSize.sm,
-  },
-  planNameBadge: {
-    backgroundColor: colors.dark.bg.tertiary,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-    maxWidth: 120,
-  },
-  planNameText: {
-    color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.xs,
-    fontWeight: '600',
   },
 });

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Modal, FlatList, TextInput, Alert } from 'react-native';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { View, Text, ScrollView, Pressable, StyleSheet, Modal, FlatList, TextInput, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -11,40 +11,64 @@ import { useWeeklyPlanStore, WeeklyPlan } from '@/store/weekly-plan.store';
 import { useWorkoutStore } from '@/store/workout.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useTranslation } from 'react-i18next';
-import { ExerciseRepository } from '@/infra/repositories/exercise.repository';
 import { WorkoutTemplateRepository } from '@/infra/repositories/workout-template.repository';
+import { useExercisePicker } from '@/features/training/hooks/use-exercise-picker';
+import { ExercisePicker } from '@/features/training/components/ExercisePicker';
+import { CreateCustomMGModal } from '@/features/training/components/CreateCustomMGModal';
+import { CreateCustomExerciseModal } from '@/features/training/components/CreateCustomExerciseModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { HankoCalendar } from '@/components/HankoCalendar';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const dangerousCharsRegex = /[<>"';\\\{\}\[\]]/;
 
 export default function WeeklyPlanDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, isNew } = useLocalSearchParams<{ id: string, isNew?: string }>();
   const { t, i18n } = useTranslation();
-  const { weeklyPlans, activateWeeklyPlan, assignTemplateToWeek, fetchPlanTemplates } = useWeeklyPlanStore();
+  const { weeklyPlans, activateWeeklyPlan, assignToDay, fetchPlanTemplates, deleteWeeklyPlan, updateWeeklyPlan } = useWeeklyPlanStore();
   const { savedWorkouts, fetchSavedWorkouts } = useWorkoutStore();
 
   const [plan, setPlan] = useState<WeeklyPlan | null>(null);
   const [assignedTemplates, setAssignedTemplates] = useState<any[]>([]);
   const [isTemplateModalVisible, setTemplateModalVisible] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const [isCreatingNewWorkout, setIsCreatingNewWorkout] = useState(false);
   const [newWorkoutName, setNewWorkoutName] = useState('');
-  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [workoutNameError, setWorkoutNameError] = useState<string | null>(null);
-  const [allExercises, setAllExercises] = useState<any[]>([]);
+
+  const [editPlanName, setEditPlanName] = useState('');
+  const [editPlanWeeks, setEditPlanWeeks] = useState('');
+  const [editPlanStartDate, setEditPlanStartDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+
+  const [isDraft, setIsDraft] = useState(isNew === 'true');
+  const isDraftRef = useRef(isDraft);
 
   useEffect(() => {
-    if (isCreatingNewWorkout) {
-      const userId = useAuthStore.getState().user?.id || 'guest';
-      const exs = ExerciseRepository.getAllExercises(userId);
-      setAllExercises(exs);
-    }
-  }, [isCreatingNewWorkout]);
+    isDraftRef.current = isDraft;
+  }, [isDraft]);
+
+  useEffect(() => {
+    return () => {
+      if (isDraftRef.current && id) {
+        deleteWeeklyPlan(id);
+      }
+    };
+  }, [id]);
+
+  const newWorkoutPicker = useExercisePicker([]);
 
   useEffect(() => {
     const p = weeklyPlans.find((prog) => prog.id === id);
-    if (p) setPlan(p);
+    if (p) {
+      setPlan(p);
+      setEditPlanName(p.name);
+      setEditPlanWeeks(p.total_weeks.toString());
+      setEditPlanStartDate(p.start_date || '');
+    }
   }, [id, weeklyPlans]);
 
   useEffect(() => {
@@ -59,15 +83,64 @@ export default function WeeklyPlanDetailScreen() {
     setAssignedTemplates(templates);
   };
 
-  const handleOpenTemplatePicker = (week: number) => {
+  const handleOpenTemplatePicker = (week: number, day: number) => {
     setSelectedWeek(week);
+    setSelectedDay(day);
     setTemplateModalVisible(true);
   };
 
-  const filteredExercises = allExercises.filter(ex => {
-    const name = i18n.language === 'ja' ? ex.name_ja : ex.name_en;
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const handleSavePlan = async () => {
+    if (!plan) return;
+    
+    const trimmedName = editPlanName.trim();
+    if (!trimmedName) {
+      setEditPlanName(plan.name); // revert
+      Alert.alert(t('common.error'), t('weeklyPlanBuilder.nameRequired', 'Name is required'));
+      return;
+    }
+    
+    const weeksNum = parseInt(editPlanWeeks, 10);
+    if (isNaN(weeksNum) || weeksNum < 1 || weeksNum > 52) {
+      setEditPlanWeeks(plan.total_weeks.toString()); // revert
+      Alert.alert(t('common.error'), t('weeklyPlanBuilder.invalidWeeks', 'Weeks must be between 1 and 52'));
+      return;
+    }
+
+    try {
+      if (trimmedName !== plan.name || weeksNum !== plan.total_weeks || editPlanStartDate !== (plan.start_date || '')) {
+        await updateWeeklyPlan(plan.id, trimmedName, weeksNum, editPlanStartDate || undefined);
+      }
+      isDraftRef.current = false;
+      setIsDraft(false);
+      router.back();
+    } catch (err: any) {
+      Alert.alert(t('common.error'), 'Failed to save changes');
+      setEditPlanName(plan.name);
+      setEditPlanWeeks(plan.total_weeks.toString());
+      setEditPlanStartDate(plan.start_date || '');
+    }
+  };
+
+  const handleDeletePlan = () => {
+    Alert.alert(
+      t('weeklyPlan.deletePlan', 'Delete Plan'),
+      t('weeklyPlan.deletePlanConfirm', 'Are you sure you want to delete this weekly plan?'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        { 
+          text: t('common.delete', 'Delete'), 
+          style: 'destructive',
+          onPress: async () => {
+            if (id) {
+               await deleteWeeklyPlan(id);
+               isDraftRef.current = false;
+               router.back();
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const handleSaveNewWorkoutTemplate = async () => {
     const trimmedName = newWorkoutName.trim();
@@ -95,25 +168,24 @@ export default function WeeklyPlanDetailScreen() {
         return;
       }
 
-      const selectedExercises = allExercises
-        .filter(ex => selectedExerciseIds.includes(ex.id))
-        .map(ex => ({
-          id: ex.id,
-          name: i18n.language === 'ja' ? ex.name_ja : ex.name_en
-        }));
+      const selectedExercises = newWorkoutPicker.selectedExerciseIds.map(exId => {
+        return newWorkoutPicker.allExercises.find(e => e.id === exId);
+      }).filter((ex): ex is any => !!ex).map(ex => ({
+        id: ex.id,
+        name: i18n.language === 'ja' ? ex.name_ja : ex.name_en
+      }));
 
       const templateId = WorkoutTemplateRepository.saveWorkoutTemplate(userId, trimmedName, selectedExercises);
       await fetchSavedWorkouts();
 
-      if (selectedWeek !== null && id) {
-        await assignTemplateToWeek(id, templateId, selectedWeek);
+      if (selectedWeek !== null && selectedDay !== null && id) {
+        await assignToDay(id, templateId, selectedWeek, selectedDay, false);
         await loadAssignedTemplates();
       }
 
       setIsCreatingNewWorkout(false);
       setNewWorkoutName('');
-      setSelectedExerciseIds([]);
-      setSearchQuery('');
+      newWorkoutPicker.setSelectedExerciseIds([]);
       setTemplateModalVisible(false);
 
       Alert.alert(t('common.success'), t('session.workoutSaved', 'Workout template created and assigned successfully.'));
@@ -122,13 +194,15 @@ export default function WeeklyPlanDetailScreen() {
     }
   };
 
-  const handleSelectTemplate = async (templateId: string) => {
-    if (selectedWeek !== null && id) {
-      await assignTemplateToWeek(id, templateId, selectedWeek);
+  const handleSelectTemplate = async (templateId: string | null, isRestDay: boolean = false) => {
+    if (selectedWeek !== null && selectedDay !== null && id) {
+      await assignToDay(id, templateId, selectedWeek, selectedDay, isRestDay);
       await loadAssignedTemplates();
     }
     setTemplateModalVisible(false);
   };
+
+  const handleSelectRestDay = () => handleSelectTemplate(null, true);
 
   const handleActivate = async () => {
     if (id) {
@@ -138,9 +212,9 @@ export default function WeeklyPlanDetailScreen() {
 
   if (!plan) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView edges={['top']} style={styles.container}>
         <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -148,55 +222,149 @@ export default function WeeklyPlanDetailScreen() {
   const weeks = Array.from({ length: plan.total_weeks }, (_, i) => i + 1);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: plan.name,
           headerLargeTitle: false,
           headerBackVisible: true,
+          headerShown: false, // Use custom header for consistent style
         }} 
       />
+
+      <View style={styles.customHeader}>
+        <Pressable 
+          onPress={() => {
+            if (isDraft) {
+              deleteWeeklyPlan(id);
+              isDraftRef.current = false;
+            }
+            router.back();
+          }} 
+          hitSlop={8} 
+          style={styles.headerBackButton}
+        >
+          <Icon name="chevron-back" size={24} color={colors.dark.text.primary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>{isNew ? t('weeklyPlan.addWeeklyPlan') : t('weeklyPlan.editWeeklyPlan')}</Text>
+        {!isNew ? (
+          <Pressable 
+            onPress={handleDeletePlan} 
+            hitSlop={8} 
+            style={styles.headerActionButton}
+          >
+            <Icon name="trash-outline" size={24} color={colors.dark.accent.danger} />
+          </Pressable>
+        ) : (
+          <View style={styles.headerActionButton} />
+        )}
+      </View>
       
       <ScrollView 
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-        <Card style={styles.headerCard}>
-          <View style={styles.headerRow}>
-            <Text style={styles.weeklyPlanName}>{plan.name}</Text>
-            {plan.is_active && (
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>{t('weeklyPlan.active', 'Active')}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.weeklyPlanDetails}>
-            {plan.total_weeks} {t('weeklyPlan.weeks', 'Weeks')}
-            {plan.start_date ? ` • Starts: ${plan.start_date}` : ''}
-          </Text>
-          
-          {!plan.is_active && (
+        <View style={[styles.detailsHeader, { justifyContent: 'flex-end' }]}>
+          {plan.is_active ? (
+            <View style={styles.activeBadge}>
+              <Text style={styles.activeBadgeText}>{t('weeklyPlan.active', 'Active')}</Text>
+            </View>
+          ) : (
             <Button 
-              label={t('weeklyPlan.setAsActive', 'Set as Active Plan')} 
-              variant="secondary" 
+              label={t('weeklyPlan.setAsActive', 'Set Active')} 
+              variant="outline" 
               size="sm"
               onPress={handleActivate}
-              style={styles.activateButton}
             />
           )}
+        </View>
+
+        <Card style={styles.formCard}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {t('weeklyPlanBuilder.name', 'Weekly Plan Name')}
+            </Text>
+            <TextInput 
+              value={editPlanName}
+              onChangeText={setEditPlanName}
+              placeholder={t('weeklyPlanBuilder.namePlaceholder', 'e.g. 4-Week Strength Block')}
+              placeholderTextColor={colors.dark.text.tertiary}
+              style={styles.textInput}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {t('weeklyPlanBuilder.totalWeeks', 'Total Weeks (1-52)')}
+            </Text>
+            <TextInput 
+              value={editPlanWeeks}
+              onChangeText={setEditPlanWeeks}
+              placeholder="4"
+              keyboardType="number-pad"
+              placeholderTextColor={colors.dark.text.tertiary}
+              style={styles.textInput}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>
+              {t('weeklyPlanBuilder.startDate', 'Start Date')}
+            </Text>
+            <Pressable onPress={() => {
+              setShowDatePicker(true);
+              setCalendarDate(editPlanStartDate ? new Date(editPlanStartDate + 'T00:00:00') : new Date());
+            }} style={[styles.textInput, { justifyContent: 'center' }]}>
+              <Text style={{ color: editPlanStartDate ? colors.dark.text.primary : colors.dark.text.tertiary, fontSize: typography.fontSize.md }}>
+                {editPlanStartDate || new Date().toISOString().split('T')[0]}
+              </Text>
+            </Pressable>
+            
+            {showDatePicker && (
+              <Modal visible={showDatePicker} transparent animationType="fade">
+                <Pressable style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setShowDatePicker(false)}>
+                  <Pressable style={{ backgroundColor: colors.dark.bg.elevated, padding: spacing.md, borderRadius: radius.xl, width: '90%', maxWidth: 400 }} onPress={e => e.stopPropagation()}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
+                      <Pressable onPress={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))} hitSlop={12} style={{ padding: spacing.sm }}>
+                        <Icon name="chevron-back" size={20} color={colors.dark.text.secondary} />
+                      </Pressable>
+                      <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.md, fontWeight: 'bold' }}>
+                        {calendarDate.toLocaleString(i18n.language, { year: 'numeric', month: 'long' })}
+                      </Text>
+                      <Pressable onPress={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))} hitSlop={12} style={{ padding: spacing.sm }}>
+                        <Icon name="chevron-forward" size={20} color={colors.dark.text.secondary} />
+                      </Pressable>
+                    </View>
+                    <HankoCalendar
+                      year={calendarDate.getFullYear()}
+                      month={calendarDate.getMonth() + 1}
+                      stampedDates={[]}
+                      selectedDate={editPlanStartDate || undefined}
+                      onDatePress={async (dateString) => {
+                        setEditPlanStartDate(dateString);
+                        setShowDatePicker(false);
+                        if (plan && dateString !== (plan.start_date || '')) {
+                          // Allow explicit save to commit the change
+                        }
+                      }}
+                    />
+                  </Pressable>
+                </Pressable>
+              </Modal>
+            )}
+          </View>
         </Card>
 
         <Text style={styles.sectionTitle}>{t('weeklyPlan.timeline', 'Schedule Timeline')}</Text>
 
         <View style={styles.timeline}>
           {weeks.map((week) => {
-            // Find if a template is assigned to this week
-            const templateForWeek = assignedTemplates.find(m => m.plan_week === week);
+            const templatesForWeek = assignedTemplates.filter(m => m.plan_week === week);
 
             return (
               <View key={week} style={styles.weekRow}>
                 <View style={styles.weekIndicator}>
-                  <View style={styles.weekCircle}>
+                  <View style={[styles.weekCircle, templatesForWeek.length > 0 && styles.weekCircleActive]}>
                     <Text style={styles.weekNumber}>{week}</Text>
                   </View>
                   {week !== plan.total_weeks && <View style={styles.weekLine} />}
@@ -205,29 +373,62 @@ export default function WeeklyPlanDetailScreen() {
                 <Card style={styles.weekCard}>
                   <Text style={styles.weekTitle}>{t('weeklyPlan.weekN', { n: week, defaultValue: `Week ${week}` })}</Text>
                   
-                  {templateForWeek ? (
-                    <View style={styles.assignedRoutine}>
-                      <Icon name="document-text-outline" size={20} color={colors.dark.accent.primary} />
-                      <Text style={styles.routineName}>{templateForWeek.name}</Text>
-                      <Pressable onPress={() => handleOpenTemplatePicker(week)} hitSlop={8}>
-                        <Icon name="swap-horizontal" size={20} color={colors.dark.text.tertiary} />
-                      </Pressable>
-                    </View>
-                  ) : (
-                    <Button 
-                      label={t('weeklyPlan.assignWorkout')} 
-                      variant="outline" 
-                      size="sm"
-                      iconName="add"
-                      onPress={() => handleOpenTemplatePicker(week)}
-                    />
-                  )}
+                  <View style={{ gap: spacing.sm }}>
+                    {[1, 2, 3, 4, 5, 6, 7].map(day => {
+                      const assignedTemplate = assignedTemplates.find(m => m.plan_week === week && m.day_of_week === day);
+                      return (
+                        <View key={day} style={styles.dayRow}>
+                          <Text style={styles.dayLabel}>{t('weeklyPlan.dayN', { n: day, defaultValue: `Day ${day}` })}</Text>
+                          <View style={{ flex: 1 }}>
+                            {assignedTemplate ? (
+                              assignedTemplate.is_rest_day ? (
+                                <View style={[styles.assignedRoutine, { backgroundColor: colors.dark.bg.tertiary, borderColor: 'transparent' }]}>
+                                  <Icon name="cafe-outline" size={20} color={colors.dark.text.secondary} />
+                                  <Text style={[styles.routineName, { color: colors.dark.text.secondary }]}>{t('weeklyPlan.restDay', 'Rest Day')}</Text>
+                                  <Pressable onPress={() => handleOpenTemplatePicker(week, day)} hitSlop={8}>
+                                    <Icon name="swap-horizontal" size={20} color={colors.dark.text.tertiary} />
+                                  </Pressable>
+                                </View>
+                              ) : (
+                                <View style={styles.assignedRoutine}>
+                                  <Icon name="document-text-outline" size={20} color={colors.dark.accent.primary} />
+                                  <Text style={styles.routineName} numberOfLines={1}>{assignedTemplate.name}</Text>
+                                  <Pressable onPress={() => handleOpenTemplatePicker(week, day)} hitSlop={8}>
+                                    <Icon name="swap-horizontal" size={20} color={colors.dark.text.tertiary} />
+                                  </Pressable>
+                                </View>
+                              )
+                            ) : (
+                              <Button 
+                                label={t('weeklyPlan.assignWorkout')} 
+                                variant="outline" 
+                                size="sm"
+                                iconName="add"
+                                onPress={() => handleOpenTemplatePicker(week, day)}
+                                style={{ paddingVertical: 8 }}
+                                textStyle={{ fontSize: 13 }}
+                              />
+                            )}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
                 </Card>
               </View>
             );
           })}
         </View>
       </ScrollView>
+
+      <View style={styles.footer}>
+        <Button 
+          label={t('common.save', 'Save Plan')} 
+          fullWidth 
+          disabled={!editPlanName.trim() || !editPlanWeeks.trim()}
+          onPress={handleSavePlan} 
+        />
+      </View>
 
       {/* Template Picker Modal */}
       <Modal 
@@ -239,16 +440,18 @@ export default function WeeklyPlanDetailScreen() {
           setIsCreatingNewWorkout(false);
         }}
       >
-        <View style={styles.modalContainer}>
+        <SafeAreaView edges={['top']} style={styles.modalContainer}>
           {isCreatingNewWorkout ? (
-            <View style={{ flex: 1, padding: spacing.md, gap: spacing.md }}>
+            <KeyboardAvoidingView 
+              style={{ flex: 1 }} 
+              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            >
               <View style={styles.modalHeader}>
                 <Pressable 
                   onPress={() => {
                     setIsCreatingNewWorkout(false);
                     setNewWorkoutName('');
-                    setSelectedExerciseIds([]);
-                    setSearchQuery('');
+                    newWorkoutPicker.setSelectedExerciseIds([]);
                   }} 
                   hitSlop={8}
                 >
@@ -258,71 +461,37 @@ export default function WeeklyPlanDetailScreen() {
                 <View style={{ width: 24 }} />
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>{t('todayWorkout.workoutName', 'Workout Name')}</Text>
-                <TextInput
-                  value={newWorkoutName}
-                  onChangeText={(text) => {
-                    setNewWorkoutName(text);
-                    setWorkoutNameError(null);
-                  }}
-                  placeholder={t('todayWorkout.placeholder', 'e.g. Chest & Shoulders')}
-                  placeholderTextColor={colors.dark.text.tertiary}
-                  style={[styles.textInput, workoutNameError ? styles.textInputError : null]}
-                />
-                {workoutNameError ? <Text style={styles.errorText}>{workoutNameError}</Text> : null}
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <View style={[styles.formContainer, { paddingBottom: 0 }]}>
+                  <Text style={styles.modalInputLabel}>{t('todayWorkout.workoutName', 'Workout Name')}</Text>
+                  <TextInput
+                    value={newWorkoutName}
+                    onChangeText={(text) => {
+                      setNewWorkoutName(text);
+                      setWorkoutNameError(null);
+                    }}
+                    placeholder={t('todayWorkout.placeholder', 'e.g. Chest & Shoulders')}
+                    placeholderTextColor={colors.dark.text.tertiary}
+                    style={[styles.modalTextInput, workoutNameError ? styles.textInputError : null]}
+                  />
+                  {workoutNameError ? <Text style={styles.errorText}>{workoutNameError}</Text> : null}
+                </View>
+              </TouchableWithoutFeedback>
+
+              {/* Embedded Reusable Exercise Picker */}
+              <View style={{ flex: 1 }}>
+                <ExercisePicker picker={newWorkoutPicker} />
               </View>
 
-              <Text style={styles.sectionTitle}>{t('todayWorkout.exercises', 'Exercises')}</Text>
-              
-              <View style={styles.searchBar}>
-                <Icon name="search" size={16} color={colors.dark.text.secondary} />
-                <TextInput
-                  placeholder={t('library.searchPlaceholder', 'Search exercises...')}
-                  placeholderTextColor={colors.dark.text.secondary}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  style={styles.searchInput}
-                />
-              </View>
-
-              <FlatList
-                data={filteredExercises}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => {
-                  const isChecked = selectedExerciseIds.includes(item.id);
-                  const name = i18n.language === 'ja' ? item.name_ja : item.name_en;
-                  return (
-                    <Pressable
-                      style={[styles.exerciseSelectCard, isChecked && styles.exerciseSelectCardChecked]}
-                      onPress={() => {
-                        if (isChecked) {
-                          setSelectedExerciseIds(selectedExerciseIds.filter(id => id !== item.id));
-                        } else {
-                          setSelectedExerciseIds([...selectedExerciseIds, item.id]);
-                        }
-                      }}
-                    >
-                      <Text style={styles.exerciseSelectName}>{name}</Text>
-                      <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-                        {isChecked && <Icon name="checkmark" size={12} color={colors.white} />}
-                      </View>
-                    </Pressable>
-                  );
-                }}
-                contentContainerStyle={styles.exerciseSelectList}
-                style={{ flex: 1 }}
-              />
-
-              <View style={styles.creatorFooter}>
+              <View style={styles.modalFooter}>
                 <Button
                   label={t('common.save')}
                   fullWidth
-                  disabled={!newWorkoutName.trim() || selectedExerciseIds.length === 0}
+                  disabled={!newWorkoutName.trim() || newWorkoutPicker.selectedExerciseIds.length === 0}
                   onPress={handleSaveNewWorkoutTemplate}
                 />
               </View>
-            </View>
+            </KeyboardAvoidingView>
           ) : (
             <>
               <View style={styles.modalHeader}>
@@ -337,29 +506,70 @@ export default function WeeklyPlanDetailScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.routineList}
                 ListHeaderComponent={
-                  <Button
-                    label={t('weeklyPlan.createNewWorkout', 'Create New Workout')}
-                    iconName="add-circle"
-                    variant="outline"
-                    style={{ marginBottom: spacing.md }}
-                    onPress={() => setIsCreatingNewWorkout(true)}
-                  />
+                  <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
+                    <Button
+                      label={t('weeklyPlan.createNewWorkout', 'Create New Workout')}
+                      iconName="add-circle"
+                      variant="outline"
+                      onPress={() => setIsCreatingNewWorkout(true)}
+                    />
+                    <Button
+                      label={t('weeklyPlan.markAsRestDay', 'Mark as Rest Day')}
+                      iconName="cafe-outline"
+                      variant="secondary"
+                      onPress={handleSelectRestDay}
+                    />
+                  </View>
                 }
                 ListEmptyComponent={
                   <Text style={styles.emptyText}>{t('weeklyPlan.noSavedWorkouts')}</Text>
                 }
                 renderItem={({ item }) => (
-                  <Pressable style={styles.routineItem} onPress={() => handleSelectTemplate(item.id)}>
-                    <Text style={styles.routineItemName}>{item.name}</Text>
-                    <Icon name="chevron-forward" size={20} color={colors.dark.text.tertiary} />
+                  <Pressable style={styles.routineCardItem} onPress={() => handleSelectTemplate(item.id)}>
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={styles.routineCardName}>{item.name}</Text>
+                      <Text style={styles.routineCardDetails}>
+                        {item.exercises.length} {t('common.exercises')}
+                      </Text>
+                    </View>
+                    <Icon name="chevron-forward" size={20} color={colors.dark.accent.primary} />
                   </Pressable>
                 )}
               />
             </>
           )}
-        </View>
+        </SafeAreaView>
       </Modal>
-    </View>
+
+      {/* Reusable Exercise Picker Modals */}
+      <CreateCustomMGModal
+        visible={newWorkoutPicker.showCreateCustomMGModal}
+        onRequestClose={() => newWorkoutPicker.setShowCreateCustomMGModal(false)}
+        newMGNameJa={newWorkoutPicker.newMGNameJa}
+        setNewMGNameJa={newWorkoutPicker.setNewMGNameJa}
+        newMGNameEn={newWorkoutPicker.newMGNameEn}
+        setNewMGNameEn={newWorkoutPicker.setNewMGNameEn}
+        handleCreateCustomMuscleGroup={newWorkoutPicker.handleCreateCustomMuscleGroup}
+        t={t}
+      />
+
+      <CreateCustomExerciseModal
+        visible={newWorkoutPicker.showCreateCustomExerciseModal}
+        onRequestClose={() => newWorkoutPicker.setShowCreateCustomExerciseModal(false)}
+        newExNameJa={newWorkoutPicker.newExNameJa}
+        setNewExNameJa={newWorkoutPicker.setNewExNameJa}
+        newExNameEn={newWorkoutPicker.newExNameEn}
+        setNewExNameEn={newWorkoutPicker.setNewExNameEn}
+        newExMGId={newWorkoutPicker.newExMGId}
+        setNewExMGId={newWorkoutPicker.setNewExMGId}
+        allMuscleGroups={newWorkoutPicker.allMuscleGroups}
+        selectedMuscleGroupId={newWorkoutPicker.selectedMuscleGroupId}
+        handleCreateCustomExercise={newWorkoutPicker.handleCreateCustomExercise}
+        t={t}
+        i18n={i18n}
+      />
+
+    </SafeAreaView>
   );
 }
 
@@ -367,6 +577,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.dark.bg.primary,
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.subtle,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerActionButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  headerTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
   },
   loadingText: {
     color: colors.dark.text.secondary,
@@ -378,23 +615,47 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingBottom: spacing.xl * 2,
   },
-  headerCard: {
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  headerRow: {
+  detailsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: spacing.xs,
   },
-  weeklyPlanName: {
-    fontSize: typography.fontSize.xl,
+  formCard: {
+    padding: spacing.md,
+    gap: spacing.md,
+    backgroundColor: colors.dark.bg.secondary,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  inputGroup: {
+    gap: spacing.sm,
+  },
+  inputLabel: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
     fontWeight: 'bold',
+  },
+  textInput: {
+    backgroundColor: colors.dark.bg.tertiary,
     color: colors.dark.text.primary,
-    flex: 1,
+    paddingHorizontal: spacing.md,
+    height: 48,
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    fontSize: typography.fontSize.md,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  footer: {
+    padding: spacing.base,
+    paddingBottom: spacing.xl,
+    backgroundColor: colors.dark.bg.primary,
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border.subtle,
   },
   activeBadge: {
-    backgroundColor: colors.dark.accent.primary + '20',
+    backgroundColor: colors.dark.accent.primary + '15',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
@@ -410,11 +671,27 @@ const styles = StyleSheet.create({
     color: colors.dark.text.secondary,
     fontSize: typography.fontSize.sm,
   },
-  activateButton: {
-    marginTop: spacing.sm,
+  activateBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.dark.bg.tertiary,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.dark.accent.primary + '30',
+    gap: spacing.md,
+  },
+  activateBannerTitle: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+  },
+  activateBannerDesc: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.xs,
   },
   sectionTitle: {
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.md,
     fontWeight: 'bold',
     color: colors.dark.text.primary,
   },
@@ -441,6 +718,10 @@ const styles = StyleSheet.create({
     borderColor: colors.dark.border.default,
     zIndex: 2,
   },
+  weekCircleActive: {
+    borderColor: colors.dark.accent.primary,
+    backgroundColor: colors.dark.accent.primary + '10',
+  },
   weekNumber: {
     color: colors.dark.text.primary,
     fontWeight: 'bold',
@@ -458,6 +739,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     padding: spacing.md,
     justifyContent: 'center',
+    backgroundColor: colors.dark.bg.secondary,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
   },
   weekTitle: {
     color: colors.dark.text.secondary,
@@ -471,17 +755,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.dark.bg.tertiary,
     padding: spacing.sm,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
     gap: spacing.sm,
+  },
+  dayRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  dayLabel: {
+    width: 48,
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: 'bold',
   },
   routineName: {
     flex: 1,
     color: colors.dark.text.primary,
     fontWeight: 'bold',
+    fontSize: typography.fontSize.sm,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: colors.dark.bg.secondary,
+    backgroundColor: colors.dark.bg.primary,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -498,105 +796,63 @@ const styles = StyleSheet.create({
   },
   routineList: {
     padding: spacing.base,
+    gap: spacing.sm,
   },
-  routineItem: {
+  routineCardItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.dark.border.subtle,
+    padding: spacing.md,
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
   },
-  routineItemName: {
+  routineCardName: {
     color: colors.dark.text.primary,
     fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+  },
+  routineCardDetails: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.xs,
   },
   emptyText: {
     color: colors.dark.text.secondary,
     textAlign: 'center',
     marginTop: spacing.xl,
   },
-  inputGroup: {
+  formContainer: {
+    padding: spacing.base,
     gap: spacing.xs,
-    marginBottom: spacing.xs,
   },
-  inputLabel: {
+  modalInputLabel: {
     fontSize: typography.fontSize.sm,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: colors.dark.text.secondary,
   },
-  textInput: {
-    height: 40,
-    backgroundColor: colors.dark.bg.tertiary,
+  modalTextInput: {
+    height: 48,
+    backgroundColor: colors.dark.bg.secondary,
     borderWidth: 1,
-    borderColor: colors.dark.border.default,
+    borderColor: colors.dark.border.subtle,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     color: colors.white,
-    fontSize: typography.fontSize.base,
+    fontSize: typography.fontSize.md,
   },
   textInputError: {
-    borderColor: '#E54D42',
+    borderColor: colors.dark.accent.danger,
   },
   errorText: {
-    color: '#E54D42',
+    color: colors.dark.accent.danger,
     fontSize: typography.fontSize.xs,
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.dark.bg.tertiary,
-    borderWidth: 1,
-    borderColor: colors.dark.border.default,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    height: 40,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.white,
-    marginLeft: spacing.xs,
-    fontSize: typography.fontSize.base,
-    height: '100%',
-  },
-  exerciseSelectList: {
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  exerciseSelectCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.md,
-    backgroundColor: colors.dark.bg.tertiary,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.dark.border.default,
-  },
-  exerciseSelectCardChecked: {
-    borderColor: colors.dark.accent.primary,
-  },
-  exerciseSelectName: {
-    color: colors.dark.text.primary,
-    fontWeight: '600',
-    fontSize: typography.fontSize.sm,
-    flex: 1,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.dark.border.default,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: spacing.sm,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.dark.accent.primary,
-    borderColor: colors.dark.accent.primary,
-  },
-  creatorFooter: {
-    marginTop: spacing.xs,
+  modalFooter: {
+    padding: spacing.base,
+    paddingBottom: Platform.OS === 'ios' ? spacing.xl : spacing.base,
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border.subtle,
+    backgroundColor: colors.dark.bg.primary,
   },
 });

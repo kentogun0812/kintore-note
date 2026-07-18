@@ -97,5 +97,43 @@ export const WorkoutTemplateRepository = {
 
     console.log(`[WorkoutTemplateRepository] Saved template ${templateId} locally.`);
     return templateId;
+  },
+
+  /**
+   * Update an existing Workout Template locally
+   */
+  updateWorkoutTemplate(templateId: string, name: string, exercises: { id: string }[]): void {
+    const db = getSqliteDb();
+    const now = new Date().toISOString();
+
+    db.withTransactionSync(() => {
+      // 1. Update Workout Template
+      db.runSync(
+        `UPDATE workout_templates 
+         SET name = ?, updatedAt = ?, syncStatus = 'pending'
+         WHERE id = ?`,
+        [name, now, templateId]
+      );
+
+      // 2. Delete existing exercises
+      db.runSync(
+        `DELETE FROM workout_template_exercises 
+         WHERE workout_template_id = ?`,
+        [templateId]
+      );
+
+      // 3. Insert new exercises
+      let sortOrder = 0;
+      for (const ex of exercises) {
+        const id = Crypto.randomUUID();
+        db.runSync(
+          `INSERT INTO workout_template_exercises (id, workout_template_id, exercise_id, sort_order, target_sets, target_reps, syncStatus, createdAt, updatedAt)
+           VALUES (?, ?, ?, ?, 3, 10, 'pending', ?, ?)`,
+          [id, templateId, ex.id, sortOrder++, now, now]
+        );
+      }
+    });
+
+    console.log(`[WorkoutTemplateRepository] Updated template ${templateId} locally.`);
   }
 };

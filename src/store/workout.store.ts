@@ -29,6 +29,7 @@ interface WorkoutBuilderState {
   clearWorkoutBuilder: () => void;
   saveCurrentWorkout: () => Promise<{ success: boolean; error?: any } | undefined>;
   fetchSavedWorkouts: () => Promise<void>;
+  updateSavedWorkout: (id: string, name: string, exercises: WorkoutTemplateExercise[]) => Promise<{ success: boolean; error?: any }>;
 }
 
 export const useWorkoutStore = create<WorkoutBuilderState>()(
@@ -69,6 +70,17 @@ export const useWorkoutStore = create<WorkoutBuilderState>()(
           set({ savedWorkouts: parsed });
         } catch (error) {
           console.error('[WorkoutStore] Error fetching Workouts:', error);
+        }
+      },
+
+      updateSavedWorkout: async (id, name, exercises) => {
+        try {
+          await WorkoutTemplateRepository.updateWorkoutTemplate(id, name, exercises);
+          await get().fetchSavedWorkouts();
+          return { success: true };
+        } catch (err: any) {
+          console.error('[WorkoutStore] Failed to update Workout:', err);
+          return { success: false, error: err.message };
         }
       },
 

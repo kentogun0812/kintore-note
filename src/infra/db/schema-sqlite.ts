@@ -165,6 +165,21 @@ export const SQLITE_SCHEMA = {
         updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(workout_template_id) REFERENCES workout_templates(id) ON DELETE CASCADE
       );
+    `,
+    weekly_plan_assigned_templates: `
+      CREATE TABLE IF NOT EXISTS weekly_plan_assigned_templates (
+        id TEXT PRIMARY KEY,
+        weekly_plan_id TEXT NOT NULL,
+        plan_week INTEGER NOT NULL,
+        day_of_week INTEGER NOT NULL,
+        workout_template_id TEXT,
+        is_rest_day INTEGER DEFAULT 0,
+        syncStatus TEXT DEFAULT 'pending',
+        createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        updatedAt TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(weekly_plan_id) REFERENCES weekly_plans(id) ON DELETE CASCADE,
+        FOREIGN KEY(workout_template_id) REFERENCES workout_templates(id) ON DELETE SET NULL
+      );
     `
   }
 };

@@ -1,116 +1,124 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
-import { useWeeklyPlanStore } from '@/store/weekly-plan.store';
+import { useWeeklyPlanStore, WeeklyPlan } from '@/store/weekly-plan.store';
 import { useTranslation } from 'react-i18next';
-import { DismissibleBanner } from '@/components/DismissibleBanner';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Card } from '@/components/Card';
+import { useIsFocused } from '@react-navigation/native';
 
-export default function WeeklyPlansScreen() {
+export default function WeeklyPlansListScreen() {
   const { t } = useTranslation();
-  const { createWeeklyPlan } = useWeeklyPlanStore();
-  
-  const [name, setName] = useState('');
-  const [weeks, setWeeks] = useState('4');
-  const [isSaving, setIsSaving] = useState(false);
-  
-  const handleSavePlan = async () => {
-    const totalWeeks = parseInt(weeks, 10);
-    if (isNaN(totalWeeks) || totalWeeks < 1 || totalWeeks > 52) {
-      Alert.alert(t('common.error'), t('weeklyPlanBuilder.invalidWeeks'));
-      return;
+  const { weeklyPlans, fetchWeeklyPlans, createWeeklyPlan } = useWeeklyPlanStore();
+  const isFocused = useIsFocused();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    if (isFocused) {
+      loadPlans();
     }
-    try {
-      setIsSaving(true);
-      const planId = await createWeeklyPlan(name, totalWeeks);
-      setIsSaving(false);
-      if (planId) {
-        router.replace(`/training/weekly-plan/${planId}`);
-      } else {
-        Alert.alert(t('common.error'), t('weeklyPlanBuilder.createFailed'));
-      }
-    } catch (err) {
-      setIsSaving(false);
-      console.error(err);
+  }, [isFocused]);
+
+  const loadPlans = async () => {
+    setIsLoading(true);
+    await fetchWeeklyPlans();
+    setIsLoading(false);
+  };
+
+  const handleAddPlan = async () => {
+    setIsCreating(true);
+    const newId = await createWeeklyPlan('', 4);
+    setIsCreating(false);
+    if (newId) {
+      router.push({ pathname: `/training/weekly-plan/${newId}`, params: { isNew: 'true' } });
     }
   };
 
+  const renderPlanItem = ({ item }: { item: WeeklyPlan }) => {
+    return (
+      <Pressable onPress={() => router.push(`/training/weekly-plan/${item.id}`)}>
+        <Card style={styles.planCard}>
+          <View style={styles.planCardInner}>
+            <View style={styles.planContent}>
+              <View style={styles.planHeaderRow}>
+                <Text style={styles.planName} numberOfLines={1}>{item.name || t('weeklyPlan.unnamedPlan', 'Unnamed Plan')}</Text>
+                
+                <View style={styles.badgesRow}>
+                  {item.is_active && (
+                    <View style={styles.activeBadge}>
+                      <Text style={styles.activeBadgeText}>{t('weeklyPlan.active')}</Text>
+                    </View>
+                  )}
+                  <View style={styles.weekBadge}>
+                    <Text style={styles.weekBadgeText}>
+                      {item.total_weeks} {t('weeklyPlan.weeks')}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {item.assigned_templates && item.assigned_templates.length > 0 ? (
+                <Text style={styles.planTemplatesText} numberOfLines={1}>
+                  {item.assigned_templates.map(t => t.name).join(' • ')}
+                </Text>
+              ) : (
+                <Text style={styles.planTemplatesTextEmpty} numberOfLines={1}>
+                  {t('weeklyPlan.noWorkoutThisWeek')}
+                </Text>
+              )}
+            </View>
+          </View>
+        </Card>
+      </Pressable>
+    );
+  };
+
   return (
-    <View style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          title: t('weeklyPlanBuilder.title'), 
-          headerLargeTitle: false,
-          headerBackVisible: true,
-          headerLeft: () => (
-            <Pressable 
-              onPress={() => router.back()} 
-              hitSlop={8} 
-              style={styles.headerBackButton}
-            >
-              <Icon name="chevron-back" size={20} color={colors.dark.text.primary} />
-            </Pressable>
-          ),
-        }} 
-      />
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
       
-      <ScrollView 
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.scrollContent}
-      >
-        <DismissibleBanner
-          bannerId="weekly_plans"
-          description={t('banners.weeklyPlansDesc')}
-        />
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            {t('weeklyPlanBuilder.name')}
-          </Text>
-          <TextInput 
-            value={name}
-            onChangeText={setName}
-            placeholder={t('weeklyPlanBuilder.namePlaceholder')}
-            placeholderTextColor={colors.dark.text.tertiary}
-            style={styles.textInput}
-          />
-        </View>
+      <View style={styles.customHeader}>
+        <Pressable 
+          onPress={() => router.back()} 
+          hitSlop={8} 
+          style={styles.headerBackButton}
+        >
+          <Icon name="chevron-back" size={24} color={colors.dark.text.primary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>{t('nav.weeklyPlans')}</Text>
+        <View style={{ width: 40 }} />
+      </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>
-            {t('weeklyPlanBuilder.totalWeeks')}
-          </Text>
-          <TextInput 
-            value={weeks}
-            onChangeText={setWeeks}
-            placeholder="4"
-            keyboardType="number-pad"
-            placeholderTextColor={colors.dark.text.tertiary}
-            style={styles.textInput}
-          />
-        </View>
-        
-        <View style={styles.infoCard}>
-          <Icon name="information-circle-outline" size={24} color={colors.dark.text.secondary} />
-          <Text style={styles.infoText}>
-            {t('weeklyPlanBuilder.info')}
-          </Text>
-        </View>
-
-      </ScrollView>
+      <FlatList
+        data={weeklyPlans}
+        keyExtractor={(item) => item.id}
+        renderItem={renderPlanItem}
+        contentContainerStyle={styles.listContent}
+        ListEmptyComponent={
+          !isLoading ? (
+            <View style={styles.emptyState}>
+              <Icon name="calendar-outline" size={48} color={colors.dark.border.subtle} />
+              <Text style={styles.emptyText}>{t('weeklyPlan.emptyPlans')}</Text>
+            </View>
+          ) : null
+        }
+      />
       
       <View style={styles.footer}>
         <Button 
-          label={isSaving ? t('common.saving') : t('weeklyPlanBuilder.save')} 
+          label={t('common.add')} 
           fullWidth 
-          onPress={handleSavePlan} 
-          disabled={!name || !weeks || isSaving} 
+          disabled={isCreating}
+          onPress={handleAddPlan} 
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -119,48 +127,112 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.dark.bg.primary,
   },
-  headerBackButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.dark.border.default,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: spacing.xs,
-  },
-  scrollContent: {
-    padding: spacing.base,
-    gap: spacing.lg,
-  },
-  inputGroup: {
-    gap: spacing.sm,
-  },
-  inputLabel: {
-    color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.sm,
-  },
-  textInput: {
-    backgroundColor: colors.dark.bg.tertiary,
-    color: colors.dark.text.primary,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    fontSize: typography.fontSize.md,
-  },
-  infoCard: {
+  customHeader: {
     flexDirection: 'row',
-    backgroundColor: colors.dark.bg.tertiary,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    gap: spacing.md,
     alignItems: 'center',
-    marginTop: spacing.md,
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.subtle,
+    backgroundColor: colors.dark.bg.primary,
   },
-  infoText: {
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  headerTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+  },
+  listContent: {
+    padding: spacing.base,
+    gap: spacing.md,
+  },
+  planCard: {
+    padding: spacing.md,
+    backgroundColor: colors.dark.bg.secondary,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  planCardInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  planContent: {
     flex: 1,
+    gap: spacing.xs,
+    paddingRight: spacing.sm,
+  },
+  planHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.ss,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  weekBadge: {
+    backgroundColor: colors.dark.bg.tertiary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  weekBadgeText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.dark.text.secondary,
+    fontWeight: 'bold',
+  },
+  planTemplatesText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.dark.text.secondary,
+  },
+  planTemplatesTextEmpty: {
+    fontSize: typography.fontSize.sm,
+    color: colors.dark.text.tertiary,
+    fontStyle: 'italic',
+  },
+  planName: {
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+    flex: 1,
+  },
+  activeBadge: {
+    backgroundColor: colors.dark.accent.primary + '15',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.dark.accent.primary,
+  },
+  activeBadgeText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.dark.accent.primary,
+    fontWeight: 'bold',
+  },
+
+  emptyState: {
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  emptyText: {
     color: colors.dark.text.secondary,
     fontSize: typography.fontSize.sm,
-    lineHeight: 20,
+    textAlign: 'center',
   },
   footer: {
     padding: spacing.base,

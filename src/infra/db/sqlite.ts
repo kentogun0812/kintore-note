@@ -42,6 +42,47 @@ export function initSqliteDb(): void {
         console.error(`[SQLite] Error creating table "${tableName}":`, error);
       }
     }
+
+    // Migrate old weekly plan assignments from workout_templates to weekly_plan_assigned_templates
+    try {
+      const oldAssignments = db.getAllSync<any>(
+        `SELECT id, weekly_plan_id, plan_week, createdAt, updatedAt 
+         FROM workout_templates 
+         WHERE weekly_plan_id IS NOT NULL AND plan_week IS NOT NULL`
+      );
+      
+      for (const row of oldAssignments) {
+        const exists = db.getFirstSync<any>(
+          `SELECT 1 FROM weekly_plan_assigned_templates 
+           WHERE weekly_plan_id = ? AND plan_week = ? AND workout_template_id = ?`,
+          [row.weekly_plan_id, row.plan_week, row.id]
+        );
+        
+        if (!exists) {
+          const migrationId = `${row.weekly_plan_id}_${row.plan_week}_${row.id}`;
+          db.runSync(
+            `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, plan_week, day_of_week, workout_template_id, syncStatus, createdAt, updatedAt)
+             VALUES (?, ?, ?, 1, ?, 'pending', ?, ?)`,
+            [migrationId, row.weekly_plan_id, row.plan_week, row.id, row.createdAt, row.updatedAt]
+          );
+        }
+      }
+
+      // Add columns day_of_week and is_rest_day to weekly_plan_assigned_templates if they don't exist
+      try {
+        db.execSync(`ALTER TABLE weekly_plan_assigned_templates ADD COLUMN day_of_week INTEGER NOT NULL DEFAULT 1`);
+      } catch (e) {
+        // Column might already exist
+      }
+      try {
+        db.execSync(`ALTER TABLE weekly_plan_assigned_templates ADD COLUMN is_rest_day INTEGER DEFAULT 0`);
+      } catch (e) {
+        // Column might already exist
+      }
+      
+    } catch (e) {
+      console.warn('[SQLite] Migration warning (this is normal if table schemas are still initializing):', e);
+    }
   });
 }
 

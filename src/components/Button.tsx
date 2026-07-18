@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, View, PressableProps, StyleSheet } from 'react-native';
+import { Pressable, Text, View, PressableProps, StyleSheet, StyleProp, TextStyle } from 'react-native';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
@@ -13,6 +13,7 @@ interface ButtonProps extends PressableProps {
   fullWidth?: boolean;
   iconName?: IconName;
   iconPosition?: 'left' | 'right';
+  textStyle?: StyleProp<TextStyle>;
 }
 
 export function Button({ 
@@ -23,6 +24,7 @@ export function Button({
   iconName,
   iconPosition = 'left',
   style,
+  textStyle,
   onPress,
   ...props 
 }: ButtonProps) {
@@ -89,7 +91,7 @@ export function Button({
       {...props}
     >
       {iconPosition === 'left' && iconElement}
-      <Text style={[styles.text, { color: getTextColor() }]}>
+      <Text style={[styles.text, { color: getTextColor() }, textStyle]}>
         {label}
       </Text>
       {iconPosition === 'right' && iconElement}

@@ -444,3 +444,56 @@ V? l?i hoàn toàn các du?ng d?n (Path) c?a co lung/vai d?a theo hình v? gi?i ph?u
   - Màu co t?p chính: màu d? (\#ff0044\)
   - Màu co t?p ph?: màu cam dào (\#ff804e\)
 - [x] TypeScript biên d?ch thành công. ? Done
+
+---
+
+## Objective
+Cho phAcp ng?i dA1ng Edit Workout Template s- d-ng li ExercisePicker.
+
+## Status
+- [x] Extract hook useExercisePicker tu useActiveSession o. Done
+- [x] Extract UI Component ExercisePicker.tsx tu session.tsx o. Done
+- [x] To mAn hAnh m>i app/training/template/picker.tsx dA1ng Component o. Done
+- [x] Update mAn app/training/template/[id].tsx chuyn h>ng nAt Add Exercise vAo picker.tsx o. Done
+- [x] Tin hAnh chy check TypeScript khA'ng cA3 l-i o. Done
+
+## Changes
+- Component hA3a vA hAm hA3a phn ch?n Exercise tu Active Session thAnh reusable code.
+- Cho phep nguoi dung edit template blueprint.
+
+---
+
+## Objective
+Hi?n th? tên Weekly Plan ? góc trên bên ph?i c?a card TodayWorkout trên màn hình Home n?u bài t?p du?c l?y t? m?t weekly plan.
+
+## Status
+- [x] S?a component Home d? ki?m tra xem scheduledTemplate có t?n t?i không.
+- [x] Thêm thu?c tính planName vào memo displayRoutine.
+- [x] Hi?n th? tên plan vào sectionHeader v?i style badge (n?n m?, vi?n bo tròn) ? Home.
+
+## Changes
+- pp/(tabs)/home.tsx: Thêm planName vào logic tính toán displayRoutine thông qua ctiveWeeklyPlan?.name. Thêm giao di?n hi?n th? tên plan ? th? Today Workout.
+
+## Decisions
+- Thêm thu?c tính planNameBadge và planNameText d? UI badge phù h?p v?i màu s?c t?i (dark theme) c?a ?ng d?ng.
+
+---
+
+## Objective
+Thêm nút Save vào màn hình ch?nh s?a Weekly Plan thay vì t? d?ng luu (auto-save) và x? lý l?i rác d? li?u draft.
+
+## Status
+- [x] Thay th? co ch? t? d?ng luu trên s? ki?n onBlur c?a các TextInputs b?ng hàm handleSavePlan.
+- [x] Thêm nút "Save Plan" n?m ? ph?n du?i c?a th? chi ti?t form (plan name, weeks, start date).
+- [x] C?p nh?t hàm handleSavePlan d? d?t isDraftRef.current = false khi save, tránh vi?c plan draft b? t? d?ng xoá n?u ngu?i dùng ?n Back.
+- [x] Hi?n th? Alert báo thành công ho?c l?i khi validate input.
+
+## Changes
+- pp/training/weekly-plan/[id].tsx: Ð?i tên handleSaveEdit thành handleSavePlan. Xóa onBlur kh?i TextInputs. Thêm <Button label="Save Plan" onPress={handleSavePlan} /> ? cu?i FormCard. 
+
+## Decisions
+- Chuy?n t? auto-save qua màn hình Explicit Save giúp UX rõ ràng hon, ngu?i dùng bi?t lúc nào d? li?u du?c xác nh?n luu thay vì b? hoang mang khi t?o plan m?i mà không th?y nút Save.
+- Chuy?n nút Save Plan xu?ng ph?n Footer c? d?nh ? du?i cùng màn hình (Fixed Bottom Footer), gi?ng h?t v?i giao di?n màn hình t?o Plan.
+- Xoá nút Save cu b? trùng l?p ? màn hình t?o m?i (do block isDraft render thêm m?t footer riêng), g?p l?i s? d?ng chung m?t nút Save ? Fixed Footer cho c? 2 màn hình t?o và s?a.
+- Disable nút Save Plan khi chua nh?p d? Title ho?c s? Week.
+- C?p nh?t hành vi sau khi ?n Save: t? d?ng di?u hu?ng quay l?i màn hình danh sách (list) và không hi?n th? thông báo alert thành công n?a.

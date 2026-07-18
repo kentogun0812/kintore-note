@@ -1,5 +1,6 @@
 {
   "common": {
+    "add": "Add",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -10,12 +11,15 @@
     "weight": "weight",
     "finished": "Finished!",
     "goodJob": "Good job!",
+    "done": "Done",
     "more": "more",
     "exercises": "exercises",
     "error": "Error",
     "success": "Success",
     "yes": "Yes",
     "no": "No",
+    "loading": "Loading...",
+    "saving": "Saving...",
     "weekdays": {
       "sun": "Sun",
       "mon": "Mon",
@@ -51,8 +55,8 @@
     "todayWorkout": "Today's Workout",
     "weeklyPlans": "Weekly Plans",
     "exerciseLibrary": "Exercise Library",
-    "savedWorkouts": "Saved Workouts",
-    "noWorkouts": "No saved workouts yet."
+    "savedWorkouts": "Workout Templates",
+    "noWorkouts": "No workout templates yet."
   },
   "stats": {
     "title": "Analytics",
@@ -149,6 +153,7 @@
     "selectMuscleGroup": "Muscle",
     "finish": "Finish",
     "addExercise": "Add Exercise",
+    "addSet": "Add Set",
     "addNotes": "Add notes for this exercise...",
     "sets": "Sets",
     "kg": "kg",
@@ -165,7 +170,7 @@
       "stampHanko": "Stamp Hanko",
       "done": "Done"
     },
-    "editWorkoutTemplate": "Edit Workout Template",
+    "editWorkoutTemplate": "Edit Template",
     "exercises": "Exercises",
     "newMuscle": "New Muscle",
     "newExercise": "New Exercise",
@@ -200,6 +205,9 @@
     "body": "Photo",
     "stats": "Stats",
     "settings": "Settings"
+  },
+  "nav": {
+    "weeklyPlans": "Weekly Plans"
   },
   "todayWorkout": {
     "title": "Today's Workout",
@@ -334,7 +342,16 @@
     "noSavedWorkouts": "You have no saved workouts yet.",
     "active": "Active",
     "weeks": "Weeks",
-    "setAsActive": "Set as Active Plan"
+    "setAsActive": "Set as Active Plan",
+    "deletePlan": "Delete Plan",
+    "deletePlanConfirm": "Are you sure you want to delete this weekly plan?",
+    "createNewWorkout": "Create New Workout",
+    "editPlan": "Edit Plan",
+    "saveChanges": "Save Changes",
+    "starts": "Starts",
+    "emptyPlans": "No weekly plans yet. Tap Add to create your first plan.",
+    "addWeeklyPlan": "Add Weekly Plan",
+    "editWeeklyPlan": "Edit Weekly Plan"
   },
   "weeklyPlanBuilder": {
     "invalidWeeks": "Invalid weeks. Please enter a number between 1 and 52.",
