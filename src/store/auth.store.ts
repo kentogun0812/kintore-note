@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { isMockAdminMode, mockAdminSession, mockAdminUser } from '@/constants/mockAdmin';
 
 interface AuthState {
   session: Session | null;
@@ -24,10 +25,10 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  session: null,
-  user: null,
+  session: isMockAdminMode ? mockAdminSession : null,
+  user: isMockAdminMode ? mockAdminUser : null,
   isLoading: true,
-  isGuest: false,
+  isGuest: !isMockAdminMode,
   isSessionExpired: false,
 
   setSession: (session) => set({ 
@@ -57,6 +58,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   initialize: async () => {
+    if (isMockAdminMode) {
+      set({ 
+        session: mockAdminSession, 
+        user: mockAdminUser, 
+        isGuest: false,
+        isSessionExpired: false,
+        isLoading: false 
+      });
+      return;
+    }
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       

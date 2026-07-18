@@ -20,16 +20,22 @@ export const colors = {
       logo: '#E54D42',           // Logo color
     },
     accent: {
-      primary: '#E54D42',         // Hanko red (朱色)
-      secondary: '#FF6B5B',       // Lighter accent
+      primary: '#D24A42',         // Hanko red (softer tone)
+      secondary: '#E35D55',       // Lighter accent
       success: '#34C759',         // Complete/PR
       warning: '#FF9500',         // Attention
       info: '#5AC8FA',            // Info
+      danger: '#FF6B6B',          // Destructive / Delete actions
+    },
+    button: {
+      primary: '#C4443D',         // Less orange, more muted red for buttons
+      primaryPressed: '#D95850',  // Pressed state
     },
     border: {
       default: '#2A2A2A',         // Card borders
       subtle: '#1A1A1A',          // Dividers
       focus: '#E54D42',           // Focus rings
+      light: '#E54D42',        // Border color 
     },
     hanko: {
       ink: '#C41E1E',             // Hanko stamp ink

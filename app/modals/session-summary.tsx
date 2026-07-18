@@ -7,11 +7,14 @@ import { spacing } from '@/constants/spacing';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { useTrainingStore } from '@/store/training.store';
+import { useAuthStore } from '@/store/auth.store';
 import { useTranslation } from 'react-i18next';
 
 export default function SessionSummaryModal() {
   const { t } = useTranslation();
-  const { exercises, endSession } = useTrainingStore();
+  const { user } = useAuthStore();
+  const userId = user?.id || 'guest';
+  const { exercises, endSession, saveActiveSession } = useTrainingStore();
   
   let totalVolume = 0;
   let totalSets = 0;
@@ -28,6 +31,7 @@ export default function SessionSummaryModal() {
   });
 
   const handleFinish = () => {
+    saveActiveSession(userId);
     endSession();
     router.replace('/modals/hanko-stamp');
   };
@@ -70,6 +74,7 @@ export default function SessionSummaryModal() {
         variant="secondary"
         fullWidth
         onPress={() => {
+          saveActiveSession(userId);
           endSession();
           router.dismissAll();
           router.replace('/(tabs)/home');

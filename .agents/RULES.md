@@ -163,7 +163,7 @@ assets/         → Static assets (images, fonts)
 
 ## 10. State Management (Zustand)
 
-- One store per domain: `auth.store.ts`, `training.store.ts`, `menu.store.ts`, etc.
+- One store per domain: `auth.store.ts`, `training.store.ts`, `workout.store.ts`, etc.
 - Store files export a single `use[Name]Store` hook.
 - Keep stores flat — avoid deeply nested state.
 - Derived state should be computed via selectors, not stored redundantly.

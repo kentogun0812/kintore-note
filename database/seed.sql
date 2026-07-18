@@ -1,4 +1,4 @@
--- Seed Data cho Kintore Note (Muscle Groups, Exercises, Template Menus)
+-- Seed Data cho Kintore Note (Muscle Groups, Exercises, Template Workouts)
 -- Lưu ý: Sử dụng UUID hợp lệ cho các khoá chính
 
 -- 1. Insert Muscle Groups
@@ -46,15 +46,15 @@ INSERT INTO public.exercises (id, muscle_group_id, name_en, name_ja) VALUES
 ('e0000000-0000-0000-0000-000000000024', '00000000-0000-0000-0000-000000000006', 'Leg Raise', 'レッグレイズ')
 ON CONFLICT (id) DO NOTHING;
 
--- 3. Insert Template Menus
-INSERT INTO public.training_menus (id, user_id, name, is_template) VALUES
-('f0000000-0000-0000-0000-000000000001', null, 'Push Day (Chest, Shoulders, Triceps)', true),
-('f0000000-0000-0000-0000-000000000002', null, 'Pull Day (Back, Biceps)', true),
-('f0000000-0000-0000-0000-000000000003', null, 'Leg Day (Quads, Hamstrings, Calves)', true)
+-- 3. Insert Template Workouts
+INSERT INTO public.workout_templates (id, user_id, name) VALUES
+('f0000000-0000-0000-0000-000000000001', null, 'Push Day (Chest, Shoulders, Triceps)'),
+('f0000000-0000-0000-0000-000000000002', null, 'Pull Day (Back, Biceps)'),
+('f0000000-0000-0000-0000-000000000003', null, 'Leg Day (Quads, Hamstrings, Calves)')
 ON CONFLICT (id) DO NOTHING;
 
--- 4. Insert Menu Exercises cho Templates
-INSERT INTO public.menu_exercises (menu_id, exercise_id, sort_order, target_sets, target_reps) VALUES
+-- 4. Insert Workout Template Exercises
+INSERT INTO public.workout_template_exercises (workout_template_id, exercise_id, sort_order, target_sets, target_reps) VALUES
 -- Push Day
 ('f0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000001', 1, 3, 10),
 ('f0000000-0000-0000-0000-000000000001', 'e0000000-0000-0000-0000-000000000002', 2, 3, 10),

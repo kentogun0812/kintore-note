@@ -13,6 +13,9 @@
     "more": "more",
     "exercises": "exercises",
     "error": "Error",
+    "success": "Success",
+    "yes": "Yes",
+    "no": "No",
     "weekdays": {
       "sun": "Sun",
       "mon": "Mon",
@@ -33,7 +36,7 @@
     "currentStreak": "Current Streak",
     "hankoCalendar": "Hanko Calendar",
     "loginToSync": "Sign in to keep your data in sync ☁️",
-    "todayMenu": "Today's Menu",
+    "todayRoutine": "Today's Workout",
     "startSession": "Start Session",
     "weeklyGoal": "This Week's Goal",
     "weeklyTarget": "/ {{target}} days",
@@ -45,10 +48,11 @@
     "quickStart": "Quick Start",
     "quickStartDesc": "Start an empty session and log exercises as you go.",
     "startEmpty": "Start Empty Session",
-    "menuBuilder": "Menu Builder",
+    "todayWorkout": "Today's Workout",
+    "weeklyPlans": "Weekly Plans",
     "exerciseLibrary": "Exercise Library",
-    "savedMenus": "Saved Menus",
-    "noMenus": "No saved menus yet."
+    "savedWorkouts": "Saved Workouts",
+    "noWorkouts": "No saved workouts yet."
   },
   "stats": {
     "title": "Analytics",
@@ -73,12 +77,6 @@
     "takeFirst": "Take First Photo",
     "loading": "Loading encrypted photos...",
     "decrypting": "Decrypting..."
-  },
-  "circle": {
-    "title": "Private Circle",
-    "comingSoon": "Coming in Phase 2",
-    "comingSoonDesc": "Connect with friends, share your training menus, and react to their daily hanko stamps in a private, supportive feed.",
-    "addFriend": "Add Friend"
   },
   "settings": {
     "title": "Settings",
@@ -148,13 +146,15 @@
   },
   "session": {
     "title": "Workout Session",
+    "selectMuscleGroup": "Muscle",
     "finish": "Finish",
     "addExercise": "Add Exercise",
-    "sets": "SETS",
+    "addNotes": "Add notes for this exercise...",
+    "sets": "Sets",
     "kg": "kg",
-    "weight": "WEIGHT",
-    "reps": "REPS",
-    "status": "STATUS",
+    "weight": "Weight",
+    "reps": "Reps",
+    "status": "Status",
     "restTimer": "Rest Timer",
     "summary": {
       "title": "Summary",
@@ -164,7 +164,31 @@
       "totalSets": "Total Sets",
       "stampHanko": "Stamp Hanko",
       "done": "Done"
-    }
+    },
+    "editWorkoutTemplate": "Edit Workout Template",
+    "exercises": "Exercises",
+    "newMuscle": "New Muscle",
+    "newExercise": "New Exercise",
+    "noExercisesCreate": "No exercises. Create one using the buttons above.",
+    "selectMuscleGroupView": "Select a muscle group to view exercises.",
+    "saveWorkoutTemplate": "Save Workout Template",
+    "createWorkoutTemplate": "Create Workout Template",
+    "createCustomMuscle": "Create Custom Muscle",
+    "japaneseName": "Japanese Name",
+    "englishName": "English Name",
+    "createCustomExercise": "Create Custom Exercise",
+    "targetMuscle": "Target Muscle",
+    "muscleGroupExists": "Muscle group already exists.",
+    "deleteCustomMuscle": "Delete Custom Muscle",
+    "deleteCustomMuscleDesc": "Are you sure you want to delete this custom muscle group?",
+    "deleteCustomExercise": "Delete Custom Exercise",
+    "deleteCustomExerciseDesc": "Are you sure you want to delete this custom exercise?",
+    "pleaseMarkAllDone": "Please mark all sets as completed before finishing.",
+    "saveAsTemplateTitle": "Save as Template",
+    "finishTitle": "Finish Workout",
+    "saveAsTemplatePrompt": "Would you like to save this session as a Workout Template for future use?",
+    "workoutSaved": "Workout template created and assigned successfully.",
+    "defaultTemplateName": "Workout {{date}}"
   },
   "hanko": {
     "wellDone": "Well done!",
@@ -173,23 +197,27 @@
   "tabs": {
     "home": "Home",
     "training": "Training",
-    "body": "Body",
-    "circle": "Circle",
-    "stats": "Stats"
+    "body": "Photo",
+    "stats": "Stats",
+    "settings": "Settings"
   },
-  "menuBuilder": {
-    "title": "Menu Builder",
-    "menuName": "Menu Name",
+  "todayWorkout": {
+    "title": "Today's Workout",
+    "workoutName": "Workout Name",
     "placeholder": "Ex: Chest Day",
     "exercises": "Exercises",
     "add": "Add",
     "noExercises": "No exercises added yet.",
     "saving": "Saving...",
-    "saveMenu": "Save Menu",
+    "saveWorkout": "Save Workout",
     "guestLimitTitle": "Guest Limit",
-    "guestLimitDesc": "Guests can only create 1 training menu. Please login or register to create unlimited menus and sync them to the cloud! 🏋️‍♂️",
+    "guestLimitDesc": "Guests can only create 1 training template. Please login or register to create unlimited templates and sync them to the cloud! 🏋️‍♂️",
     "later": "Later",
-    "loginRegister": "Login / Register"
+    "loginRegister": "Login / Register",
+    "nameTooLong": "Workout Name must be 50 characters or less.",
+    "nameInvalidChars": "Special characters (<, >, \", ', ;, \\, etc.) are not allowed.",
+    "nameEmpty": "Workout Name cannot be empty.",
+    "library": "Library"
   },
   "library": {
     "title": "Exercise Library",
@@ -199,7 +227,7 @@
   },
   "exerciseDetail": {
     "title": "Details",
-    "addToMenu": "Add to Menu"
+    "addToRoutine": "Add to Routine"
   },
   "camera": {
     "permissionTitle": "Camera Access Required",
@@ -294,31 +322,33 @@
       }
     }
   },
-  "body": {
-    "title": "Body Records",
-    "encrypted": "E2E Encrypted",
-    "takePhoto": "Take Progress Photo",
-    "cameraDesc": "AES-256 encrypted · Self-timer · Never saved to Camera Roll",
-    "photos": "Photos",
-    "noPhotos": "No Progress Photos Yet",
-    "noPhotosDesc": "Start tracking your body transformation with encrypted, private photos.",
-    "noAnglePhotos": "No Photos for This Angle",
-    "noAnglePhotosDesc": "Take a photo from this angle to see your progress here.",
-    "takeFirst": "Take First Photo",
-    "loading": "Loading encrypted photos...",
-    "filterAll": "All",
-    "filterFront": "Front",
-    "filterSide": "Side",
-    "filterBack": "Back"
+  "weeklyPlan": {
+    "builder": "Weekly Plan Builder",
+    "activePlan": "Active Plan",
+    "weekN": "Week {{n}}",
+    "noWorkoutThisWeek": "No workout assigned for this week.",
+    "viewSchedule": "View Schedule",
+    "timeline": "Schedule Timeline",
+    "assignWorkout": "Assign Workout",
+    "selectWorkout": "Select Workout",
+    "noSavedWorkouts": "You have no saved workouts yet.",
+    "active": "Active",
+    "weeks": "Weeks",
+    "setAsActive": "Set as Active Plan"
   },
-  "camera": {
-    "permissionTitle": "Camera Access Required",
-    "permissionDesc": "Your photos are encrypted locally using AES-256 and never saved to your Camera Roll.",
-    "grantPermission": "Grant Permission",
-    "encrypting": "Encrypting...",
-    "decrypting": "Decrypting...",
-    "angleFront": "Front",
-    "angleSide": "Side",
-    "angleBack": "Back"
+  "weeklyPlanBuilder": {
+    "invalidWeeks": "Invalid weeks. Please enter a number between 1 and 52.",
+    "createFailed": "Failed to create weekly plan.",
+    "title": "Create Weekly Plan",
+    "name": "Weekly Plan Name",
+    "namePlaceholder": "e.g. 4-Week Strength Block",
+    "totalWeeks": "Total Weeks (1-52)",
+    "info": "After creating the plan, you will be able to assign different workout templates to each week.",
+    "save": "Save"
+  },
+  "banners": {
+    "todayWorkoutDesc": "Create today's workout by selecting the exercises you plan to do.",
+    "weeklyPlansDesc": "Build a weekly training plan and reuse it anytime.",
+    "libraryDesc": "Browse exercises or create your own custom exercises."
   }
 }

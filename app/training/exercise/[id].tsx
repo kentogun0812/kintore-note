@@ -6,16 +6,20 @@ import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
 import { Icon } from '@/components/Icon';
 import { Button } from '@/components/Button';
-import { useMenuStore } from '@/store/menu.store';
+import { useWorkoutStore } from '@/store/workout.store';
 import { useTranslation } from 'react-i18next';
 
 export default function ExerciseDetailScreen() {
   const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const addExercise = useMenuStore((state) => state.addExerciseToMenu);
+  const addExercise = useWorkoutStore((state) => state.addExerciseToWorkout);
   
-  const handleAddToMenu = () => {
-    addExercise({ id: Array.isArray(id) ? id[0] : id, name: 'ベンチプレス (Bench Press)' });
+  const handleAddToRoutine = () => {
+    addExercise({ 
+      id: Array.isArray(id) ? id[0] : id, 
+      name_ja: 'ベンチプレス',
+      name_en: 'Bench Press'
+    });
     router.back();
   };
 
@@ -50,11 +54,11 @@ export default function ExerciseDetailScreen() {
         </View>
 
         <Button 
-          label={t('exerciseDetail.addToMenu')} 
+          label={t('exerciseDetail.addToRoutine')} 
           iconName="add-circle"
           fullWidth
           style={styles.addButton}
-          onPress={handleAddToMenu}
+          onPress={handleAddToRoutine}
         />
       </View>
     </ScrollView>

@@ -4,8 +4,15 @@
     "strict": true,
     "experimentalDecorators": true,
     "baseUrl": ".",
+    "jsx": "react-native",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
 }

@@ -6,10 +6,16 @@ import { typography } from '@/constants/typography';
 import { spacing } from '@/constants/spacing';
 import { ExerciseCard } from '@/components/ExerciseCard';
 import { Icon } from '@/components/Icon';
-import { supabase } from '@/infra/api/supabase.client';
+import { ExerciseRepository } from '@/infra/repositories/exercise.repository';
+import { useAuthStore } from '@/store/auth.store';
 import { useQuery } from '@tanstack/react-query';
-import { useMenuStore } from '@/store/menu.store';
+import { useWorkoutStore } from '@/store/workout.store';
 import { useTranslation } from 'react-i18next';
+import { DismissibleBanner } from '@/components/DismissibleBanner';
+
+import { useLocalSearchParams } from 'expo-router';
+import { useTrainingStore } from '@/store/training.store';
+import { DEFAULT_EXERCISES, DEFAULT_MUSCLE_GROUPS } from '@/constants/defaultExercises';
 
 // Interface matching the joined query result
 interface ExerciseRow {
@@ -28,37 +34,25 @@ export default function ExerciseLibraryScreen() {
   const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
-  const { addExerciseToMenu } = useMenuStore();
+  const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const { addExerciseToWorkout } = useWorkoutStore();
+  const { addExercise } = useTrainingStore();
 
-  const handleSelectExercise = (exerciseId: string, exerciseName: string) => {
-    addExerciseToMenu({ id: exerciseId, name: exerciseName });
+  const handleSelectExercise = (exerciseId: string, exerciseNameJa: string, exerciseNameEn: string, exerciseName: string) => {
+    if (mode === 'session') {
+      addExercise({ id: exerciseId, name: exerciseName });
+    } else {
+      addExerciseToWorkout({ id: exerciseId, name_ja: exerciseNameJa, name_en: exerciseNameEn });
+    }
     router.back();
   };
 
-  // Fetch exercises and their muscle groups from Supabase
+  // Fetch exercises and their muscle groups from SQLite
   const { data: exercises, isLoading, error } = useQuery({
     queryKey: ['exercises'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercises')
-        .select(`
-          id,
-          name_en,
-          name_ja,
-          muscle_groups (
-            id,
-            name_en,
-            name_ja,
-            sort_order
-          )
-        `);
-      
-      if (error) {
-        console.log('[Library] Supabase fetch error (exercises):', error);
-        return Promise.reject(error);
-      }
-      
-      return data as any as ExerciseRow[];
+      const userId = useAuthStore.getState().user?.id || 'guest';
+      return ExerciseRepository.getAllExercises(userId);
     }
   });
 
@@ -98,6 +92,8 @@ export default function ExerciseLibraryScreen() {
       groups[mgId].data.push({
         id: ex.id,
         name: `${ex.name_ja} (${ex.name_en})`,
+        name_ja: ex.name_ja,
+        name_en: ex.name_en,
         muscleGroup: ex.muscle_groups?.name_ja || 'Other',
         iconName: getIconForGroup(ex.muscle_groups?.name_en)
       });
@@ -130,6 +126,10 @@ export default function ExerciseLibraryScreen() {
       />
       
       <View style={styles.searchContainer}>
+        <DismissibleBanner
+          bannerId="library"
+          description={t('banners.libraryDesc')}
+        />
         <View style={styles.searchBar}>
           <Icon name="search" size={16} color={colors.dark.text.secondary} />
           <TextInput
@@ -163,7 +163,7 @@ export default function ExerciseLibraryScreen() {
             <View style={styles.itemContainer}>
               <ExerciseCard 
                 exercise={item} 
-                onPress={() => handleSelectExercise(item.id, item.name)} 
+                onPress={() => handleSelectExercise(item.id, item.name_ja, item.name_en, item.name)} 
               />
             </View>
           )}

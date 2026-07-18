@@ -15,6 +15,7 @@ export default function TrainingLayout() {
         headerLargeTitle: true,
         headerLargeStyle: { backgroundColor: colors.dark.bg.primary },
         headerBackVisible: false,
+        gestureEnabled: true,
         headerLeft: () => (
           <Pressable 
             onPress={() => router.back()} 

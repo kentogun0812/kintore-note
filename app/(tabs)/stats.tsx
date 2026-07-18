@@ -9,11 +9,12 @@ import { useTranslation } from 'react-i18next';
 import { useAnalyticsStore, TimeRange } from '@/store/analytics.store';
 import { MuscleHeatmap } from '@/components/charts/MuscleHeatmap';
 import { VolumeChart } from '@/components/charts/VolumeChart';
-import { supabase } from '@/infra/api/supabase.client';
+import { ExerciseRepository } from '@/infra/repositories/exercise.repository';
+import { useAuthStore } from '@/store/auth.store';
 import { useState, useEffect } from 'react';
 
 export default function StatsScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { 
     heatmapData, 
     chartData, 
@@ -35,14 +36,19 @@ export default function StatsScreen() {
   // Load Exercises for the chart picker
   useEffect(() => {
     const loadExercises = async () => {
-      const { data } = await supabase.from('exercises').select('id, name_en').limit(10);
+      const userId = useAuthStore.getState().user?.id || 'guest';
+      const allEx = ExerciseRepository.getAllExercises(userId);
+      const data = allEx.slice(0, 15); // Take first 15 exercises to display in trend picker
       if (data && data.length > 0) {
-        setExercises(data.map((ex: any) => ({ id: ex.id, name: ex.name_en })));
+        setExercises(data.map((ex: any) => ({ 
+          id: ex.id, 
+          name: i18n.language === 'ja' ? ex.name_ja : ex.name_en 
+        })));
         setSelectedExercise(data[0].id);
       }
     };
     loadExercises();
-  }, []);
+  }, [i18n.language]);
 
   // Load Chart data
   useEffect(() => {

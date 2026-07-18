@@ -7,6 +7,7 @@ import { spacing } from '@/constants/spacing';
 import { Button } from '@/components/Button';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
+import { useTrainingStore } from '@/store/training.store';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -20,6 +21,7 @@ import Animated, {
 
 export default function HankoStampModal() {
   const { t } = useTranslation();
+  const { latestStreak } = useTrainingStore();
   const scale = useSharedValue(0);
   const opacity = useSharedValue(0);
   const streakOpacity = useSharedValue(0);
@@ -29,18 +31,13 @@ export default function HankoStampModal() {
   };
 
   useEffect(() => {
-    // Opacity fades in fast
     opacity.value = withTiming(1, { duration: 200 });
-    
-    // Scale bounces up to 1.2 then settles at 1.0
     scale.value = withSequence(
       withTiming(1.2, { duration: 200, easing: Easing.out(Easing.cubic) }, () => {
         runOnJS(triggerHaptic)();
       }),
       withSpring(1.0, { damping: 10, stiffness: 150 })
     );
-
-    // Fade in text slightly after
     streakOpacity.value = withDelay(400, withTiming(1, { duration: 500 }));
   }, []);
 
@@ -49,7 +46,7 @@ export default function HankoStampModal() {
       opacity: opacity.value,
       transform: [
         { scale: scale.value },
-        { rotate: '-10deg' } // Organic tilt
+        { rotate: '-10deg' }
       ],
     };
   });
@@ -57,21 +54,13 @@ export default function HankoStampModal() {
   const animatedStreakStyle = useAnimatedStyle(() => {
     return {
       opacity: streakOpacity.value,
-      transform: [
-        { translateY: withTiming(streakOpacity.value === 1 ? 0 : 20, { duration: 400 }) }
-      ]
     };
   });
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ presentation: 'fullScreenModal', headerShown: false }} />
-      
       <View style={styles.content}>
-        <Text style={styles.title}>
-          {t('hanko.wellDone')}
-        </Text>
-        
         <View style={styles.hankoHitbox}>
           <Animated.View style={[styles.hankoContainer, animatedStampStyle]}>
             <View style={styles.hankoBorder}>
@@ -79,21 +68,18 @@ export default function HankoStampModal() {
             </View>
           </Animated.View>
         </View>
-        
         <Animated.View style={animatedStreakStyle}>
           <Text style={styles.streakText}>
-            🔥 {t('hanko.streak', { count: 15 })}
+            🔥 {t('hanko.streak', { count: latestStreak || 1 })}
           </Text>
         </Animated.View>
       </View>
-      
       <View style={styles.footer}>
         <Button 
           label={t('common.close')} 
           fullWidth
           onPress={() => {
-            router.dismissAll();
-            router.replace('/(tabs)/home');
+            router.navigate('/(tabs)/home');
           }}
         />
       </View>
@@ -110,14 +96,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.xl,
-    marginBottom: 100,
-  },
-  title: {
-    color: colors.dark.text.primary,
-    fontSize: typography.fontSize['2xl'],
-    fontWeight: 'heavy',
+    paddingBottom: 80,
   },
   streakText: {
     color: colors.dark.accent.warning,
@@ -131,11 +114,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   hankoHitbox: {
-    width: 200,
-    height: 200,
+    width: 150,
+    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: spacing.xl,
+    marginVertical: spacing.sm,
   },
   hankoContainer: {
     width: 140,

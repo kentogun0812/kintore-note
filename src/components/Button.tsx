@@ -29,7 +29,7 @@ export function Button({
   
   const getBackgroundColor = (pressed: boolean) => {
     switch (variant) {
-      case 'primary': return pressed ? colors.dark.accent.secondary : colors.dark.accent.primary;
+      case 'primary': return pressed ? colors.dark.button.primaryPressed : colors.dark.button.primary;
       case 'secondary': return pressed ? colors.dark.bg.elevated : colors.dark.bg.secondary;
       case 'outline': return pressed ? colors.dark.bg.secondary : 'transparent';
       case 'ghost': return pressed ? colors.dark.bg.secondary : 'transparent';
@@ -38,7 +38,7 @@ export function Button({
 
   const getTextColor = () => {
     switch (variant) {
-      case 'primary': return colors.dark.text.inverse;
+      case 'primary': return colors.white;
       case 'secondary': return colors.dark.text.primary;
       case 'outline': return colors.dark.text.primary;
       case 'ghost': return colors.dark.text.primary;
@@ -62,6 +62,7 @@ export function Button({
   };
 
   const handlePress = (e: any) => {
+    if (props.disabled) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onPress) onPress(e);
   };
@@ -81,6 +82,7 @@ export function Button({
           width: fullWidth ? '100%' : 'auto',
           borderWidth: variant === 'outline' ? 1 : 0,
           borderColor: variant === 'outline' ? colors.dark.border.default : 'transparent',
+          opacity: props.disabled ? 0.5 : 1,
         },
         typeof style === 'function' ? style(state) : style,
       ]}

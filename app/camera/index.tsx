@@ -22,6 +22,8 @@ import { Icon } from '@/components/Icon';
 import { generatePhotoKey } from '@/lib/key-manager';
 import { encryptAndSavePhoto } from '@/lib/photo-encryption';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/store/auth.store';
+import { BodyPhotosRepository } from '@/infra/repositories/body-photos.repository';
 
 type ShootingAngle = 'front' | 'side' | 'back';
 type TimerDuration = 0 | 3 | 5 | 10;
@@ -142,9 +144,11 @@ export default function CameraScreen() {
       // 4. Encrypt and save to App Sandbox (NOT Camera Roll)
       const filePath = await encryptAndSavePhoto(photo.base64, photoId, key);
 
-      // 5. Save metadata to WatermelonDB
-      // TODO: Wire up WatermelonDB write when running in EAS Build
-      console.log('Photo encrypted and saved:', {
+      // 5. Save metadata to SQLite
+      const userId = useAuthStore.getState().user?.id || 'guest';
+      BodyPhotosRepository.saveBodyPhoto(userId, filePath, angle);
+      
+      console.log('Photo encrypted and saved to SQLite:', {
         photoId,
         filePath,
         angle,

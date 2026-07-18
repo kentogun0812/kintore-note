@@ -5,6 +5,40 @@
 -- ============================================================
 
 -- ============================================================
+-- 0. CLEANUP (DROP EXISTING OBJECTS)
+-- ============================================================
+DROP TABLE IF EXISTS public.comments CASCADE;
+DROP TABLE IF EXISTS public.reactions CASCADE;
+DROP TABLE IF EXISTS public.posts CASCADE;
+DROP TABLE IF EXISTS public.friendships CASCADE;
+DROP TABLE IF EXISTS public.body_photos CASCADE;
+DROP TABLE IF EXISTS public.hanko_stamps CASCADE;
+DROP TABLE IF EXISTS public.session_sets CASCADE;
+DROP TABLE IF EXISTS public.training_sessions CASCADE;
+DROP TABLE IF EXISTS public.workout_template_exercises CASCADE;
+DROP TABLE IF EXISTS public.workout_templates CASCADE;
+DROP TABLE IF EXISTS public.weekly_plans CASCADE;
+DROP TABLE IF EXISTS public.exercises CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+DROP TABLE IF EXISTS public.muscle_groups CASCADE;
+
+DROP FUNCTION IF EXISTS public.generate_user_code() CASCADE;
+DROP FUNCTION IF EXISTS public.check_personal_record() CASCADE;
+DROP FUNCTION IF EXISTS public.update_session_volume() CASCADE;
+DROP FUNCTION IF EXISTS public.update_exercise_search() CASCADE;
+
+DROP TYPE IF EXISTS public.auth_provider CASCADE;
+DROP TYPE IF EXISTS public.locale_type CASCADE;
+DROP TYPE IF EXISTS public.weight_unit CASCADE;
+DROP TYPE IF EXISTS public.session_status CASCADE;
+DROP TYPE IF EXISTS public.photo_angle CASCADE;
+DROP TYPE IF EXISTS public.hanko_tier CASCADE;
+DROP TYPE IF EXISTS public.friendship_status CASCADE;
+DROP TYPE IF EXISTS public.sub_plan CASCADE;
+DROP TYPE IF EXISTS public.sub_status CASCADE;
+DROP TYPE IF EXISTS public.reaction_type CASCADE;
+
+-- ============================================================
 -- 1. ENUMS
 -- ============================================================
 CREATE TYPE auth_provider AS ENUM ('apple', 'google', 'email');
@@ -94,8 +128,8 @@ CREATE TABLE public.exercises (
 CREATE INDEX idx_exercises_muscle ON public.exercises(muscle_group_id);
 CREATE INDEX idx_exercises_search ON public.exercises USING GIN(search_text);
 
--- Training Programs
-CREATE TABLE public.training_programs (
+-- Weekly Plans
+CREATE TABLE public.weekly_plans (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
@@ -107,23 +141,21 @@ CREATE TABLE public.training_programs (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Training Menus
-CREATE TABLE public.training_menus (
+-- Workout Templates
+CREATE TABLE public.workout_templates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
-    is_template BOOLEAN DEFAULT false,
-    schedule_days INT[] DEFAULT '{}',              -- 0=Mon, 6=Sun
-    program_id UUID REFERENCES public.training_programs(id) ON DELETE SET NULL,
-    program_week INT,
+    weekly_plan_id UUID REFERENCES public.weekly_plans(id) ON DELETE SET NULL,
+    plan_week INT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Menu Exercises (junction)
-CREATE TABLE public.menu_exercises (
+-- Workout Template Exercises (junction)
+CREATE TABLE public.workout_template_exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    menu_id UUID REFERENCES public.training_menus(id) ON DELETE CASCADE,
+    workout_template_id UUID REFERENCES public.workout_templates(id) ON DELETE CASCADE,
     exercise_id UUID REFERENCES public.exercises(id),
     sort_order INT NOT NULL,
     target_sets INT DEFAULT 3,
@@ -135,7 +167,7 @@ CREATE TABLE public.menu_exercises (
 CREATE TABLE public.training_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    menu_id UUID REFERENCES public.training_menus(id),
+    workout_template_id UUID REFERENCES public.workout_templates(id),
     started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMPTZ,
     total_volume DECIMAL(10,2) DEFAULT 0,
@@ -294,7 +326,7 @@ CREATE TRIGGER trg_exercise_search
 -- 6. RLS POLICIES (BASIC)
 -- ============================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.training_menus ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.training_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.session_sets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hanko_stamps ENABLE ROW LEVEL SECURITY;
@@ -304,7 +336,7 @@ ALTER TABLE public.muscle_groups ENABLE ROW LEVEL SECURITY;
 -- User-owned data policies
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can manage their own menus" ON public.training_menus FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own templates" ON public.workout_templates FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage their own sessions" ON public.training_sessions FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage their own sets" ON public.session_sets FOR ALL USING (
     EXISTS (SELECT 1 FROM public.training_sessions WHERE id = session_id AND user_id = auth.uid())

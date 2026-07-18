@@ -1,504 +1,470 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, SafeAreaView, TextInput } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, Text, Pressable, FlatList, ActivityIndicator, Animated, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
-import { typography } from '@/constants/typography';
-import { spacing, radius } from '@/constants/spacing';
+import { spacing } from '@/constants/spacing';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
-import { useTrainingStore } from '@/store/training.store';
 import * as Haptics from 'expo-haptics';
-import { useTranslation } from 'react-i18next';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
+import { Ionicons } from '@expo/vector-icons';
+import { useActiveSession } from '@/features/training/hooks/use-active-session';
+import { ActiveTimerOverlay } from '@/features/training/components/ActiveTimerOverlay';
+import { CreateCustomMGModal } from '@/features/training/components/CreateCustomMGModal';
+import { CreateCustomExerciseModal } from '@/features/training/components/CreateCustomExerciseModal';
+import { SaveWorkoutTemplateModal } from '@/features/training/components/SaveWorkoutTemplateModal';
+import { styles } from '@/features/training/session.styles';
+import { ExerciseSection } from '@/features/training/components/ExerciseSection';
+import { MuscleGroupIcon } from '@/components/MuscleGroupIcon';
 
-export default function ActiveSessionScreen() {
-  const { t } = useTranslation();
-  const { exercises, startSession, addSet, removeSet, updateSet, toggleSetComplete, updateExerciseNote, removeExercise, reorderSessionExercises } = useTrainingStore();
+export default function SessionScreen() {
+  const {
+    // States
+    exercises,
+    isEditingTemplate,
+    selectedExerciseIds,
+    selectedMuscleGroupId,
+    focusedInput,
+    restLeft,
+    restTotal,
+    toastMessage,
+    showCreateCustomMGModal,
+    showCreateCustomExerciseModal,
+    showSaveTemplateModal,
+    templateName,
+    showTimerPresets,
+    selectedRestIndex,
+    newMGNameJa,
+    newMGNameEn,
+    newExNameJa,
+    newExNameEn,
+    newExMGId,
+    allMuscleGroups,
+    filteredExercises,
+    allExercisesDone,
+    isLoading,
+    error,
+    // Refs & Animations
+    pan,
+    scrollY,
+    timerAnimation,
+    panResponder,
+    // State Setters
+    setIsEditingTemplate,
+    setSelectedMuscleGroupId,
+    setFocusedInput,
+    setShowCreateCustomMGModal,
+    setShowCreateCustomExerciseModal,
+    setShowSaveTemplateModal,
+    setTemplateName,
+    setShowTimerPresets,
+    setSelectedRestIndex,
+    setNewMGNameJa,
+    setNewMGNameEn,
+    setNewExNameJa,
+    setNewExNameEn,
+    setNewExMGId,
+    // Actions
+    addSet,
+    removeSet,
+    updateSet,
+    removeExercise,
+    updateExercises,
+    startRest,
+    cancelRest,
+    formatRest,
+    handleToggleExercise,
+    handleToggleSelectExercise,
+    handleConfirmTemplate,
+    handleCreateCustomMuscleGroup,
+    handleCreateCustomExercise,
+    handleDeleteCustomMuscleGroup,
+    handleDeleteCustomExercise,
+    getMuscleGroupColor,
+    handleConfirmSaveTemplate,
+    handleFinishSession,
+    t,
+    i18n,
+    width,
+  } = useActiveSession();
 
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  // Calculate dynamic width for muscle group items to ensure perfect fit across all devices
+  const gridContainerWidth = width - (spacing.base * 2 + spacing.md * 2);
+  const minItemWidth = 90;
+  const gridGap = spacing.sm;
+  const numColumns = Math.max(2, Math.floor((gridContainerWidth + gridGap) / (minItemWidth + gridGap)));
+  const itemWidth = (gridContainerWidth - (numColumns - 1) * gridGap) / numColumns;
 
-  const [restLeft, setRestLeft] = useState(0);
-  
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (restLeft > 0) {
-      interval = setInterval(() => {
-        setRestLeft(prev => {
-          if (prev <= 1) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [restLeft]);
-
-  const startRest = (seconds: number) => {
-    setRestLeft(seconds);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  };
-
-  const formatRest = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleToggleComplete = (exId: string, setId: string, currentlyCompleted: boolean) => {
-    toggleSetComplete(exId, setId);
-    if (!currentlyCompleted && restLeft === 0) {
-      startRest(60);
-    }
-  };
+  const renderItem = useCallback(({ item: ex, drag, isActive }: RenderItemParams<any>) => {
+    return (
+      <ScaleDecorator>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onLongPress={drag}
+          delayLongPress={300}
+          disabled={isActive}
+          style={{ flex: 1 }}
+        >
+          <ExerciseSection
+            ex={ex}
+            drag={drag || (() => { })}
+            isActive={isActive || false}
+            focusedInput={focusedInput}
+            setFocusedInput={setFocusedInput}
+            updateSet={updateSet}
+            addSet={addSet}
+            removeSet={removeSet}
+            handleToggleExercise={handleToggleExercise}
+            removeExercise={removeExercise}
+            t={t}
+          />
+        </TouchableOpacity>
+      </ScaleDecorator>
+    );
+  }, [focusedInput, handleToggleExercise, t, addSet, removeSet, updateSet, removeExercise]);
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen 
-        options={{ 
-          headerShown: false,
-        }} 
-      />
-      
-      <View style={styles.customHeader}>
-        <Pressable 
-          onPress={() => router.back()} 
-          hitSlop={8} 
-          style={styles.headerBackButton}
-        >
-          <Icon name="chevron-back" size={24} color={colors.dark.text.primary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>{t('session.title')}</Text>
-        <View style={styles.headerRight} />
-      </View>
-
-      <ScrollView 
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={styles.scrollContent}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {exercises.map((ex, index) => (
-          <View key={ex.id} style={styles.exerciseSection}>
-            <View style={styles.exerciseSectionHeader}>
-              <View style={styles.exerciseSectionHeaderLeft}>
-                <View style={styles.exerciseIconWrapper}>
-                  <Icon name="barbell" size={16} color={colors.white} />
-                </View>
-                <Text style={styles.exerciseName}>{ex.name}</Text>
-              </View>
-              
-              <View style={styles.exerciseActions}>
-                {index > 0 && (
-                  <Pressable hitSlop={8} onPress={() => reorderSessionExercises(index, index - 1)}>
-                    <Icon name="chevron-up" size={20} color={colors.dark.text.secondary} />
-                  </Pressable>
-                )}
-                {index < exercises.length - 1 && (
-                  <Pressable hitSlop={8} onPress={() => reorderSessionExercises(index, index + 1)}>
-                    <Icon name="chevron-down" size={20} color={colors.dark.text.secondary} />
-                  </Pressable>
-                )}
-                <Pressable hitSlop={8} onPress={() => removeExercise(ex.id)} style={{ marginLeft: 8 }}>
-                  <Icon name="trash-outline" size={20} color={colors.dark.accent.primary} />
-                </Pressable>
-              </View>
-            </View>
-            
-            <TextInput
-              style={styles.notesInput}
-              placeholder={t('session.addNotes', 'Add notes for this exercise...')}
-              placeholderTextColor={colors.dark.text.tertiary}
-              value={ex.notes || ''}
-              onChangeText={(text) => updateExerciseNote(ex.id, text)}
-              multiline
-            />
-            
-            <Card style={styles.exerciseCard}>
-              <View style={styles.tableHeader}>
-                <Text style={styles.tableHeaderSet}>{t('session.sets')}</Text>
-                <Text style={styles.tableHeaderMain}>{t('session.kg')}</Text>
-                <Text style={styles.tableHeaderMain}>{t('session.reps')}</Text>
-                <Text style={styles.tableHeaderCheck}>✓</Text>
-              </View>
-              
-              {ex.sets.map((set, index) => (
-                <View key={set.id} style={[
-                  styles.setRow, 
-                  { backgroundColor: set.completed ? colors.dark.bg.elevated : colors.transparent }
-                ]}>
-                  <Text style={styles.setNumber}>{index + 1}</Text>
-                  <View style={styles.setInputContainer}>
-                    <View style={[
-                      styles.inlineInputWrapper,
-                      focusedInput === `${set.id}-weight` && styles.inlineInputWrapperFocused,
-                      set.completed && styles.inlineInputWrapperCompleted
-                    ]}>
-                      <Pressable 
-                        style={styles.adjustBtn} 
-                        hitSlop={12}
-                        onPress={() => !set.completed && updateSet(ex.id, set.id, { weight: String(Math.max(0, Number(set.weight || 0) - 1)) })}
-                      >
-                        <Icon name="remove" size={16} color={set.completed ? colors.dark.text.tertiary : (focusedInput === `${set.id}-weight` ? colors.dark.text.primary : colors.dark.text.secondary)} />
-                      </Pressable>
-                      <TextInput
-                        style={[styles.textInput, set.completed && { color: colors.dark.text.secondary }]}
-                        value={set.weight}
-                        onChangeText={(val) => updateSet(ex.id, set.id, { weight: val })}
-                        onFocus={() => setFocusedInput(`${set.id}-weight`)}
-                        onBlur={() => setFocusedInput(null)}
-                        keyboardType="decimal-pad"
-                        placeholder="--"
-                        placeholderTextColor={colors.dark.text.tertiary}
-                        editable={!set.completed}
-                        selectTextOnFocus
-                      />
-                      <Pressable 
-                        style={styles.adjustBtn} 
-                        hitSlop={12}
-                        onPress={() => !set.completed && updateSet(ex.id, set.id, { weight: String(Number(set.weight || 0) + 1) })}
-                      >
-                        <Icon name="add" size={16} color={set.completed ? colors.dark.text.tertiary : (focusedInput === `${set.id}-weight` ? colors.dark.text.primary : colors.dark.text.secondary)} />
-                      </Pressable>
-                    </View>
-                  </View>
-                  <View style={styles.setInputContainer}>
-                    <View style={[
-                      styles.inlineInputWrapper,
-                      focusedInput === `${set.id}-reps` && styles.inlineInputWrapperFocused,
-                      set.completed && styles.inlineInputWrapperCompleted
-                    ]}>
-                      <Pressable 
-                        style={styles.adjustBtn} 
-                        hitSlop={12}
-                        onPress={() => !set.completed && updateSet(ex.id, set.id, { reps: String(Math.max(0, Number(set.reps || 0) - 1)) })}
-                      >
-                        <Icon name="remove" size={16} color={set.completed ? colors.dark.text.tertiary : (focusedInput === `${set.id}-reps` ? colors.dark.text.primary : colors.dark.text.secondary)} />
-                      </Pressable>
-                      <TextInput
-                        style={[styles.textInput, set.completed && { color: colors.dark.text.secondary }]}
-                        value={set.reps}
-                        onChangeText={(val) => updateSet(ex.id, set.id, { reps: val })}
-                        onFocus={() => setFocusedInput(`${set.id}-reps`)}
-                        onBlur={() => setFocusedInput(null)}
-                        keyboardType="number-pad"
-                        placeholder="--"
-                        placeholderTextColor={colors.dark.text.tertiary}
-                        editable={!set.completed}
-                        selectTextOnFocus
-                      />
-                      <Pressable 
-                        style={styles.adjustBtn} 
-                        hitSlop={12}
-                        onPress={() => !set.completed && updateSet(ex.id, set.id, { reps: String(Number(set.reps || 0) + 1) })}
-                      >
-                        <Icon name="add" size={16} color={set.completed ? colors.dark.text.tertiary : (focusedInput === `${set.id}-reps` ? colors.dark.text.primary : colors.dark.text.secondary)} />
-                      </Pressable>
-                    </View>
-                  </View>
-                  <View style={styles.setCheckContainer}>
-                    <Pressable 
-                      onPress={() => removeSet(ex.id, set.id)}
-                      hitSlop={8}
-                    >
-                      <Icon name="trash-outline" size={20} color={colors.dark.text.tertiary} />
-                    </Pressable>
-                    <Pressable 
-                      onPress={() => handleToggleComplete(ex.id, set.id, set.completed)}
-                      hitSlop={8}
-                      style={[
-                        styles.checkCircle,
-                        { backgroundColor: set.completed ? colors.dark.accent.success : colors.dark.bg.tertiary }
-                      ]}>
-                       <Icon name="checkmark" size={18} color={set.completed ? colors.dark.bg.primary : colors.dark.text.secondary} />
-                    </Pressable>
-                  </View>
-                </View>
-              ))}
-              
-              <Pressable onPress={() => addSet(ex.id)} style={styles.addSetButton}>
-                <View style={styles.addSetContent}>
-                  <Icon name="add-circle" size={20} color={colors.dark.accent.primary} />
-                  <Text style={styles.addSetText}>{t('session.addSet', 'Add Set')}</Text>
-                </View>
-              </Pressable>
-            </Card>
-          </View>
-        ))}
-        
-        <Pressable style={styles.globalAddExerciseBtn}>
-           <Icon name="add" size={20} color={colors.dark.text.primary} />
-           <Text style={styles.globalAddExerciseText}>{t('session.addExercise')}</Text>
-        </Pressable>
-      </ScrollView>
+        <Stack.Screen
+          options={{
+            headerShown: false,
+            gestureEnabled: false,
+          }}
+        />
 
-      <View style={styles.footerContainer}>
-        <View style={styles.timerContainer}>
-          <View style={styles.timerInfo}>
-            <Icon name="timer-outline" size={24} color={restLeft > 0 ? colors.dark.accent.info : colors.dark.text.secondary} />
-            <Text style={[
-              styles.timerLabel,
-              { color: restLeft > 0 ? colors.dark.accent.info : colors.dark.text.secondary }
-            ]}>
-              {restLeft > 0 ? formatRest(restLeft) : t('session.restTimer')}
-            </Text>
-          </View>
-          <View style={styles.timerPresets}>
-             <Pressable onPress={() => startRest(60)} style={styles.presetButton}>
-               <Text style={styles.presetText}>1:00</Text>
-             </Pressable>
-             <Pressable onPress={() => startRest(90)} style={styles.presetButton}>
-               <Text style={styles.presetText}>1:30</Text>
-             </Pressable>
-             <Pressable onPress={() => startRest(120)} style={styles.presetButton}>
-               <Text style={styles.presetText}>2:00</Text>
-             </Pressable>
-          </View>
+        <View style={styles.customHeader}>
+          <Pressable
+            onPress={() => {
+              if (isEditingTemplate && exercises.length > 0) {
+                setIsEditingTemplate(false);
+              } else {
+                router.back();
+              }
+            }}
+            hitSlop={8}
+            style={styles.headerBackButton}
+          >
+            <Icon name="chevron-back" size={24} color={colors.dark.text.primary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{t('session.title')}</Text>
+          <View style={styles.headerRight} />
         </View>
 
-        <Button 
-          label={t('session.finish')} 
-          iconName="checkmark-done"
-          fullWidth
-          onPress={() => router.push('/modals/session-summary')}
-        />
-      </View>
+        {isEditingTemplate ? (
+          <>
+            <View style={styles.selectionContainer}>
+              <Text style={styles.selectionTitle}>
+                {t('session.selectMuscleGroup')}
+              </Text>
 
+              {isLoading ? (
+                <View style={styles.centerContainer}>
+                  <ActivityIndicator size="large" color={colors.dark.accent.primary} />
+                </View>
+              ) : error ? (
+                <View style={styles.centerContainer}>
+                  <Text style={{ color: colors.dark.text.secondary }}>
+                    {t('library.loadError')}
+                  </Text>
+                </View>
+              ) : (
+                <View style={{ flex: 1 }}>
+                  {/* Muscle Groups Section */}
+                  <View style={styles.muscleGroupsSection}>
+                    <View style={styles.muscleGroupGrid}>
+                      {allMuscleGroups.map(mg => {
+                        if (mg.id === 'mg-other') {
+                          return (
+                            <View key={mg.id} style={[styles.muscleGroupItemWrapper, { width: itemWidth }]}>
+                              <Pressable
+                                style={[
+                                  styles.muscleGroupItem,
+                                  {
+                                    backgroundColor: colors.dark.bg.tertiary,
+                                    borderColor: colors.dark.border.subtle,
+                                    borderStyle: 'dashed'
+                                  }
+                                ]}
+                                onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                  setShowCreateCustomMGModal(true);
+                                }}
+                              >
+                                <Ionicons name="add" size={24} color={colors.dark.text.secondary} />
+                              </Pressable>
+                            </View>
+                          );
+                        }
+
+                        const isSelected = selectedMuscleGroupId === mg.id;
+                        const softColor = getMuscleGroupColor(mg.id);
+                        return (
+                          <View key={mg.id} style={[styles.muscleGroupItemWrapper, { width: itemWidth }]}>
+                            <Pressable
+                              style={[
+                                styles.muscleGroupItem,
+                                {
+                                  backgroundColor: isSelected ? softColor.selectedBg : softColor.bg,
+                                  borderColor: isSelected ? softColor.border : colors.dark.border.subtle
+                                }
+                              ]}
+                              onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setSelectedMuscleGroupId(mg.id);
+                              }}
+                            >
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <MuscleGroupIcon
+                                  id={mg.id}
+                                  size={20}
+                                  color={isSelected ? colors.white : colors.dark.text.primary}
+                                />
+                                <Text style={[
+                                  styles.muscleGroupText,
+                                  { color: isSelected ? colors.white : colors.dark.text.primary }
+                                ]}>
+                                  {i18n.language === 'ja' ? mg.name_ja : mg.name_en}
+                                </Text>
+                              </View>
+                              {mg.id.startsWith('mg-custom') && (
+                                <Pressable
+                                  onPress={() => handleDeleteCustomMuscleGroup(mg.id)}
+                                  hitSlop={15}
+                                  style={styles.deleteBadge}
+                                >
+                                  <Ionicons name="close" size={12} color={colors.white} />
+                                </Pressable>
+                              )}
+                            </Pressable>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  </View>
+
+                  {/* Selected Muscle Group's Exercises List */}
+                  {selectedMuscleGroupId ? (
+                    <View style={{ flex: 1, marginTop: spacing.md }}>
+                      <View style={styles.exercisesHeaderRow}>
+                        <Text style={styles.exercisesListTitle}>
+                          {t('session.exercises')}
+                        </Text>
+                      </View>
+
+                      <FlatList
+                        data={filteredExercises}
+                        keyExtractor={(item) => item.id}
+                        showsVerticalScrollIndicator={false}
+                        renderItem={({ item }) => {
+                          const name = i18n.language === 'ja' ? item.name_ja : item.name_en;
+                          const isChecked = selectedExerciseIds.includes(item.id);
+                          return (
+                            <Pressable
+                              style={[
+                                styles.exerciseSelectItem,
+                                isChecked && styles.exerciseSelectItemChecked
+                              ]}
+                              onPress={() => handleToggleSelectExercise(item.id)}
+                            >
+                              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Text style={[styles.exerciseSelectName, { flexShrink: 1 }]}>{name}</Text>
+                                {item.id.startsWith('ex-custom') && (
+                                  <Pressable onPress={() => handleDeleteCustomExercise(item.id)} hitSlop={12} style={{ padding: 4 }}>
+                                    <Ionicons name="close-circle" size={20} color={colors.dark.accent.warning} />
+                                  </Pressable>
+                                )}
+                              </View>
+                              <View style={[
+                                styles.checkboxCircle,
+                                isChecked && styles.checkboxCircleChecked
+                              ]}>
+                                {isChecked && <Ionicons name="checkmark" size={14} color={colors.white} />}
+                              </View>
+                            </Pressable>
+                          );
+                        }}
+                        contentContainerStyle={styles.selectListContent}
+                        style={{ flex: 1 }}
+                        bounces={false}
+                        ListEmptyComponent={
+                          <View style={styles.emptyExercisesContainer}>
+                            <Text style={styles.emptyExercisesText}>
+                              {t('session.noExercisesCreate')}
+                            </Text>
+                          </View>
+                        }
+                        ListFooterComponent={
+                          <Pressable
+                            style={[
+                              styles.exerciseSelectItem,
+                              {
+                                justifyContent: 'center',
+                                backgroundColor: colors.dark.bg.tertiary,
+                                borderStyle: 'dashed',
+                                marginTop: 0,
+                                marginBottom: spacing.md
+                              }
+                            ]}
+                            onPress={() => setShowCreateCustomExerciseModal(true)}
+                          >
+                            <Ionicons name="add" size={24} color={colors.dark.text.primary} />
+                          </Pressable>
+                        }
+                      />
+                    </View>
+                  ) : (
+                    <View style={styles.emptyExercisesContainer}>
+                      <Text style={styles.emptyExercisesText}>
+                        {t('session.selectMuscleGroupView')}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Sticky Submit Button */}
+            {selectedExerciseIds.length > 0 && (
+              <View style={styles.submitButtonContainer}>
+                <Button
+                  label={exercises.length > 0
+                    ? t('session.saveWorkoutTemplate')
+                    : t('session.createWorkoutTemplate')}
+                  iconName="checkmark-done"
+                  fullWidth
+                  onPress={handleConfirmTemplate}
+                />
+                {exercises.length > 0 && (
+                  <Pressable onPress={() => setIsEditingTemplate(false)} style={styles.cancelEditBtn}>
+                    <Text style={styles.cancelEditText}>{t('common.cancel')}</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={{ flex: 1 }}>
+            <Pressable
+              style={[styles.globalAddExerciseBtn, { marginHorizontal: spacing.base, marginTop: spacing.base, marginBottom: 0, zIndex: 10 }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                setIsEditingTemplate(true);
+              }}
+            >
+              <Ionicons name="pencil-sharp" size={18} color={colors.dark.text.primary} style={{ marginRight: spacing.xs }} />
+              <Text style={styles.globalAddExerciseText}>
+                {t('session.editWorkoutTemplate')}
+              </Text>
+            </Pressable>
+            <DraggableFlatList
+              data={exercises}
+              keyExtractor={(item) => item.id}
+              onDragEnd={({ data }) => updateExercises(data)}
+              renderItem={renderItem}
+              contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
+              containerStyle={{ flex: 1 }}
+              style={{ flex: 1 }}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            />
+          </View>
+        )}
+
+        {!isEditingTemplate && exercises.length > 0 && (
+          <View style={styles.submitButtonContainer}>
+            <Button
+              label={t('session.finish')}
+              iconName="checkmark-done"
+              fullWidth
+              onPress={handleFinishSession}
+              style={!allExercisesDone && { opacity: 0.4 }}
+            />
+          </View>
+        )}
+
+        {/* Floating Timer Bubble */}
+        {!isEditingTemplate && exercises.length > 0 && restLeft === 0 && !showTimerPresets && (
+          <Animated.View
+            {...panResponder.panHandlers}
+            style={[styles.floatingBubble, { transform: [{ translateX: pan.x }, { translateY: pan.y }] }]}
+          >
+            <Pressable
+              style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => setShowTimerPresets(true)}
+            >
+              <Icon name="timer-outline" size={32} color={colors.white} />
+            </Pressable>
+          </Animated.View>
+        )}
+
+        {/* Extracted Modals & Overlays */}
+        <ActiveTimerOverlay
+          restLeft={restLeft}
+          restTotal={restTotal}
+          showTimerPresets={showTimerPresets}
+          setShowTimerPresets={setShowTimerPresets}
+          selectedRestIndex={selectedRestIndex}
+          setSelectedRestIndex={setSelectedRestIndex}
+          startRest={startRest}
+          cancelRest={cancelRest}
+          formatRest={formatRest}
+          scrollY={scrollY}
+          timerAnimation={timerAnimation}
+          t={t}
+        />
+
+        <CreateCustomMGModal
+          visible={showCreateCustomMGModal}
+          onRequestClose={() => setShowCreateCustomMGModal(false)}
+          newMGNameJa={newMGNameJa}
+          setNewMGNameJa={setNewMGNameJa}
+          newMGNameEn={newMGNameEn}
+          setNewMGNameEn={setNewMGNameEn}
+          handleCreateCustomMuscleGroup={handleCreateCustomMuscleGroup}
+          t={t}
+        />
+
+        <CreateCustomExerciseModal
+          visible={showCreateCustomExerciseModal}
+          onRequestClose={() => setShowCreateCustomExerciseModal(false)}
+          newExNameJa={newExNameJa}
+          setNewExNameJa={setNewExNameJa}
+          newExNameEn={newExNameEn}
+          setNewExNameEn={setNewExNameEn}
+          newExMGId={newExMGId}
+          setNewExMGId={setNewExMGId}
+          allMuscleGroups={allMuscleGroups}
+          selectedMuscleGroupId={selectedMuscleGroupId}
+          handleCreateCustomExercise={handleCreateCustomExercise}
+          t={t}
+          i18n={i18n}
+        />
+
+        <SaveWorkoutTemplateModal
+          visible={showSaveTemplateModal}
+          onRequestClose={() => setShowSaveTemplateModal(false)}
+          templateName={templateName}
+          setTemplateName={setTemplateName}
+          onSave={handleConfirmSaveTemplate}
+          t={t}
+        />
+
+        {toastMessage && (
+          <View style={styles.toastContainer}>
+            <Icon name="alert-circle-outline" size={20} color={colors.dark.accent.warning} />
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.dark.bg.primary,
-  },
-  customHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.dark.border.subtle,
-    backgroundColor: colors.dark.bg.primary,
-  },
-  headerBackButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: 'bold',
-    color: colors.dark.text.primary,
-  },
-  headerRight: {
-    width: 40,
-  },
-  scrollContent: {
-    padding: spacing.base,
-    gap: spacing.xl,
-  },
-  exerciseSection: {
-    gap: spacing.md,
-  },
-  exerciseSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  exerciseSectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  exerciseIconWrapper: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: colors.dark.accent.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  exerciseName: {
-    color: colors.dark.text.primary,
-    fontSize: typography.fontSize.lg,
-    fontWeight: 'bold',
-  },
-  exerciseActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  notesInput: {
-    backgroundColor: colors.dark.bg.tertiary,
-    color: colors.dark.text.primary,
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    fontSize: typography.fontSize.sm,
-    minHeight: 40,
-  },
-  exerciseCard: {
-    padding: 0,
-    borderWidth: 1,
-    borderColor: colors.dark.border.subtle,
-    overflow: 'hidden',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    backgroundColor: colors.dark.bg.elevated,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.dark.border.subtle,
-  },
-  tableHeaderSet: {
-    width: 40,
-    color: colors.dark.text.secondary,
-    textAlign: 'center',
-  },
-  tableHeaderMain: {
-    flex: 2.5,
-    color: colors.dark.text.secondary,
-    textAlign: 'center',
-  },
-  tableHeaderCheck: {
-    flex: 1.5,
-    color: colors.dark.text.secondary,
-    textAlign: 'right',
-  },
-  setRow: {
-    flexDirection: 'row',
-    padding: spacing.md,
-    alignItems: 'center',
-  },
-  setNumber: {
-    width: 40,
-    color: colors.dark.text.primary,
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  setInputContainer: {
-    flex: 2.5,
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  inlineInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.dark.bg.tertiary,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    overflow: 'hidden',
-    height: 36,
-    width: '100%',
-  },
-  inlineInputWrapperFocused: {
-    borderColor: colors.dark.accent.primary,
-    backgroundColor: colors.dark.bg.secondary,
-  },
-  inlineInputWrapperCompleted: {
-    backgroundColor: 'transparent',
-  },
-  adjustBtn: {
-    paddingHorizontal: 6,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textInput: {
-    flex: 1,
-    color: colors.dark.text.primary,
-    textAlign: 'center',
-    fontVariant: ['tabular-nums'],
-    fontWeight: 'bold',
-    padding: 0,
-  },
-  setCheckContainer: {
-    flex: 1.5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-  },
-  checkCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addSetButton: {
-    padding: spacing.md,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: colors.dark.border.subtle,
-    backgroundColor: colors.dark.bg.secondary,
-  },
-  addSetContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  addSetText: {
-    color: colors.dark.accent.primary,
-    fontWeight: 'bold',
-  },
-  globalAddExerciseBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.dark.border.default,
-    backgroundColor: colors.dark.bg.tertiary,
-    marginTop: spacing.sm,
-  },
-  globalAddExerciseText: {
-    color: colors.dark.text.primary,
-    fontWeight: 'bold',
-    fontSize: typography.fontSize.base,
-  },
-  footerContainer: {
-    padding: spacing.base,
-    paddingBottom: spacing.xl,
-    backgroundColor: colors.dark.bg.elevated,
-    borderTopWidth: 1,
-    borderTopColor: colors.dark.border.subtle,
-    gap: spacing.md,
-  },
-  timerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.dark.bg.secondary,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-  },
-  timerInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  timerLabel: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: 'bold',
-  },
-  timerPresets: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  presetButton: {
-    padding: spacing.xs,
-    backgroundColor: colors.dark.bg.tertiary,
-    borderRadius: radius.sm,
-  },
-  presetText: {
-    color: colors.dark.text.primary,
-  },
-});
+
+
 

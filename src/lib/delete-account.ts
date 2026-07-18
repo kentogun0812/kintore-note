@@ -11,7 +11,7 @@
  * 7. Sign out from Supabase auth
  */
 import { supabase } from '@/lib/supabase';
-import { getDatabase } from '@/db';
+import { getSqliteDb } from '@/infra/db/sqlite';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Paths, Directory } from 'expo-file-system';
@@ -39,6 +39,11 @@ interface DeleteAccountResult {
  */
 export async function deleteAccount(): Promise<DeleteAccountResult> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'User not authenticated' };
+    }
+
     // Step 1: Delete user on server
     // This calls Supabase's built-in user deletion endpoint.
     // The server's CASCADE constraints will remove all related data.
@@ -84,21 +89,29 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
  */
 async function clearLocalDatabase(userId: string): Promise<void> {
   try {
-    const database = getDatabase(userId);
-    if (!database) return;
-    await database.write(async () => {
-      const tables = ['training_sessions', 'session_sets', 'hanko_stamps'];
-      for (const tableName of tables) {
-        const collection = database.get(tableName);
-        const allRecords = await collection.query().fetch();
-        for (const record of allRecords) {
-          await record.destroyPermanently();
-        }
+    const db = getSqliteDb();
+    db.withTransactionSync(() => {
+      const tables = [
+        'workout_sets',
+        'workout_exercises',
+        'workout_sessions',
+        'favorite_exercises',
+        'custom_exercises',
+        'hanko_stamps',
+        'body_photos',
+        'workout_routine_exercises',
+        'workout_routines',
+        'weekly_plans',
+        'exercises',
+        'muscle_groups'
+      ];
+      for (const table of tables) {
+        db.runSync(`DELETE FROM ${table};`);
       }
     });
+    console.log('[SQLite] Local database wiped successfully.');
   } catch (error) {
-    // WatermelonDB might not be initialized in Expo Go
-    console.warn('Failed to clear local database (expected in Expo Go):', error);
+    console.error('Failed to clear local database:', error);
   }
 }
 

@@ -4,27 +4,27 @@ import { useCallback } from 'react';
 import { Link, router, useFocusEffect } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
-import { spacing } from '@/constants/spacing';
+import { spacing, radius } from '@/constants/spacing';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Icon } from '@/components/Icon';
-import { useMenuStore } from '@/store/menu.store';
+import { useWorkoutStore } from '@/store/workout.store';
 import { useTrainingStore } from '@/store/training.store';
 import { useTranslation } from 'react-i18next';
 
 export default function TrainingScreen() {
-  const { t } = useTranslation();
-  const { savedMenus, fetchSavedMenus } = useMenuStore();
+  const { t, i18n } = useTranslation();
+  const { savedWorkouts, fetchSavedWorkouts } = useWorkoutStore();
   const { startSession } = useTrainingStore();
 
   useFocusEffect(
     useCallback(() => {
-      fetchSavedMenus();
+      fetchSavedWorkouts();
     }, [])
   );
 
-  const handleStartMenu = (menu: any) => {
-    startSession(menu.exercises);
+  const handleStartRoutine = (routine: any) => {
+    startSession(routine.exercises);
     router.push('/training/session');
   };
 
@@ -34,10 +34,6 @@ export default function TrainingScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-      <Text style={styles.screenTitle}>
-        {t('record.title')}
-      </Text>
-      
       <Card style={styles.quickStartCard}>
         <View style={styles.cardHeader}>
           <Icon name="flash" size={20} color={colors.dark.accent.warning} />
@@ -48,33 +44,34 @@ export default function TrainingScreen() {
         <Text style={styles.cardSubtitle}>
            {t('record.quickStartDesc')}
         </Text>
-        <Link href="/training/session" asChild>
-          <Button label={t('record.startEmpty')} iconName="play" fullWidth />
-        </Link>
+        <Button 
+          label={t('record.startEmpty')} 
+          fullWidth 
+          onPress={() => {
+            startSession([]);
+            router.push('/training/session');
+          }}
+        />
       </Card>
       
       <View style={styles.toolsRow}>
-        <Link href="/training/menu-builder" asChild>
+        <Link href="/training/weekly-plans" asChild>
           <Pressable style={styles.toolItem}>
             <Card style={styles.toolCard}>
-              <Icon name="clipboard" size={32} color={colors.dark.accent.primary} />
-              <Text style={styles.toolText}>{t('record.menuBuilder')}</Text>
-            </Card>
-          </Pressable>
-        </Link>
-        <Link href="/training/program-builder" asChild>
-          <Pressable style={styles.toolItem}>
-            <Card style={styles.toolCard}>
-              <Icon name="calendar-outline" size={32} color={colors.dark.accent.secondary} />
-              <Text style={styles.toolText} numberOfLines={1} adjustsFontSizeToFit>{t('program.builder', 'Program')}</Text>
+              <View style={styles.toolIconWatermark}>
+                  <Icon name="calendar-outline" size={54} color={colors.dark.accent.primary} />
+              </View>
+                <Text style={styles.toolText} numberOfLines={2}>{t('record.weeklyPlans')}</Text>
             </Card>
           </Pressable>
         </Link>
         <Link href="/training/library" asChild>
           <Pressable style={styles.toolItem}>
             <Card style={styles.toolCard}>
-              <Icon name="library" size={32} color={colors.dark.text.secondary} />
-              <Text style={styles.toolText}>{t('record.exerciseLibrary')}</Text>
+              <View style={styles.toolIconWatermark}>
+                  <Icon name="library" size={54} color={colors.dark.accent.primary} />
+              </View>
+              <Text style={styles.toolText} numberOfLines={2}>{t('record.exerciseLibrary')}</Text>
             </Card>
           </Pressable>
         </Link>
@@ -83,42 +80,60 @@ export default function TrainingScreen() {
       <View style={styles.sectionHeader}>
         <Icon name="bookmarks-outline" size={20} color={colors.dark.text.primary} />
         <Text style={styles.sectionTitle}>
-           {t('record.savedMenus')}
+           {t('record.savedWorkouts')}
         </Text>
       </View>
 
-      {savedMenus.length === 0 ? (
+      {savedWorkouts.length === 0 ? (
         <Card style={styles.emptyCard}>
           <Icon name="document-text-outline" size={28} color={colors.dark.text.tertiary} />
           <Text style={styles.emptyText}>
-            {t('record.noMenus')}
+            {t('record.noWorkouts')}
           </Text>
         </Card>
       ) : (
-        savedMenus.map(menu => (
-          <Card key={menu.id} style={styles.menuCard}>
-            <View style={styles.menuHeader}>
-              <Text style={styles.menuName}>{menu.name}</Text>
-              <Text style={styles.menuExerciseCount}>{menu.exercises.length} {t('common.exercises')}</Text>
+        savedWorkouts.map(routine => (
+          <Card key={routine.id} style={styles.routineCard}>
+            <View style={styles.routineHeader}>
+              <Text style={styles.routineName}>{routine.name}</Text>
+              <Text style={styles.routineExerciseCount}>{routine.exercises.length} {t('common.exercises')}</Text>
             </View>
-            <View style={styles.exercisePreview}>
-              {menu.exercises.slice(0, 3).map((ex, i) => (
-                <View key={ex.id} style={styles.exerciseTag}>
-                  <Text style={styles.exerciseTagText}>{ex.name}</Text>
-                </View>
-              ))}
-              {menu.exercises.length > 3 && (
-                <View style={styles.exerciseTag}>
-                  <Text style={styles.exerciseTagText}>+{menu.exercises.length - 3} {t('common.more')}</Text>
+            
+            <View style={styles.modernExerciseList}>
+              {routine.exercises.slice(0, 4).map((ex, index) => {
+                const showBorder = index < Math.min(routine.exercises.length, 4) - 1 || routine.exercises.length > 4;
+                return (
+                  <View key={ex.id} style={[styles.modernExerciseItem, showBorder && styles.modernExerciseItemBorder]}>
+                    <View style={styles.modernExerciseInfo}>
+                      <View style={styles.modernExerciseIconContainer}>
+                        <Icon name="barbell-outline" size={14} color={colors.dark.accent.primary} />
+                      </View>
+                      <Text style={styles.modernExerciseName} numberOfLines={1}>
+                        {i18n.language === 'ja' ? ex.name_ja : ex.name_en}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+              {routine.exercises.length > 4 && (
+                <View style={styles.modernExerciseItem}>
+                  <View style={styles.modernExerciseInfo}>
+                    <View style={[styles.modernExerciseIconContainer, { backgroundColor: 'transparent' }]}>
+                      <Icon name="ellipsis-horizontal" size={14} color={colors.dark.text.tertiary} />
+                    </View>
+                    <Text style={[styles.modernExerciseName, { color: colors.dark.text.tertiary }]} numberOfLines={1}>
+                      +{routine.exercises.length - 4} {t('common.more')}
+                    </Text>
+                  </View>
                 </View>
               )}
             </View>
+
             <Button 
               label={t('home.startSession')} 
-              iconName="play-circle" 
-              variant="secondary" 
-              size="sm" 
-              onPress={() => handleStartMenu(menu)} 
+              variant="outline" 
+              size="md" 
+              onPress={() => handleStartRoutine(routine)} 
             />
           </Card>
         ))
@@ -174,14 +189,30 @@ const styles = StyleSheet.create({
   },
   toolCard: {
     padding: spacing.md,
-    height: 120,
+    height: 100,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.sm,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: colors.dark.border.light,
+    backgroundColor: colors.dark.bg.tertiary,
+  },
+  toolIconWatermark: {
+    position: 'absolute',
+    opacity: 0.45,
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   toolText: {
     color: colors.dark.text.primary,
     fontWeight: 'bold',
+    textAlign: 'center',
+    zIndex: 1,
+    fontSize: typography.fontSize.md,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -206,38 +237,61 @@ const styles = StyleSheet.create({
     color: colors.dark.text.secondary,
     paddingVertical: spacing.sm,
   },
-  menuCard: {
+  routineCard: {
     padding: spacing.md,
     gap: spacing.sm,
   },
-  menuHeader: {
+  routineHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  menuName: {
+  routineName: {
     color: colors.dark.text.primary,
     fontSize: typography.fontSize.md,
     fontWeight: 'bold',
   },
-  menuExerciseCount: {
+  routineExerciseCount: {
     color: colors.dark.text.tertiary,
     fontSize: typography.fontSize.xs,
   },
-  exercisePreview: {
+  modernExerciseList: {
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  modernExerciseItem: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginBottom: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
   },
-  exerciseTag: {
-    backgroundColor: colors.dark.bg.tertiary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  modernExerciseItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.default,
   },
-  exerciseTagText: {
-    color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.xs,
+  modernExerciseIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.sm,
+    backgroundColor: colors.dark.bg.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modernExerciseInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+  },
+  modernExerciseName: {
+    color: colors.dark.text.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: '600',
+    flexShrink: 1,
   },
 });

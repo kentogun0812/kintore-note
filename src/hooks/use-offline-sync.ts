@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-import { syncWatermelonDB } from '@/infra/db/sync';
 import { supabase } from '@/infra/api/supabase.client';
 import { useAuthStore } from '@/store/auth.store';
+import { SyncService } from '@/infra/db/sync-service';
 
 export function useOfflineSync() {
   const appState = useRef(AppState.currentState);
@@ -25,8 +25,8 @@ export function useOfflineSync() {
 
     try {
       isSyncing.current = true;
-      console.log('Starting DB sync...');
-      await syncWatermelonDB(session.user.id);
+      console.log('Starting SQLite background sync...');
+      await SyncService.syncAll(session.user.id);
       console.log('DB sync completed successfully.');
       setLastSyncedAt(new Date());
     } catch (error) {

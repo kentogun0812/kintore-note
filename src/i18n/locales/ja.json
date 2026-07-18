@@ -13,6 +13,9 @@
     "more": "件以上",
     "exercises": "種目",
     "error": "エラー",
+    "success": "成功",
+    "yes": "はい",
+    "no": "いいえ",
     "weekdays": {
       "sun": "日",
       "mon": "月",
@@ -33,7 +36,7 @@
     "currentStreak": "現在の継続日数",
     "hankoCalendar": "ハンコカレンダー",
     "loginToSync": "ログインするとデータを同期できます ☁️",
-    "todayMenu": "今日のメニュー",
+    "todayRoutine": "今日のワークアウト",
     "startSession": "トレーニング開始",
     "weeklyGoal": "今週の目標",
     "weeklyTarget": "/ {{target}}日",
@@ -43,12 +46,13 @@
   "record": {
     "title": "トレーニング",
     "quickStart": "クイックスタート",
-    "quickStartDesc": "メニューなしでトレーニングを開始し、その場で記録します。",
+    "quickStartDesc": "空のセッションを開始し、その場で記録します。",
     "startEmpty": "空のセッションを開始",
-    "menuBuilder": "メニュービルダー",
+    "todayWorkout": "今日のワークアウト",
+    "weeklyPlans": "週間プラン",
     "exerciseLibrary": "種目ライブラリ",
-    "savedMenus": "保存済みメニュー",
-    "noMenus": "まだ保存されたメニューはありません。"
+    "savedWorkouts": "保存済みワークアウト",
+    "noWorkouts": "まだ保存されたワークアウトはありません。"
   },
   "stats": {
     "title": "分析",
@@ -73,12 +77,6 @@
     "takeFirst": "最初の写真を撮影",
     "loading": "暗号化された写真を読み込み中...",
     "decrypting": "復号化中..."
-  },
-  "circle": {
-    "title": "プライベートサークル",
-    "comingSoon": "フェーズ2で公開予定",
-    "comingSoonDesc": "友達とつながり、メニューの共有やハンコスタンプへのリアクションができる限定フィードです。",
-    "addFriend": "友達を追加"
   },
   "settings": {
     "title": "設定",
@@ -148,8 +146,10 @@
   },
   "session": {
     "title": "トレーニング中",
+    "selectMuscleGroup": "部位",
     "finish": "終了",
     "addExercise": "種目を追加",
+    "addNotes": "メモを追加...",
     "sets": "セット",
     "kg": "kg",
     "weight": "重量",
@@ -164,7 +164,31 @@
       "totalSets": "総セット数",
       "stampHanko": "ハンコを押す",
       "done": "完了"
-    }
+    },
+    "editWorkoutTemplate": "テンプレートを編集",
+    "exercises": "種目",
+    "newMuscle": "部位作成",
+    "newExercise": "種目作成",
+    "noExercisesCreate": "種目がありません。上のボタンから作成してください。",
+    "selectMuscleGroupView": "部位を選択してください。",
+    "saveWorkoutTemplate": "変更を保存する",
+    "createWorkoutTemplate": "トレーニングを開始する",
+    "createCustomMuscle": "カスタム部位の作成",
+    "japaneseName": "日本語名",
+    "englishName": "英語名",
+    "createCustomExercise": "カスタム種目の作成",
+    "targetMuscle": "対象部位",
+    "muscleGroupExists": "その部位は既に存在します。",
+    "deleteCustomMuscle": "カスタム部位の削除",
+    "deleteCustomMuscleDesc": "このカスタム部位を削除してもよろしいですか？",
+    "deleteCustomExercise": "カスタム種目の削除",
+    "deleteCustomExerciseDesc": "このカスタム種目を削除してもよろしいですか？",
+    "pleaseMarkAllDone": "終了する前に、すべてのセットを完了としてマークしてください。",
+    "saveAsTemplateTitle": "テンプレートとして保存",
+    "finishTitle": "ワークアウトの終了",
+    "saveAsTemplatePrompt": "このセッションを将来のためにワークアウトテンプレートとして保存しますか？",
+    "workoutSaved": "ワークアウトテンプレートが正常に作成され、割り当てられました。",
+    "defaultTemplateName": "ワークアウト {{date}}"
   },
   "hanko": {
     "wellDone": "よくできました！",
@@ -173,23 +197,27 @@
   "tabs": {
     "home": "ホーム",
     "training": "トレーニング",
-    "body": "記録",
-    "circle": "サークル",
-    "stats": "分析"
+    "body": "写真",
+    "stats": "分析",
+    "settings": "設定"
   },
-  "menuBuilder": {
-    "title": "メニュービルダー",
-    "menuName": "メニュー名",
+  "todayWorkout": {
+    "title": "今日のワークアウト",
+    "workoutName": "ワークアウト名",
     "placeholder": "例：胸の日",
     "exercises": "種目",
     "add": "追加",
     "noExercises": "種目が追加されていません。",
     "saving": "保存中...",
-    "saveMenu": "メニューを保存",
+    "saveWorkout": "ワークアウトを保存",
     "guestLimitTitle": "ゲスト制限",
-    "guestLimitDesc": "ゲストはメニューを1つしか作成できません。無制限に作成してクラウドに同期するには、ログインまたは登録してください！🏋️‍♂️",
+    "guestLimitDesc": "ゲストはテンプレートを1つしか作成できません。無制限に作成してクラウドに同期するには、ログインまたは登録してください！🏋️‍♂️",
     "later": "後で",
-    "loginRegister": "ログイン / 登録"
+    "loginRegister": "ログイン / 登録",
+    "nameTooLong": "ワークアウト名は50文字以内で入力してください。",
+    "nameInvalidChars": "特殊文字（<, >, \", ', ;, \\ など）は使用できません。",
+    "nameEmpty": "ワークアウト名を入力してください。",
+    "library": "ライブラリ"
   },
   "library": {
     "title": "種目ライブラリ",
@@ -199,7 +227,7 @@
   },
   "exerciseDetail": {
     "title": "詳細",
-    "addToMenu": "メニューに追加"
+    "addToRoutine": "ルーティンに追加"
   },
   "camera": {
     "permissionTitle": "カメラへのアクセスが必要です",
@@ -303,31 +331,33 @@
       }
     }
   },
-  "body": {
-    "title": "ボディレコード",
-    "encrypted": "暗号化済み",
-    "takePhoto": "経過写真を撮影",
-    "cameraDesc": "AES-256暗号化 · セルフタイマー · カメラロールには保存されません",
-    "photos": "枚",
-    "noPhotos": "まだ写真がありません",
-    "noPhotosDesc": "暗号化された安全な写真で、体の変化を記録しましょう。",
-    "noAnglePhotos": "この角度の写真はありません",
-    "noAnglePhotosDesc": "この角度から写真を撮って、変化を確認しましょう。",
-    "takeFirst": "最初の写真を撮る",
-    "loading": "暗号化写真を読み込み中...",
-    "filterAll": "すべて",
-    "filterFront": "正面",
-    "filterSide": "側面",
-    "filterBack": "背面"
+  "weeklyPlan": {
+    "builder": "週間プランビルダー",
+    "activePlan": "アクティブなプラン",
+    "weekN": "第{{n}}週",
+    "noWorkoutThisWeek": "今週はワークアウトが割り当てられていません。",
+    "viewSchedule": "スケジュールを見る",
+    "timeline": "スケジュールタイムライン",
+    "assignWorkout": "ワークアウトを割り当てる",
+    "selectWorkout": "ワークアウトを選択",
+    "noSavedWorkouts": "保存されたワークアウトがありません。",
+    "active": "アクティブ",
+    "weeks": "週",
+    "setAsActive": "アクティブプランに設定"
   },
-  "camera": {
-    "permissionTitle": "カメラへのアクセスが必要です",
-    "permissionDesc": "写真はAES-256でローカル暗号化されます。カメラロールには保存されません。",
-    "grantPermission": "許可する",
-    "encrypting": "暗号化中...",
-    "decrypting": "復号中...",
-    "angleFront": "正面",
-    "angleSide": "側面",
-    "angleBack": "背面"
+  "weeklyPlanBuilder": {
+    "invalidWeeks": "無効な週数です。1から52までの数字を入力してください。",
+    "createFailed": "プランの作成に失敗しました。",
+    "title": "週間プランを作成",
+    "name": "週間プラン名",
+    "namePlaceholder": "例: 4週間の筋力強化",
+    "totalWeeks": "週数 (1-52)",
+    "info": "プラン作成後、各週に異なるワークアウトテンプレートを割り当てることができます。",
+    "save": "保存"
+  },
+  "banners": {
+    "todayWorkoutDesc": "今日行う種目を選んでワークアウトを作成します。",
+    "weeklyPlansDesc": "週間トレーニングプランを作成し、いつでも利用できます。",
+    "libraryDesc": "種目を閲覧したり、オリジナルの種目を作成できます。"
   }
 }

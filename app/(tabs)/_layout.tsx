@@ -15,10 +15,11 @@ export default function TabLayout() {
   const router = useRouter();
 
   const guestGuard = (e: any) => {
-    if (isGuest) {
-      e.preventDefault();
-      router.push('/auth/login');
-    }
+    // MOCK: Temporarily bypassed to allow access without login
+    // if (isGuest) {
+    //   e.preventDefault();
+    //   router.push('/auth/login');
+    // }
   };
 
   return (
@@ -65,12 +66,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? 'body' : 'body-outline'} color={color} focused={focused} />,
         }}
         listeners={{ tabPress: guestGuard }}
-      />
-      <Tabs.Screen
-        name="circle"
-        options={{
-          href: null,
-        }}
       />
       <Tabs.Screen
         name="stats"
