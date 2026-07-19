@@ -151,7 +151,7 @@ export default function ExerciseLibraryScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorTitle}>{t('library.loadError')}</Text>
           <Text style={styles.errorSubtitle}>
-            {error instanceof Error ? error.message : JSON.stringify(error)}
+            {t('common.unknownError')}
           </Text>
         </View>
       ) : (

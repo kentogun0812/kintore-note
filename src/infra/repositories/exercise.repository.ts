@@ -39,7 +39,6 @@ export const ExerciseRepository = {
    * Fetch exercises (both system and custom) for a specific muscle group
    */
   getExercisesByMuscleGroup(muscleGroupId: string, userId: string = 'guest'): ExerciseModel[] {
-    // We union the system exercises and the user's custom exercises
     return queryAll<ExerciseModel>(
       `SELECT id, name_ja, name_en, muscle_group_id, 1 as is_system 
        FROM exercises 
@@ -136,10 +135,6 @@ export const ExerciseRepository = {
    */
   deleteCustomExercise(id: string, userId: string): void {
     const now = new Date().toISOString();
-    
-    // We soft-delete for sync, or hard-delete if it's not synced yet.
-    // However, to keep it simple for now, we can mark as deleted or delete.
-    // We will do a soft-delete status update first, or if it's guest, hard delete.
     if (userId === 'guest') {
       runExecute('DELETE FROM custom_exercises WHERE id = ?', [id]);
     } else {
@@ -173,7 +168,7 @@ export const ExerciseRepository = {
           [now, userId, exerciseId]
         );
       }
-      return false; // No longer favorite
+      return false;
     } else {
       const id = Crypto.randomUUID();
       runExecute(
@@ -181,7 +176,7 @@ export const ExerciseRepository = {
          VALUES (?, ?, ?, 'pending', ?, ?)`,
         [id, userId, exerciseId, now, now]
       );
-      return true; // Is now favorite
+      return true;
     }
   },
 
@@ -195,5 +190,34 @@ export const ExerciseRepository = {
       [userId]
     );
     return favs.map(f => f.exercise_id);
+  },
+
+  /**
+   * Fetch a single exercise by ID
+   */
+  getExerciseById(id: string, userId: string = 'guest'): ExerciseModel | null {
+    const ex = queryOne<any>(
+      `SELECT id, name_ja, name_en, muscle_group_id, 1 as is_system 
+       FROM exercises 
+       WHERE id = ?
+       UNION ALL
+       SELECT id, name_ja, name_en, muscle_group_id, 0 as is_system 
+       FROM custom_exercises 
+       WHERE id = ? AND (user_id = ? OR user_id = 'guest')`,
+      [id, id, userId, userId]
+    );
+    if (!ex) return null;
+
+    const mgs = this.getMuscleGroups(userId);
+    const mg = mgs.find(m => m.id === ex.muscle_group_id) || null;
+
+    return {
+      id: ex.id,
+      name_ja: ex.name_ja,
+      name_en: ex.name_en,
+      muscle_group_id: ex.muscle_group_id,
+      is_system: ex.is_system,
+      muscle_groups: mg
+    };
   }
 };

@@ -157,7 +157,7 @@ export const SQLITE_SCHEMA = {
         workout_template_id TEXT NOT NULL,
         exercise_id TEXT NOT NULL,
         sort_order INTEGER DEFAULT 0,
-        target_sets INTEGER DEFAULT 3,
+        target_sets INTEGER DEFAULT 1,
         target_reps INTEGER DEFAULT 10,
         target_weight_kg REAL,
         syncStatus TEXT DEFAULT 'pending',

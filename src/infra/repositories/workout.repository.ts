@@ -6,7 +6,7 @@ export interface WorkoutSetModel {
   workout_exercise_id: string;
   weight: number;
   reps: number;
-  completed: number; // 0 or 1
+  completed: number;
 }
 
 export interface WorkoutExerciseModel {
@@ -56,7 +56,6 @@ export const WorkoutRepository = {
     const now = new Date().toISOString();
     const startedAtISO = session.startedAt.toISOString();
     const completedAtISO = session.completedAt.toISOString();
-
     db.withTransactionSync(() => {
       // 1. Insert Workout Session
       db.runSync(
@@ -74,7 +73,6 @@ export const WorkoutRepository = {
           now
         ]
       );
-
       // 2. Insert Workout Exercises & Sets
       let exerciseOrder = 0;
       for (const ex of session.exercises) {
@@ -111,8 +109,6 @@ export const WorkoutRepository = {
         }
       }
     });
-
-    console.log(`[WorkoutRepository] Saved session ${sessionId} locally.`);
     return sessionId;
   },
 
@@ -120,7 +116,6 @@ export const WorkoutRepository = {
    * Fetch all completed session dates for Hanko stamps
    */
   getHankoStampedDates(userId: string): string[] {
-    // Return all dates where a session was completed (formatted as YYYY-MM-DD)
     const records = queryAll<{ stamp_date: string }>(
       `SELECT stamp_date FROM hanko_stamps 
        WHERE user_id = ? AND syncStatus != 'deleted'
@@ -165,35 +160,25 @@ export const WorkoutRepository = {
   saveHankoStamp(userId: string, sessionId: string | null, stampDate: string): number {
     const id = Crypto.randomUUID();
     const now = new Date().toISOString();
-    
-    // Check if there is already a stamp for today
     const todayStamp = queryOne<{ streak_count: number }>(
       `SELECT streak_count FROM hanko_stamps WHERE user_id = ? AND stamp_date = ? AND syncStatus != 'deleted'`,
       [userId, stampDate]
     );
-
     if (todayStamp) {
-      // Just update sessionId
       runExecute(
         `UPDATE hanko_stamps SET session_id = ?, syncStatus = 'pending', updatedAt = ? WHERE user_id = ? AND stamp_date = ?`,
         [sessionId, now, userId, stampDate]
       );
       return todayStamp.streak_count;
     }
-
-    // Calculate streak
     const yesterday = new Date(stampDate);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
-
     const yesterdayStamp = queryOne<{ streak_count: number }>(
       `SELECT streak_count FROM hanko_stamps WHERE user_id = ? AND stamp_date = ? AND syncStatus != 'deleted'`,
       [userId, yesterdayStr]
     );
-
     const streakCount = yesterdayStamp ? yesterdayStamp.streak_count + 1 : 1;
-    
-    // UPSERT Hanko stamp
     runExecute(
       `INSERT INTO hanko_stamps (id, user_id, session_id, stamp_date, hanko_tier, streak_count, syncStatus, createdAt, updatedAt)
        VALUES (?, ?, ?, ?, 'bronze', ?, 'pending', ?, ?)
@@ -204,7 +189,6 @@ export const WorkoutRepository = {
          updatedAt = ?`,
       [id, userId, sessionId, stampDate, streakCount, now, now, now]
     );
-
     return streakCount;
   },
 
@@ -224,18 +208,14 @@ export const WorkoutRepository = {
         AND we.syncStatus != 'deleted' 
         AND s.syncStatus != 'deleted'
     `;
-    
     const params: any[] = [userId];
-
     if (rangeDays !== 'all') {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - rangeDays);
       sql += ' AND ws.started_at >= ?';
       params.push(pastDate.toISOString());
     }
-
     sql += ' GROUP BY mg.id, mg.name_en;';
-
     return queryAll<{ id: string; name: string; volume: number }>(sql, params);
   },
 
@@ -254,18 +234,14 @@ export const WorkoutRepository = {
         AND we.syncStatus != 'deleted'
         AND s.syncStatus != 'deleted'
     `;
-    
     const params: any[] = [userId, exerciseId];
-
     if (rangeDays !== 'all') {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - rangeDays);
       sql += ' AND ws.started_at >= ?';
       params.push(pastDate.toISOString());
     }
-
     sql += ' GROUP BY SUBSTR(ws.started_at, 1, 10) ORDER BY date ASC;';
-
     return queryAll<{ date: string; volume: number }>(sql, params);
   }
 };

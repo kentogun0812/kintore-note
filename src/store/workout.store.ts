@@ -5,9 +5,11 @@ import { WorkoutTemplateRepository } from '@/infra/repositories/workout-template
 import { useAuthStore } from './auth.store';
 
 export interface WorkoutTemplateExercise {
-  id: string; // The exercise DB id
+  id: string;
   name_ja: string;
   name_en: string;
+  muscle_group_id?: string;
+  target_sets?: number;
 }
 
 export interface SavedWorkoutTemplate {
@@ -27,9 +29,9 @@ interface WorkoutBuilderState {
   removeExerciseFromWorkout: (exerciseId: string) => void;
   reorderExercises: (fromIndex: number, toIndex: number) => void;
   clearWorkoutBuilder: () => void;
-  saveCurrentWorkout: () => Promise<{ success: boolean; error?: any } | undefined>;
+  saveCurrentWorkout: () => Promise<{ success: boolean; error?: string }>;
   fetchSavedWorkouts: () => Promise<void>;
-  updateSavedWorkout: (id: string, name: string, exercises: WorkoutTemplateExercise[]) => Promise<{ success: boolean; error?: any }>;
+  updateSavedWorkout: (id: string, name: string, exercises: WorkoutTemplateExercise[]) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useWorkoutStore = create<WorkoutBuilderState>()(
@@ -38,31 +40,25 @@ export const useWorkoutStore = create<WorkoutBuilderState>()(
       workoutName: '',
       exercises: [],
       savedWorkouts: [],
-      
       setWorkoutName: (name) => set({ workoutName: name }),
       setExercises: (exercises) => set({ exercises }),
-      
       addExerciseToWorkout: (exercise) => set((state) => {
         if (state.exercises.find(e => e.id === exercise.id)) return state;
         return { exercises: [...state.exercises, exercise] };
       }),
-      
       removeExerciseFromWorkout: (exerciseId) => set((state) => ({
         exercises: state.exercises.filter(e => e.id !== exerciseId)
       })),
-
       reorderExercises: (fromIndex, toIndex) => set((state) => {
         const newExercises = [...state.exercises];
         const [moved] = newExercises.splice(fromIndex, 1);
         newExercises.splice(toIndex, 0, moved);
         return { exercises: newExercises };
       }),
-
       clearWorkoutBuilder: () => set({
         workoutName: '',
         exercises: []
       }),
-
       fetchSavedWorkouts: async () => {
         const userId = useAuthStore.getState().user?.id || 'guest';
         try {
@@ -72,7 +68,6 @@ export const useWorkoutStore = create<WorkoutBuilderState>()(
           console.error('[WorkoutStore] Error fetching Workouts:', error);
         }
       },
-
       updateSavedWorkout: async (id, name, exercises) => {
         try {
           await WorkoutTemplateRepository.updateWorkoutTemplate(id, name, exercises);
@@ -80,31 +75,27 @@ export const useWorkoutStore = create<WorkoutBuilderState>()(
           return { success: true };
         } catch (err: any) {
           console.error('[WorkoutStore] Failed to update Workout:', err);
-          return { success: false, error: err.message };
+          return { success: false, error: 'UPDATE_FAILED' };
         }
       },
 
       saveCurrentWorkout: async () => {
         const { workoutName, exercises, savedWorkouts } = get();
-        if (!workoutName || exercises.length === 0) return { success: false };
-
+        if (!workoutName || exercises.length === 0) return { success: false, error: 'NO_NAME_OR_EXERCISES' };
         try {
           const userId = useAuthStore.getState().user?.id || 'guest';
-          
           if (userId === 'guest') {
             if (savedWorkouts.length >= 1) {
               return { success: false, error: 'GUEST_LIMIT_REACHED' };
             }
           }
-
           await WorkoutTemplateRepository.saveWorkoutTemplate(userId, workoutName, exercises);
           await get().fetchSavedWorkouts();
-
           set({ workoutName: '', exercises: [] });
           return { success: true };
         } catch(err: any) {
           console.log('[WorkoutStore] Failed to save Workout:', err);
-          return { success: false, error: err.message };
+          return { success: false, error: 'SAVE_FAILED' };
         }
       }
     }),

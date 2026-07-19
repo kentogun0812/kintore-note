@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, ActivityIndicator, Pressable, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { colors } from '@/constants/colors';
@@ -7,6 +7,7 @@ import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
 import { useWorkoutStore } from '@/store/workout.store';
 import { useTranslation } from 'react-i18next';
+import { AppErrorHandler, ValidationError, BusinessError, DatabaseError } from '@/lib/error-handler';
 import { useExercisePicker } from '@/features/training/hooks/use-exercise-picker';
 import { ExercisePicker } from '@/features/training/components/ExercisePicker';
 import { CreateCustomMGModal } from '@/features/training/components/CreateCustomMGModal';
@@ -51,7 +52,7 @@ export default function EditTemplateScreen() {
       setExercises(template.exercises);
       picker.setSelectedExerciseIds(template.exercises.map((e: any) => e.id));
     } else {
-      Alert.alert(t('common.error'));
+      AppErrorHandler.handleError(new ValidationError(t('common.unknownError'), 'TEMPLATE_NOT_FOUND'));
       router.back();
     }
     setIsLoading(false);
@@ -63,11 +64,11 @@ export default function EditTemplateScreen() {
 
   const handleSave = async () => {
     if (!workoutName.trim()) {
-      Alert.alert(t('common.error'));
+      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.nameEmpty'), 'NAME_EMPTY'));
       return;
     }
     if (exercises.length === 0) {
-      Alert.alert(t('common.error'));
+      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.exercisesRequired'), 'EXERCISES_REQUIRED'));
       return;
     }
 
@@ -78,7 +79,7 @@ export default function EditTemplateScreen() {
     if (result.success) {
       router.back();
     } else {
-      Alert.alert(t('common.error'), result.error || 'Failed to update template');
+      AppErrorHandler.handleError(new DatabaseError(result.error || 'Failed to update template', 'UPDATE_FAILED'));
     }
   };
 

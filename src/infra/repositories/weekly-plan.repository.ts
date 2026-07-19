@@ -1,4 +1,4 @@
-import { queryAll, queryOne, runExecute, getSqliteDb } from '../db/sqlite';
+import { queryAll, runExecute, getSqliteDb } from '../db/sqlite';
 import * as Crypto from 'expo-crypto';
 
 export interface WeeklyPlanModel {
@@ -7,7 +7,7 @@ export interface WeeklyPlanModel {
   description?: string;
   total_weeks: number;
   start_date?: string;
-  is_active: boolean; // converted from 0 or 1
+  is_active: boolean;
   created_at: string;
   assigned_templates?: { id: string | null; name: string | null; plan_week: number; day_of_week: number; is_rest_day: boolean }[];
 }
@@ -106,13 +106,14 @@ export const WeeklyPlanRepository = {
          WHERE weekly_plan_id = ? AND plan_week = ? AND day_of_week = ?`,
         [planId, week, dayOfWeek]
       );
-      
-      // 2. Insert new assignment
-      db.runSync(
-        `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, plan_week, day_of_week, workout_template_id, is_rest_day, syncStatus, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-        [id, planId, week, dayOfWeek, templateId, isRestDay ? 1 : 0, now, now]
-      );
+      // 2. Insert new assignment only if it is a rest day or a workout template is assigned
+      if (templateId !== null || isRestDay) {
+        db.runSync(
+          `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, plan_week, day_of_week, workout_template_id, is_rest_day, syncStatus, createdAt, updatedAt)
+           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+          [id, planId, week, dayOfWeek, templateId, isRestDay ? 1 : 0, now, now]
+        );
+      }
     });
   },
 
@@ -149,7 +150,6 @@ export const WeeklyPlanRepository = {
          WHERE id = ?`,
         [name, totalWeeks, startDate || null, now, planId]
       );
-      
       // 2. Delete assigned templates for weeks greater than the new totalWeeks
       db.runSync(
         `DELETE FROM weekly_plan_assigned_templates 

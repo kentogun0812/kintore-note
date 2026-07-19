@@ -11,6 +11,7 @@ import { ExerciseRepository } from '@/infra/repositories/exercise.repository';
 import { WorkoutTemplateRepository } from '@/infra/repositories/workout-template.repository';
 import { useExercisePicker } from '@/features/training/hooks/use-exercise-picker';
 import { DEFAULT_EXERCISES, DEFAULT_MUSCLE_GROUPS } from '@/constants/defaultExercises';
+import { AppErrorHandler, ValidationError, BusinessError } from '@/lib/error-handler';
 
 const dangerousCharsRegex = /[<>"';\\\{\}\[\]]/;
 
@@ -268,15 +269,15 @@ export function useActiveSession() {
   const handleConfirmSaveTemplate = useCallback(async () => {
     const trimmedName = templateName.trim();
     if (!trimmedName) {
-      Alert.alert(t('common.error'), t('todayWorkout.nameEmpty'));
+      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.nameEmpty'), 'NAME_EMPTY'));
       return;
     }
     if (trimmedName.length > 50) {
-      Alert.alert(t('common.error'), t('todayWorkout.nameTooLong'));
+      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.nameTooLong'), 'NAME_TOO_LONG'));
       return;
     }
     if (dangerousCharsRegex.test(trimmedName)) {
-      Alert.alert(t('common.error'), t('todayWorkout.nameInvalidChars'));
+      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.nameInvalidChars'), 'INVALID_CHARS'));
       return;
     }
 
@@ -284,10 +285,7 @@ export function useActiveSession() {
       const userId = useAuthStore.getState().user?.id || 'guest';
       const { savedWorkouts, fetchSavedWorkouts } = useWorkoutStore.getState();
       if (userId === 'guest' && savedWorkouts.length >= 1) {
-        Alert.alert(
-          t('todayWorkout.guestLimitTitle'),
-          t('todayWorkout.guestLimitDesc')
-        );
+        AppErrorHandler.handleError(new BusinessError(t('todayWorkout.guestLimitDesc'), 'GUEST_LIMIT_REACHED'));
         saveActiveSession(userId);
         endSession();
         setShowSaveTemplateModal(false);
@@ -310,8 +308,7 @@ export function useActiveSession() {
       queryClient.invalidateQueries({ queryKey: ['exercisesForDate'] });
       router.push('/modals/hanko-stamp');
     } catch (err: any) {
-      Alert.alert(t('common.error'), err.message);
-      console.log(err);
+      AppErrorHandler.handleError(err);
     }
   }, [templateName, exercises, saveActiveSession, endSession, t]);
 

@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import { WeeklyPlanRepository } from '@/infra/repositories/weekly-plan.repository';
 import { useAuthStore } from './auth.store';
 
+export interface AssignedTemplate {
+  id: string | null;
+  name: string | null;
+  plan_week: number;
+  day_of_week: number;
+  is_rest_day: boolean;
+}
+
 export interface WeeklyPlan {
   id: string;
   name: string;
@@ -10,7 +18,7 @@ export interface WeeklyPlan {
   start_date?: string;
   is_active: boolean;
   created_at: string;
-  assigned_templates?: { id: string | null; name: string | null; plan_week: number; day_of_week: number; is_rest_day: boolean }[];
+  assigned_templates?: AssignedTemplate[];
 }
 
 interface WeeklyPlanState {
@@ -22,7 +30,7 @@ interface WeeklyPlanState {
   activateWeeklyPlan: (planId: string) => Promise<void>;
   deleteWeeklyPlan: (planId: string) => Promise<void>;
   assignToDay: (planId: string, templateId: string | null, week: number, dayOfWeek: number, isRestDay?: boolean) => Promise<void>;
-  fetchPlanTemplates: (planId: string) => Promise<any[]>;
+  fetchPlanTemplates: (planId: string) => Promise<AssignedTemplate[]>;
 }
 
 export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({

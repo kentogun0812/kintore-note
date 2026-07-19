@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Icon } from '@/components/Icon';
 import { useTranslation } from 'react-i18next';
+import { AppErrorHandler, ValidationError, BusinessError, NetworkError } from '@/lib/error-handler';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert(t('auth.login.errors.missingInfoTitle'), t('auth.login.errors.missingInfoDesc'));
+      AppErrorHandler.handleError(new ValidationError(t('auth.login.errors.missingInfoDesc'), 'MISSING_INFO'));
       return;
     }
     
@@ -31,8 +32,7 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
-      console.log('[Login] Supabase signIn error:', JSON.stringify(error, null, 2));
-      Alert.alert(t('auth.login.errors.loginFailedTitle'), t('auth.login.errors.loginFailedDesc'));
+      AppErrorHandler.handleError(new BusinessError(t('auth.login.errors.loginFailedDesc'), 'LOGIN_FAILED', error));
     } else {
       router.replace('/(tabs)/home');
     }
@@ -55,22 +55,19 @@ export default function LoginScreen() {
         });
         setLoading(false);
         if (error) {
-          console.log('[Login] Supabase Apple Auth error:', JSON.stringify(error, null, 2));
-          Alert.alert(t('auth.login.errors.connectionErrorTitle'), t('auth.login.errors.connectionErrorDesc'));
+          AppErrorHandler.handleError(new NetworkError(t('auth.login.errors.connectionErrorDesc'), 'CONNECTION_ERROR', error));
           return;
         }
         router.replace('/(tabs)/home');
       } else {
         setLoading(false);
-        console.log('[Login] No identity token.');
-        Alert.alert(t('auth.login.errors.connectionErrorTitle'), t('auth.login.errors.connectionErrorDesc'));
+        AppErrorHandler.handleError(new NetworkError(t('auth.login.errors.connectionErrorDesc'), 'CONNECTION_ERROR', new Error('No identity token')));
         return;
       }
     } catch (e: any) {
       setLoading(false);
-      console.log('[Login] Apple Login Exception:', e);
       if (e.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert(t('auth.login.errors.connectionErrorTitle'), t('auth.login.errors.connectionErrorDesc'));
+        AppErrorHandler.handleError(new NetworkError(t('auth.login.errors.connectionErrorDesc'), 'CONNECTION_ERROR', e));
       }
     }
   };

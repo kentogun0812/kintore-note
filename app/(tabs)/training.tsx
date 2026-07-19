@@ -96,8 +96,8 @@ export default function TrainingScreen() {
             </View>
             
             <View style={styles.modernExerciseList}>
-              {routine.exercises.slice(0, 3).map((ex, index) => {
-                const showBorder = index < Math.min(routine.exercises.length, 3) - 1 || routine.exercises.length > 3;
+              {routine.exercises.slice(0, 2).map((ex, index) => {
+                const showBorder = index < Math.min(routine.exercises.length, 2) - 1 || routine.exercises.length > 2;
                 return (
                   <View key={ex.id} style={[styles.modernExerciseItem, showBorder && styles.modernExerciseItemBorder]}>
                     <View style={styles.modernExerciseInfo}>
@@ -111,14 +111,14 @@ export default function TrainingScreen() {
                   </View>
                 );
               })}
-              {routine.exercises.length > 3 && (
+              {routine.exercises.length > 2 && (
                 <View style={styles.modernExerciseItem}>
                   <View style={styles.modernExerciseInfo}>
                     <View style={[styles.modernExerciseIconContainer, { backgroundColor: 'transparent' }]}>
                       <Icon name="ellipsis-horizontal" size={14} color={colors.dark.text.tertiary} />
                     </View>
                     <Text style={[styles.modernExerciseName, { color: colors.dark.text.tertiary }]} numberOfLines={1}>
-                      +{routine.exercises.length - 4} {t('common.more')}
+                      +{routine.exercises.length - 2} {t('common.more')}
                     </Text>
                   </View>
                 </View>

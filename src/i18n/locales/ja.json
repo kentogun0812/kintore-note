@@ -15,6 +15,7 @@
     "more": "件以上",
     "exercises": "種目",
     "error": "エラー",
+    "unknownError": "エラーが発生しました",
     "success": "成功",
     "yes": "はい",
     "no": "いいえ",
@@ -41,6 +42,8 @@
     "hankoCalendar": "ハンコカレンダー",
     "loginToSync": "ログインするとデータを同期できます ☁️",
     "todayRoutine": "今日のワークアウト",
+    "restDay": "休息日",
+    "enjoyRest": "ゆっくり休んでください！回復も大切です。",
     "startSession": "トレーニング開始",
     "weeklyGoal": "今週の目標",
     "weeklyTarget": "/ {{target}}日",
@@ -206,9 +209,6 @@
     "stats": "分析",
     "settings": "設定"
   },
-  "nav": {
-    "weeklyPlans": "週間プラン"
-  },
   "todayWorkout": {
     "title": "今日のワークアウト",
     "workoutName": "ワークアウト名",
@@ -225,6 +225,7 @@
     "nameTooLong": "ワークアウト名は50文字以内で入力してください。",
     "nameInvalidChars": "特殊文字（<, >, \", ', ;, \\ など）は使用できません。",
     "nameEmpty": "ワークアウト名を入力してください。",
+    "exercisesRequired": "種目を1つ以上追加してください。",
     "library": "ライブラリ"
   },
   "library": {
@@ -358,9 +359,14 @@
     "editPlan": "プランを編集",
     "saveChanges": "変更を保存",
     "starts": "開始日",
+    "startDateNotSet": "開始日が未設定",
     "emptyPlans": "週間プランがありません。「追加」をタップして最初のプランを作成してください。",
     "addWeeklyPlan": "週間プランを追加",
-    "editWeeklyPlan": "週間プランを編集"
+    "editWeeklyPlan": "週間プランを編集",
+    "dayN": "Day {{n}}",
+    "restDay": "休息日",
+    "markAsRestDay": "休息日にする",
+    "weekSummary": "ワークアウト {{workoutCount}}、休息日 {{restCount}}"
   },
   "weeklyPlanBuilder": {
     "invalidWeeks": "無効な週数です。1から52までの数字を入力してください。",
@@ -370,7 +376,12 @@
     "namePlaceholder": "例: 4週間の筋力強化",
     "totalWeeks": "週数 (1-52)",
     "info": "プラン作成後、各週に異なるワークアウトテンプレートを割り当てることができます。",
-    "save": "保存"
+    "save": "保存",
+    "nameRequired": "プラン名を入力してください",
+    "failedToSave": "変更の保存に失敗しました",
+    "startDate": "開始日",
+    "weeksPlaceholder": "例: 4",
+    "datePlaceholder": "yyyy-mm-dd"
   },
   "banners": {
     "todayWorkoutDesc": "今日行う種目を選んでワークアウトを作成します。",

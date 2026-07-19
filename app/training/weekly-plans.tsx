@@ -33,7 +33,7 @@ export default function WeeklyPlansListScreen() {
 
   const handleAddPlan = async () => {
     setIsCreating(true);
-    const newId = await createWeeklyPlan('', 4);
+    const newId = await createWeeklyPlan('', 0);
     setIsCreating(false);
     if (newId) {
       router.push({ pathname: `/training/weekly-plan/${newId}`, params: { isNew: 'true' } });
@@ -63,13 +63,13 @@ export default function WeeklyPlansListScreen() {
                 </View>
               </View>
 
-              {item.assigned_templates && item.assigned_templates.length > 0 ? (
+              {item.start_date ? (
                 <Text style={styles.planTemplatesText} numberOfLines={1}>
-                  {item.assigned_templates.map(t => t.name).join(' • ')}
+                  {t('weeklyPlan.starts')}: {new Date(item.start_date).toLocaleDateString()}
                 </Text>
               ) : (
                 <Text style={styles.planTemplatesTextEmpty} numberOfLines={1}>
-                  {t('weeklyPlan.noWorkoutThisWeek')}
+                  {t('weeklyPlan.startDateNotSet')}
                 </Text>
               )}
             </View>

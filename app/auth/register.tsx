@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { useOnboardingStore } from '@/store/onboarding.store';
 import { useTranslation } from 'react-i18next';
+import { AppErrorHandler, ValidationError, BusinessError, NetworkError } from '@/lib/error-handler';
 
 export default function RegisterScreen() {
   const { t } = useTranslation();
@@ -23,12 +24,12 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert(t('auth.register.errors.missingInfoTitle'), t('auth.register.errors.missingInfoDesc'));
+      AppErrorHandler.handleError(new ValidationError(t('auth.register.errors.missingInfoDesc'), 'MISSING_INFO'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(t('auth.register.errors.passwordMismatchTitle'), t('auth.register.errors.passwordMismatchDesc'));
+      AppErrorHandler.handleError(new ValidationError(t('auth.register.errors.passwordMismatchDesc'), 'PASSWORD_MISMATCH'));
       return;
     }
     
@@ -45,8 +46,7 @@ export default function RegisterScreen() {
     setLoading(false);
 
     if (error) {
-      console.error('[Register] Supabase signUp error:', JSON.stringify(error, null, 2));
-      Alert.alert(t('auth.register.errors.registerErrorTitle'), t('auth.register.errors.registerErrorDesc'));
+      AppErrorHandler.handleError(new BusinessError(t('auth.register.errors.registerErrorDesc'), 'REGISTER_FAILED', error));
     } else if (!data.session) {
       Alert.alert(t('auth.register.errors.registerSuccessTitle'), t('auth.register.errors.registerSuccessDesc'));
       router.replace('/auth/login');
@@ -73,22 +73,19 @@ export default function RegisterScreen() {
         });
         setLoading(false);
         if (error) {
-          console.log('[Register] Supabase Apple Auth error:', JSON.stringify(error, null, 2));
-          Alert.alert(t('auth.register.errors.connectionErrorTitle'), t('auth.register.errors.connectionErrorDesc'));
+          AppErrorHandler.handleError(new NetworkError(t('auth.register.errors.connectionErrorDesc'), 'CONNECTION_ERROR', error));
           return;
         }
         router.replace('/(tabs)/home');
       } else {
         setLoading(false);
-        console.log('[Register] No identity token.');
-        Alert.alert(t('auth.register.errors.connectionErrorTitle'), t('auth.register.errors.connectionErrorDesc'));
+        AppErrorHandler.handleError(new NetworkError(t('auth.register.errors.connectionErrorDesc'), 'CONNECTION_ERROR', new Error('No identity token')));
         return;
       }
     } catch (e: any) {
       setLoading(false);
-      console.log('[Register] Apple Login Exception:', e);
       if (e.code !== 'ERR_REQUEST_CANCELED') {
-        Alert.alert(t('auth.register.errors.connectionErrorTitle'), t('auth.register.errors.connectionErrorDesc'));
+        AppErrorHandler.handleError(new NetworkError(t('auth.register.errors.connectionErrorDesc'), 'CONNECTION_ERROR', e));
       }
     }
   };

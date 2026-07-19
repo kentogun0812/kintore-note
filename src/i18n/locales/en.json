@@ -15,6 +15,7 @@
     "more": "more",
     "exercises": "exercises",
     "error": "Error",
+    "unknownError": "An error occurred",
     "success": "Success",
     "yes": "Yes",
     "no": "No",
@@ -41,6 +42,8 @@
     "hankoCalendar": "Hanko Calendar",
     "loginToSync": "Sign in to keep your data in sync ☁️",
     "todayRoutine": "Today's Workout",
+    "restDay": "Rest Day",
+    "enjoyRest": "Enjoy your rest! Recovery is important.",
     "startSession": "Start Session",
     "weeklyGoal": "This Week's Goal",
     "weeklyTarget": "/ {{target}} days",
@@ -206,9 +209,6 @@
     "stats": "Stats",
     "settings": "Settings"
   },
-  "nav": {
-    "weeklyPlans": "Weekly Plans"
-  },
   "todayWorkout": {
     "title": "Today's Workout",
     "workoutName": "Workout Name",
@@ -225,6 +225,7 @@
     "nameTooLong": "Workout Name must be 50 characters or less.",
     "nameInvalidChars": "Special characters (<, >, \", ', ;, \\, etc.) are not allowed.",
     "nameEmpty": "Workout Name cannot be empty.",
+    "exercisesRequired": "Please add at least one exercise.",
     "library": "Library"
   },
   "library": {
@@ -348,10 +349,15 @@
     "createNewWorkout": "Create New Workout",
     "editPlan": "Edit Plan",
     "saveChanges": "Save Changes",
-    "starts": "Starts",
+    "starts": "Start Date",
+    "startDateNotSet": "Start date not set",
     "emptyPlans": "No weekly plans yet. Tap Add to create your first plan.",
     "addWeeklyPlan": "Add Weekly Plan",
-    "editWeeklyPlan": "Edit Weekly Plan"
+    "editWeeklyPlan": "Edit Weekly Plan",
+    "dayN": "Day {{n}}",
+    "restDay": "Rest Day",
+    "markAsRestDay": "Mark as Rest Day",
+    "weekSummary": "{{workoutCount}} workouts, {{restCount}} rest days"
   },
   "weeklyPlanBuilder": {
     "invalidWeeks": "Invalid weeks. Please enter a number between 1 and 52.",
@@ -361,7 +367,12 @@
     "namePlaceholder": "e.g. 4-Week Strength Block",
     "totalWeeks": "Total Weeks (1-52)",
     "info": "After creating the plan, you will be able to assign different workout templates to each week.",
-    "save": "Save"
+    "save": "Save",
+    "nameRequired": "Name is required",
+    "failedToSave": "Failed to save changes",
+    "startDate": "Start Date",
+    "weeksPlaceholder": "e.g. 4",
+    "datePlaceholder": "yyyy-mm-dd"
   },
   "banners": {
     "todayWorkoutDesc": "Create today's workout by selecting the exercises you plan to do.",

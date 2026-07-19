@@ -9,7 +9,7 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { HankoCalendar } from '@/components/HankoCalendar';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useAuthStore } from '@/store/auth.store';
 import { useTrainingStore } from '@/store/training.store';
 import { WorkoutRepository } from '@/infra/repositories/workout.repository';
@@ -28,6 +28,9 @@ export default function HomeScreen() {
 
   const logoScale = useSharedValue(1);
   const logoRotate = useSharedValue(0);
+  
+  const restScale = useSharedValue(1);
+  const restOpacity = useSharedValue(0.7);
 
   useEffect(() => {
     logoScale.value = withRepeat(
@@ -47,6 +50,23 @@ export default function HomeScreen() {
       -1,
       true
     );
+
+    restScale.value = withRepeat(
+      withSequence(
+        withTiming(1.1, { duration: 1500 }),
+        withTiming(1, { duration: 1500 })
+      ),
+      -1,
+      true
+    );
+    restOpacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1500 }),
+        withTiming(0.7, { duration: 1500 })
+      ),
+      -1,
+      true
+    );
   }, []);
 
   const animatedLogoStyle = useAnimatedStyle(() => ({
@@ -54,6 +74,11 @@ export default function HomeScreen() {
       { scale: logoScale.value },
       { rotate: `${logoRotate.value}deg` }
     ],
+  }));
+
+  const animatedRestStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: restScale.value }],
+    opacity: restOpacity.value,
   }));
 
   const userName = user?.user_metadata?.username || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -81,8 +106,13 @@ export default function HomeScreen() {
     enabled: !!selectedDate,
   });
 
-  const { activeWeeklyPlan } = useWeeklyPlanStore();
-  const { savedWorkouts } = useWorkoutStore();
+  const { activeWeeklyPlan, fetchWeeklyPlans } = useWeeklyPlanStore();
+  const { savedWorkouts, fetchSavedWorkouts } = useWorkoutStore();
+
+  useEffect(() => {
+    fetchWeeklyPlans();
+    fetchSavedWorkouts();
+  }, []);
   const [scheduledTemplate, setScheduledTemplate] = useState<any>(null);
 
   useEffect(() => {
@@ -96,8 +126,9 @@ export default function HomeScreen() {
       const start = new Date(startStr + 'T00:00:00');
       const current = new Date(selectedDate + 'T00:00:00');
       
-      const diffTime = current.getTime() - start.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffTime = Date.UTC(current.getFullYear(), current.getMonth(), current.getDate()) - 
+                       Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
       
       if (diffDays < 0) {
         setScheduledTemplate(null);
@@ -150,8 +181,8 @@ export default function HomeScreen() {
           data: fullTemplate.exercises.map(ex => ({
             id: ex.id,
             name: i18n.language === 'ja' ? ex.name_ja : ex.name_en,
-            muscleGroupId: 'chest', // fallback
-            sets: 3,
+            muscleGroupId: ex.muscle_group_id,
+            sets: ex.target_sets,
           }))
         };
       }
@@ -242,9 +273,9 @@ export default function HomeScreen() {
               </Text>
             </View>
             {displayRoutine.planName && (
-              <View style={styles.planNameBadge}>
-                <Text style={styles.planNameText} numberOfLines={1}>
-                  {displayRoutine.planName}
+              <View style={[styles.planNameBadge, { maxWidth: '50%', paddingLeft: spacing.sm }]}>
+                <Text style={[styles.planNameText, { color: colors.dark.text.secondary }]} numberOfLines={1}>
+                  <Text style={{ color: colors.dark.accent.secondary }}>{displayRoutine.planName}</Text>
                 </Text>
               </View>
             )}
@@ -252,9 +283,13 @@ export default function HomeScreen() {
 
           <View style={styles.modernRoutineList}>
             {displayRoutine.type === 'rest' && (
-              <View style={[styles.emptyRoutineContainer, { backgroundColor: colors.dark.bg.tertiary, borderColor: 'transparent' }]}>
-                <Icon name="cafe-outline" size={32} color={colors.dark.text.secondary} />
-                <Text style={[styles.emptyRoutineText, { color: colors.dark.text.secondary }]}>{t('weeklyPlan.restDay', 'Rest Day')}</Text>
+              <View style={[styles.emptyRoutineContainer, { backgroundColor: colors.dark.bg.tertiary, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.dark.border.subtle, paddingVertical: spacing.lg }]}>
+                <Animated.View style={animatedRestStyle}>
+                  <Icon name="bed-outline" size={48} color={colors.dark.accent.primary} />
+                </Animated.View>
+                <Text style={{ color: colors.dark.text.secondary, fontSize: typography.fontSize.sm, textAlign: 'center', marginTop: spacing.xs }}>
+                  {t('home.enjoyRest')}
+                </Text>
               </View>
             )}
             
@@ -446,15 +481,17 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSize.sm,
   },
   planNameBadge: {
-    backgroundColor: colors.dark.bg.tertiary,
+    backgroundColor: colors.dark.accent.primary + '15',
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.full,
-    maxWidth: 120,
+    maxWidth: 140,
+    borderWidth: 1,
+    borderColor: colors.dark.accent.primary + '30',
   },
   planNameText: {
-    color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.xs,
+    color: colors.dark.accent.secondary,
+    fontSize: typography.fontSize.sm,
     fontWeight: '600',
   },
 });
