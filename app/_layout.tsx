@@ -1,6 +1,6 @@
 import '@/i18n';
 import { initSqliteDb } from '@/infra/db/sqlite';
-import { seedDefaultDataSqlite } from '@/infra/db/seed-sqlite';
+import { seedDefaultDataSqlite, seedPresetTemplatesSqlite } from '@/infra/db/seed-sqlite';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -47,6 +47,7 @@ function RootLayout() {
       // Initialize SQLite database tables and seed default data
       initSqliteDb();
       const didSeed = seedDefaultDataSqlite();
+      seedPresetTemplatesSqlite();
       if (didSeed) {
         queryClient.invalidateQueries({ queryKey: ['exercises'] });
       }

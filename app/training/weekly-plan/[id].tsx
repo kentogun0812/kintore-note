@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Modal, TextInput, Alert, Platform, ToastAndroid, Animated } from 'react-native';
 import { Stack, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -10,17 +10,17 @@ import { Icon } from '@/components/Icon';
 import { useWeeklyPlanStore, WeeklyPlan } from '@/store/weekly-plan.store';
 import { useWorkoutStore } from '@/store/workout.store';
 import { AppErrorHandler, ValidationError } from '@/lib/error-handler';
-import { useAuthStore } from '@/store/auth.store';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HankoCalendar } from '@/components/HankoCalendar';
+import { ExerciseRepository } from '@/infra/repositories/exercise.repository';
 
 const dangerousCharsRegex = /[<>"';\\\{\}\[\]]/;
 
 export default function WeeklyPlanDetailScreen() {
   const { id, isNew } = useLocalSearchParams<{ id: string, isNew?: string }>();
   const { t, i18n } = useTranslation();
-  const { weeklyPlans, activateWeeklyPlan, assignToDay, fetchPlanTemplates, deleteWeeklyPlan, updateWeeklyPlan } = useWeeklyPlanStore();
+  const { weeklyPlans, activateWeeklyPlan, deactivateWeeklyPlan, assignToDay, fetchPlanTemplates, deleteWeeklyPlan, updateWeeklyPlan, applyPresetTemplate } = useWeeklyPlanStore();
   const { savedWorkouts, fetchSavedWorkouts } = useWorkoutStore();
   const [plan, setPlan] = useState<WeeklyPlan | null>(null);
   const [assignedTemplates, setAssignedTemplates] = useState<any[]>([]);
@@ -32,6 +32,29 @@ export default function WeeklyPlanDetailScreen() {
   const [isDraft, setIsDraft] = useState(isNew === 'true');
   const isDraftRef = useRef(isDraft);
   const [expandedWeek, setExpandedWeek] = useState<number | null>(1);
+  const [exercisesList, setExercisesList] = useState<any[]>([]);
+  const [switchWidth, setSwitchWidth] = useState(0);
+  const isActive = plan?.is_active || false;
+  const switchAnim = useRef(new Animated.Value(isActive ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(switchAnim, {
+      toValue: isActive ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [isActive, switchWidth]);
+
+  useEffect(() => {
+    const list = ExerciseRepository.getAllExercises();
+    setExercisesList(list);
+  }, []);
+
+  const getExerciseName = (exId: string) => {
+    const ex = exercisesList.find(e => e.id === exId);
+    if (!ex) return exId;
+    return i18n.language === 'ja' ? ex.name_ja : ex.name_en;
+  };
 
   const handleClearDay = async (week: number, day: number) => {
     if (id) {
@@ -64,7 +87,7 @@ export default function WeeklyPlanDetailScreen() {
     if (p) {
       setPlan(p);
       setEditPlanName(p.name);
-      setEditPlanWeeks(p.total_weeks > 0 ? p.total_weeks.toString() : '');
+      setEditPlanWeeks(p.total_weeks > 0 ? p.total_weeks.toString() : '1');
       setEditPlanStartDate(p.start_date || '');
     }
   }, [id, weeklyPlans]);
@@ -157,8 +180,11 @@ export default function WeeklyPlanDetailScreen() {
     );
   }
 
-  // Generate weeks array
-  const weeks = Array.from({ length: plan.total_weeks }, (_, i) => i + 1);
+  // Generate weeks array dynamically from the input state
+  const weeksNum = parseInt(editPlanWeeks, 10);
+  const weeks = !isNaN(weeksNum) && weeksNum >= 1 && weeksNum <= 52 
+    ? Array.from({ length: weeksNum }, (_, i) => i + 1)
+    : [];
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -203,20 +229,18 @@ export default function WeeklyPlanDetailScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.scrollContent}
       >
-        <View style={[styles.detailsHeader, { justifyContent: 'flex-end' }]}>
-          {plan.is_active ? (
-            <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>{t('weeklyPlan.active')}</Text>
-            </View>
-          ) : (
-            <Button 
-              label={t('weeklyPlan.setAsActive')} 
-              variant="outline" 
-              size="sm"
-              onPress={handleActivate}
-            />
-          )}
-        </View>
+        <Pressable 
+          style={styles.presetButton} 
+          onPress={() => {
+            router.push({
+              pathname: '/training/weekly-plan/preset-templates',
+              params: { planId: id }
+            });
+          }}
+        >
+          <Icon name="barbell-outline" size={20} color={colors.dark.accent.primary} />
+          <Text style={styles.presetButtonText}>{t('weeklyPlan.suggestTemplatesButton')}</Text>
+        </Pressable>
 
         <Card style={styles.formCard}>
           <View style={styles.inputGroup}>
@@ -246,51 +270,106 @@ export default function WeeklyPlanDetailScreen() {
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>
-              {t('weeklyPlanBuilder.startDate')}
-            </Text>
-            <Pressable onPress={() => {
-              setShowDatePicker(true);
-              setCalendarDate(editPlanStartDate ? new Date(editPlanStartDate + 'T00:00:00') : new Date());
-            }} style={[styles.textInput, { justifyContent: 'center' }]}>
-              <Text style={{ color: editPlanStartDate ? colors.dark.text.primary : colors.dark.text.tertiary, fontSize: typography.fontSize.md }}>
-                {editPlanStartDate || t('weeklyPlanBuilder.datePlaceholder', 'YYYY-MM-DD')}
+          <View style={{ flexDirection: 'row', gap: spacing.md }}>
+            <View style={[styles.inputGroup, { flex: 1 }]}>
+              <Text style={styles.inputLabel}>
+                {t('weeklyPlanBuilder.startDate')}
               </Text>
-            </Pressable>
-            
-            {showDatePicker && (
-              <Modal visible={showDatePicker} transparent animationType="fade">
-                <Pressable style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setShowDatePicker(false)}>
-                  <Pressable style={{ backgroundColor: colors.dark.bg.elevated, padding: spacing.md, borderRadius: radius.xl, width: '90%', maxWidth: 400 }} onPress={e => e.stopPropagation()}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
-                      <Pressable onPress={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))} hitSlop={12} style={{ padding: spacing.sm }}>
-                        <Icon name="chevron-back" size={20} color={colors.dark.text.secondary} />
-                      </Pressable>
-                      <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.md, fontWeight: 'bold' }}>
-                        {calendarDate.toLocaleString(i18n.language, { year: 'numeric', month: 'long' })}
-                      </Text>
-                      <Pressable onPress={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))} hitSlop={12} style={{ padding: spacing.sm }}>
-                        <Icon name="chevron-forward" size={20} color={colors.dark.text.secondary} />
-                      </Pressable>
-                    </View>
-                    <HankoCalendar
-                      year={calendarDate.getFullYear()}
-                      month={calendarDate.getMonth() + 1}
-                      stampedDates={[]}
-                      selectedDate={editPlanStartDate || undefined}
-                      onDatePress={async (dateString) => {
-                        setEditPlanStartDate(dateString);
-                        setShowDatePicker(false);
-                        if (plan && dateString !== (plan.start_date || '')) {}
-                      }}
-                    />
+              <Pressable onPress={() => {
+                setShowDatePicker(true);
+                setCalendarDate(editPlanStartDate ? new Date(editPlanStartDate + 'T00:00:00') : new Date());
+              }} style={[styles.textInput, { justifyContent: 'center' }]}>
+                <Text style={{ color: editPlanStartDate ? colors.dark.text.primary : colors.dark.text.tertiary, fontSize: typography.fontSize.md }}>
+                  {editPlanStartDate || t('weeklyPlanBuilder.datePlaceholder', 'YYYY-MM-DD')}
+                </Text>
+              </Pressable>
+              
+              {showDatePicker && (
+                <Modal visible={showDatePicker} transparent animationType="fade">
+                  <Pressable style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setShowDatePicker(false)}>
+                    <Pressable style={{ backgroundColor: colors.dark.bg.elevated, padding: spacing.md, borderRadius: radius.xl, width: '90%', maxWidth: 400 }} onPress={e => e.stopPropagation()}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md }}>
+                        <Pressable onPress={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1))} hitSlop={12} style={{ padding: spacing.sm }}>
+                          <Icon name="chevron-back" size={20} color={colors.dark.text.secondary} />
+                        </Pressable>
+                        <Text style={{ color: colors.dark.text.primary, fontSize: typography.fontSize.md, fontWeight: 'bold' }}>
+                          {calendarDate.toLocaleString(i18n.language, { year: 'numeric', month: 'long' })}
+                        </Text>
+                        <Pressable onPress={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))} hitSlop={12} style={{ padding: spacing.sm }}>
+                          <Icon name="chevron-forward" size={20} color={colors.dark.text.secondary} />
+                        </Pressable>
+                      </View>
+                      <HankoCalendar
+                        year={calendarDate.getFullYear()}
+                        month={calendarDate.getMonth() + 1}
+                        stampedDates={[]}
+                        selectedDate={editPlanStartDate || undefined}
+                        onDatePress={async (dateString) => {
+                          setEditPlanStartDate(dateString);
+                          setShowDatePicker(false);
+                          if (plan && dateString !== (plan.start_date || '')) {}
+                        }}
+                      />
+                    </Pressable>
                   </Pressable>
+                </Modal>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={[styles.inputLabel, { textAlign: 'right' }]}>
+                {t('weeklyPlan.setAsActive')}
+              </Text>
+              <View style={{ height: 48, justifyContent: 'center' }}>
+                <Pressable 
+                  onPress={async () => {
+                    if (!plan) return;
+                    if (plan.is_active) {
+                      await deactivateWeeklyPlan(plan.id);
+                    } else {
+                      await activateWeeklyPlan(plan.id);
+                    }
+                  }}
+                  style={{
+                    height: 28,
+                    width: '100%',
+                    borderRadius: 14,
+                    backgroundColor: colors.dark.border.subtle,
+                    padding: 2,
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                  }}
+                  onLayout={(e) => setSwitchWidth(e.nativeEvent.layout.width)}
+                >
+                  <Animated.View style={{
+                    ...StyleSheet.absoluteFillObject,
+                    backgroundColor: colors.dark.accent.primary,
+                    opacity: switchAnim,
+                  }} />
+                  <Animated.View style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: colors.white,
+                    transform: [{ 
+                      translateX: switchAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [2, Math.max(2, switchWidth - 26)]
+                      })
+                    }],
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 1.41,
+                    elevation: 2,
+                  }} />
                 </Pressable>
-              </Modal>
-            )}
+              </View>
+            </View>
           </View>
         </Card>
+
+
 
         <Text style={styles.sectionTitle}>{t('weeklyPlan.timeline')}</Text>
 
@@ -633,5 +712,154 @@ const styles = StyleSheet.create({
   unassignedRestButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
+  },
+  presetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    padding: spacing.md,
+    backgroundColor: colors.dark.bg.secondary,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+    borderRadius: radius.md,
+    marginBottom: spacing.md,
+  },
+  presetButtonText: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: 'bold',
+    color: colors.dark.accent.primary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+  },
+  modalContent: {
+    flex: 1,
+    backgroundColor: colors.dark.bg.primary,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    marginTop: spacing.xl,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.subtle,
+  },
+  modalTitle: {
+    fontSize: typography.fontSize.lg,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+  },
+  modalCloseButton: {
+    padding: spacing.xs,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.subtle,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  activeTabButton: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.dark.accent.primary,
+  },
+  tabButtonText: {
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+    color: colors.dark.text.secondary,
+  },
+  activeTabButtonText: {
+    color: colors.dark.accent.primary,
+  },
+  presetsListContent: {
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  presetCard: {
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+    overflow: 'hidden',
+  },
+  presetCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  presetCardTitle: {
+    fontSize: typography.fontSize.md,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+  },
+  presetCardDesc: {
+    fontSize: typography.fontSize.sm,
+    color: colors.dark.text.secondary,
+    lineHeight: 18,
+  },
+  presetCardDetails: {
+    padding: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border.subtle,
+    backgroundColor: colors.dark.bg.tertiary,
+  },
+  daysContainer: {
+    gap: spacing.sm,
+  },
+  presetDayRow: {
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  presetDayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  presetDayLabel: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: 'bold',
+    color: colors.dark.text.tertiary,
+  },
+  presetWorkoutName: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: 'bold',
+    color: colors.dark.accent.primary,
+  },
+  presetRestDayLabel: {
+    fontSize: typography.fontSize.sm,
+    color: colors.dark.text.tertiary,
+    fontStyle: 'italic',
+  },
+  presetExercisesList: {
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: colors.dark.border.subtle + '50',
+    paddingTop: 4,
+  },
+  presetExercisesHeader: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: 'bold',
+    color: colors.dark.text.secondary,
+    marginBottom: 2,
+  },
+  presetExercisesText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.dark.text.primary,
+    lineHeight: 18,
   },
 });

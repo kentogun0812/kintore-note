@@ -67,6 +67,286 @@ export const WeeklyPlanRepository = {
   },
 
   /**
+   * Create a weekly plan from a preset template (Full Body, Upper/Lower, PPL)
+   */
+  createWeeklyPlanFromTemplate(userId: string, templateType: string, name: string): string {
+    const db = getSqliteDb();
+    const planId = Crypto.randomUUID();
+    const now = new Date().toISOString();
+
+    db.withTransactionSync(() => {
+      // 1. Fetch the preset info
+      const preset = db.getFirstSync<{ weeks: number }>(
+        `SELECT weeks FROM preset_weekly_plans WHERE id = ?`,
+        [templateType]
+      );
+      const totalWeeks = preset ? preset.weeks : 4;
+
+      // 2. Insert the weekly plan
+      db.runSync(
+        `INSERT INTO weekly_plans (id, user_id, name, total_weeks, start_date, is_active, syncStatus, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, 0, 'pending', ?, ?)`,
+        [planId, userId, name, totalWeeks, now.split('T')[0], now, now]
+      );
+
+      // 3. Fetch configurations from database
+      const rows = db.getAllSync<{ day_of_week: number; workout_name_ja: string; workout_name_en: string; exercise_id: string }>(
+        `SELECT day_of_week, workout_name_ja, workout_name_en, exercise_id 
+         FROM preset_weekly_plan_exercises 
+         WHERE preset_plan_id = ? 
+         ORDER BY day_of_week ASC, sort_order ASC`,
+        [templateType]
+      );
+
+      // Group exercises by day and workout name
+      const dayConfigs: { day: number; templateNameJa: string; templateNameEn: string; exercises: string[] }[] = [];
+      for (const row of rows) {
+        let config = dayConfigs.find(c => c.day === row.day_of_week);
+        if (!config) {
+          config = {
+            day: row.day_of_week,
+            templateNameJa: row.workout_name_ja,
+            templateNameEn: row.workout_name_en,
+            exercises: []
+          };
+          dayConfigs.push(config);
+        }
+        config.exercises.push(row.exercise_id);
+      }
+
+      // Create workout templates and keep track of IDs
+      const createdTemplateIds = new Map<string, string>();
+      for (const config of dayConfigs) {
+        const templateName = config.templateNameEn;
+        if (!createdTemplateIds.has(templateName)) {
+          const existing = db.getFirstSync<{ id: string }>(
+            `SELECT id FROM workout_templates WHERE user_id = ? AND name = ? AND syncStatus != 'deleted' LIMIT 1`,
+            [userId, templateName]
+          );
+
+          let templateId = '';
+          if (existing) {
+            templateId = existing.id;
+          } else {
+            templateId = Crypto.randomUUID();
+            db.runSync(
+              `INSERT INTO workout_templates (id, user_id, name, syncStatus, createdAt, updatedAt)
+               VALUES (?, ?, ?, 'pending', ?, ?)`,
+              [templateId, userId, templateName, now, now]
+            );
+
+            let sortOrder = 0;
+            for (const exId of config.exercises) {
+              const linkId = Crypto.randomUUID();
+              db.runSync(
+                `INSERT INTO workout_template_exercises (id, workout_template_id, exercise_id, sort_order, target_sets, target_reps, syncStatus, createdAt, updatedAt)
+                 VALUES (?, ?, ?, ?, 3, 10, 'pending', ?, ?)`,
+                [linkId, templateId, exId, sortOrder++, now, now]
+              );
+            }
+          }
+          createdTemplateIds.set(templateName, templateId);
+        }
+      }
+
+      // Assign templates to weeks
+      for (let week = 1; week <= totalWeeks; week++) {
+        for (let day = 1; day <= 7; day++) {
+          const config = dayConfigs.find(c => c.day === day);
+          const assignId = Crypto.randomUUID();
+
+          if (config) {
+            const templateId = createdTemplateIds.get(config.templateNameEn)!;
+            db.runSync(
+              `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, workout_template_id, plan_week, day_of_week, is_rest_day, syncStatus, createdAt, updatedAt)
+               VALUES (?, ?, ?, ?, ?, 0, 'pending', ?, ?)`,
+              [assignId, planId, templateId, week, day, now, now]
+            );
+          } else {
+            db.runSync(
+              `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, workout_template_id, plan_week, day_of_week, is_rest_day, syncStatus, createdAt, updatedAt)
+               VALUES (?, ?, NULL, ?, ?, 1, 'pending', ?, ?)`,
+              [assignId, planId, week, day, now, now]
+            );
+          }
+        }
+      }
+    });
+
+    return planId;
+  },
+
+  /**
+   * Apply a preset template to an existing weekly plan
+   */
+  applyPresetTemplate(userId: string, planId: string, templateType: string, name: string): void {
+    const db = getSqliteDb();
+    const now = new Date().toISOString();
+
+    db.withTransactionSync(() => {
+      // 1. Fetch the preset info
+      const preset = db.getFirstSync<{ weeks: number }>(
+        `SELECT weeks FROM preset_weekly_plans WHERE id = ?`,
+        [templateType]
+      );
+      const totalWeeks = preset ? preset.weeks : 4;
+
+      // 2. Update the plan total weeks
+      db.runSync(
+        `UPDATE weekly_plans 
+         SET total_weeks = ?, syncStatus = 'pending', updatedAt = ? 
+         WHERE id = ?`,
+        [totalWeeks, now, planId]
+      );
+
+      // If the current name is empty, update it
+      const currentPlan = db.getFirstSync<{ name: string }>(
+        `SELECT name FROM weekly_plans WHERE id = ?`,
+        [planId]
+      );
+      if (currentPlan && (!currentPlan.name || currentPlan.name.trim() === '')) {
+        db.runSync(
+          `UPDATE weekly_plans SET name = ? WHERE id = ?`,
+          [name, planId]
+        );
+      }
+
+      // 3. Clear existing assignments
+      db.runSync(
+        `DELETE FROM weekly_plan_assigned_templates WHERE weekly_plan_id = ?`,
+        [planId]
+      );
+
+      // 4. Fetch configurations from database
+      const rows = db.getAllSync<{ day_of_week: number; workout_name_ja: string; workout_name_en: string; exercise_id: string }>(
+        `SELECT day_of_week, workout_name_ja, workout_name_en, exercise_id 
+         FROM preset_weekly_plan_exercises 
+         WHERE preset_plan_id = ? 
+         ORDER BY day_of_week ASC, sort_order ASC`,
+        [templateType]
+      );
+
+      // Group exercises by day and workout name
+      const dayConfigs: { day: number; templateNameJa: string; templateNameEn: string; exercises: string[] }[] = [];
+      for (const row of rows) {
+        let config = dayConfigs.find(c => c.day === row.day_of_week);
+        if (!config) {
+          config = {
+            day: row.day_of_week,
+            templateNameJa: row.workout_name_ja,
+            templateNameEn: row.workout_name_en,
+            exercises: []
+          };
+          dayConfigs.push(config);
+        }
+        config.exercises.push(row.exercise_id);
+      }
+
+      // Create workout templates and keep track of IDs
+      const createdTemplateIds = new Map<string, string>();
+      for (const config of dayConfigs) {
+        const templateName = config.templateNameEn;
+        if (!createdTemplateIds.has(templateName)) {
+          const existing = db.getFirstSync<{ id: string }>(
+            `SELECT id FROM workout_templates WHERE user_id = ? AND name = ? AND syncStatus != 'deleted' LIMIT 1`,
+            [userId, templateName]
+          );
+
+          let templateId = '';
+          if (existing) {
+            templateId = existing.id;
+          } else {
+            templateId = Crypto.randomUUID();
+            db.runSync(
+              `INSERT INTO workout_templates (id, user_id, name, syncStatus, createdAt, updatedAt)
+               VALUES (?, ?, ?, 'pending', ?, ?)`,
+              [templateId, userId, templateName, now, now]
+            );
+
+            let sortOrder = 0;
+            for (const exId of config.exercises) {
+              const linkId = Crypto.randomUUID();
+              db.runSync(
+                `INSERT INTO workout_template_exercises (id, workout_template_id, exercise_id, sort_order, target_sets, target_reps, syncStatus, createdAt, updatedAt)
+                 VALUES (?, ?, ?, ?, 3, 10, 'pending', ?, ?)`,
+                [linkId, templateId, exId, sortOrder++, now, now]
+              );
+            }
+          }
+          createdTemplateIds.set(templateName, templateId);
+        }
+      }
+
+      // Assign templates to weeks
+      for (let week = 1; week <= totalWeeks; week++) {
+        for (let day = 1; day <= 7; day++) {
+          const config = dayConfigs.find(c => c.day === day);
+          const assignId = Crypto.randomUUID();
+
+          if (config) {
+            const templateId = createdTemplateIds.get(config.templateNameEn)!;
+            db.runSync(
+              `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, workout_template_id, plan_week, day_of_week, is_rest_day, syncStatus, createdAt, updatedAt)
+               VALUES (?, ?, ?, ?, ?, 0, 'pending', ?, ?)`,
+              [assignId, planId, templateId, week, day, now, now]
+            );
+          } else {
+            db.runSync(
+              `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, workout_template_id, plan_week, day_of_week, is_rest_day, syncStatus, createdAt, updatedAt)
+               VALUES (?, ?, NULL, ?, ?, 1, 'pending', ?, ?)`,
+              [assignId, planId, week, day, now, now]
+            );
+          }
+        }
+      }
+    });
+  },
+
+  /**
+   * Fetch all preset weekly plan templates from the database
+   */
+  fetchPresetTemplates(): any[] {
+    const plans = queryAll<any>(`SELECT * FROM preset_weekly_plans`);
+    const result: any[] = [];
+
+    for (const plan of plans) {
+      const exercises = queryAll<any>(
+        `SELECT day_of_week, workout_name_ja, workout_name_en, exercise_id 
+         FROM preset_weekly_plan_exercises 
+         WHERE preset_plan_id = ? 
+         ORDER BY day_of_week ASC, sort_order ASC`,
+        [plan.id]
+      );
+
+      const workouts: { [day: number]: { name_ja: string; name_en: string; exercises: string[] } } = {};
+      for (const ex of exercises) {
+        if (!workouts[ex.day_of_week]) {
+          workouts[ex.day_of_week] = {
+            name_ja: ex.workout_name_ja,
+            name_en: ex.workout_name_en,
+            exercises: []
+          };
+        }
+        workouts[ex.day_of_week].exercises.push(ex.exercise_id);
+      }
+
+      result.push({
+        id: plan.id,
+        name_ja: plan.name_ja,
+        name_en: plan.name_en,
+        desc_ja: plan.desc_ja,
+        desc_en: plan.desc_en,
+        days: plan.days,
+        weeks: plan.weeks,
+        level: plan.level,
+        workouts
+      });
+    }
+
+    return result;
+  },
+
+  /**
    * Activate a specific weekly plan and deactivate all others for a user
    */
   activateWeeklyPlan(userId: string, planId: string): void {
@@ -78,7 +358,7 @@ export const WeeklyPlanRepository = {
       db.runSync(
         `UPDATE weekly_plans 
          SET is_active = 0, syncStatus = 'pending', updatedAt = ? 
-         WHERE user_id = ?`,
+         WHERE user_id = ? AND (syncStatus != 'deleted' OR syncStatus IS NULL)`,
         [now, userId]
       );
       // Activate target
@@ -89,6 +369,21 @@ export const WeeklyPlanRepository = {
         [now, planId]
       );
     });
+  },
+
+  /**
+   * Deactivate a specific weekly plan
+   */
+  deactivateWeeklyPlan(planId: string): void {
+    const db = getSqliteDb();
+    const now = new Date().toISOString();
+
+    db.runSync(
+      `UPDATE weekly_plans 
+       SET is_active = 0, syncStatus = 'pending', updatedAt = ? 
+       WHERE id = ?`,
+      [now, planId]
+    );
   },
 
   /**

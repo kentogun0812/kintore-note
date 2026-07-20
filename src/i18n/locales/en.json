@@ -138,10 +138,22 @@
     "title": "Kintore Note PRO",
     "subtitle": "Take your training to the ultimate level with professional tools.",
     "features": {
-      "unlimited": { "title": "Unlimited Workouts", "desc": "Log as many sessions as you lift." },
-      "stats": { "title": "Advanced Analytics", "desc": "Deep dive into your progress curves." },
-      "cloud": { "title": "Cloud Sync", "desc": "Keep your data safe across devices." },
-      "programs": { "title": "Exclusive Programs", "desc": "Access to professional training plans." }
+      "unlimited": {
+        "title": "Unlimited Workouts",
+        "desc": "Log as many sessions as you lift."
+      },
+      "stats": {
+        "title": "Advanced Analytics",
+        "desc": "Deep dive into your progress curves."
+      },
+      "cloud": {
+        "title": "Cloud Sync",
+        "desc": "Keep your data safe across devices."
+      },
+      "programs": {
+        "title": "Exclusive Programs",
+        "desc": "Access to professional training plans."
+      }
     },
     "plans": {
       "annual": "Annual Plan",
@@ -259,9 +271,18 @@
       "button": "Unlock My Journey"
     },
     "levels": {
-      "beginner": { "title": "Easy Start", "desc": "Take it slow and start your journey today" },
-      "intermediate": { "title": "Good Habit", "desc": "Keeping it steady and finding your rhythm" },
-      "advanced": { "title": "My Own Pace", "desc": "Consistency is key to finding your style" }
+      "beginner": {
+        "title": "Easy Start",
+        "desc": "Take it slow and start your journey today"
+      },
+      "intermediate": {
+        "title": "Good Habit",
+        "desc": "Keeping it steady and finding your rhythm"
+      },
+      "advanced": {
+        "title": "My Own Pace",
+        "desc": "Consistency is key to finding your style"
+      }
     }
   },
   "intro": {
@@ -332,6 +353,8 @@
     }
   },
   "weeklyPlan": {
+    "searchPlaceholder": "Search plans...",
+    "title": "Weekly Plan",
     "builder": "Weekly Plan Builder",
     "activePlan": "Active Plan",
     "weekN": "Week {{n}}",
@@ -343,7 +366,7 @@
     "noSavedWorkouts": "You have no saved workouts yet.",
     "active": "Active",
     "weeks": "Weeks",
-    "setAsActive": "Set as Active Plan",
+    "setAsActive": "Set Active",
     "deletePlan": "Delete Plan",
     "deletePlanConfirm": "Are you sure you want to delete this weekly plan?",
     "createNewWorkout": "Create New Workout",
@@ -352,12 +375,25 @@
     "starts": "Start Date",
     "startDateNotSet": "Start date not set",
     "emptyPlans": "No weekly plans yet. Tap Add to create your first plan.",
+    "noPlansFound": "No weekly plans found.",
     "addWeeklyPlan": "Add Weekly Plan",
     "editWeeklyPlan": "Edit Weekly Plan",
     "dayN": "Day {{n}}",
     "restDay": "Rest Day",
     "markAsRestDay": "Mark as Rest Day",
-    "weekSummary": "{{workoutCount}} workouts, {{restCount}} rest days"
+    "weekSummary": "{{workoutCount}} workouts, {{restCount}} rest days",
+    "suggestTemplates": "Suggested Templates",
+    "suggestTemplatesButton": "Choose Preset Template",
+    "beginner": "Beginner",
+    "experienced": "Experienced",
+    "daysPerWeek": "{{n}} Days / Week",
+    "applyThisTemplate": "Apply Template",
+    "presetExercises": "Exercises",
+    "dayOfWeekTitle": "Day {{n}}",
+    "inactive": "Inactive",
+    "noPlansTitle": "No Plans Yet",
+    "activatedMessage": "Activated plan: ",
+    "setActive": "Set Active"
   },
   "weeklyPlanBuilder": {
     "invalidWeeks": "Invalid weeks. Please enter a number between 1 and 52.",
@@ -378,5 +414,8 @@
     "todayWorkoutDesc": "Create today's workout by selecting the exercises you plan to do.",
     "weeklyPlansDesc": "Build a weekly training plan and reuse it anytime.",
     "libraryDesc": "Browse exercises or create your own custom exercises."
+  },
+  "nav": {
+    "weeklyPlans": "Weekly Plans"
   }
 }

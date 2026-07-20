@@ -24,10 +24,15 @@ export interface WeeklyPlan {
 interface WeeklyPlanState {
   weeklyPlans: WeeklyPlan[];
   activeWeeklyPlan: WeeklyPlan | null;
+  presetTemplates: any[];
   fetchWeeklyPlans: () => Promise<void>;
+  fetchPresetTemplates: () => Promise<void>;
   createWeeklyPlan: (name: string, total_weeks: number, start_date?: string) => Promise<string | null>;
+  createWeeklyPlanFromTemplate: (templateType: string, name: string) => Promise<string | null>;
+  applyPresetTemplate: (planId: string, templateType: string, name: string) => Promise<void>;
   updateWeeklyPlan: (planId: string, name: string, total_weeks: number, start_date?: string) => Promise<void>;
   activateWeeklyPlan: (planId: string) => Promise<void>;
+  deactivateWeeklyPlan: (planId: string) => Promise<void>;
   deleteWeeklyPlan: (planId: string) => Promise<void>;
   assignToDay: (planId: string, templateId: string | null, week: number, dayOfWeek: number, isRestDay?: boolean) => Promise<void>;
   fetchPlanTemplates: (planId: string) => Promise<AssignedTemplate[]>;
@@ -36,6 +41,7 @@ interface WeeklyPlanState {
 export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
   weeklyPlans: [],
   activeWeeklyPlan: null,
+  presetTemplates: [],
 
   fetchWeeklyPlans: async () => {
     const userId = useAuthStore.getState().user?.id || 'guest';
@@ -60,6 +66,28 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
     }
   },
 
+  createWeeklyPlanFromTemplate: async (templateType, name) => {
+    const userId = useAuthStore.getState().user?.id || 'guest';
+    try {
+      const id = WeeklyPlanRepository.createWeeklyPlanFromTemplate(userId, templateType, name);
+      await get().fetchWeeklyPlans();
+      return id;
+    } catch (error) {
+      console.error('[WeeklyPlanStore] Error creating plan from template:', error);
+      return null;
+    }
+  },
+
+  applyPresetTemplate: async (planId, templateType, name) => {
+    const userId = useAuthStore.getState().user?.id || 'guest';
+    try {
+      WeeklyPlanRepository.applyPresetTemplate(userId, planId, templateType, name);
+      await get().fetchWeeklyPlans();
+    } catch (error) {
+      console.error('[WeeklyPlanStore] Error applying preset template:', error);
+    }
+  },
+
   updateWeeklyPlan: async (planId, name, total_weeks, start_date) => {
     try {
       WeeklyPlanRepository.updateWeeklyPlan(planId, name, total_weeks, start_date);
@@ -76,6 +104,15 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
       await get().fetchWeeklyPlans();
     } catch (error) {
       console.error('[WeeklyPlanStore] Error activating plan:', error);
+    }
+  },
+
+  deactivateWeeklyPlan: async (planId) => {
+    try {
+      WeeklyPlanRepository.deactivateWeeklyPlan(planId);
+      await get().fetchWeeklyPlans();
+    } catch (error) {
+      console.error('[WeeklyPlanStore] Error deactivating plan:', error);
     }
   },
 
@@ -102,6 +139,15 @@ export const useWeeklyPlanStore = create<WeeklyPlanState>((set, get) => ({
     } catch (error) {
       console.error('[WeeklyPlanStore] Error fetching plan templates:', error);
       return [];
+    }
+  },
+
+  fetchPresetTemplates: async () => {
+    try {
+      const data = WeeklyPlanRepository.fetchPresetTemplates();
+      set({ presetTemplates: data });
+    } catch (error) {
+      console.error('[WeeklyPlanStore] Error fetching preset templates:', error);
     }
   }
 }));

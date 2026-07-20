@@ -138,10 +138,22 @@
     "title": "筋トレノート PRO",
     "subtitle": "プロフェッショナルなツールでトレーニングの質を高めましょう。",
     "features": {
-      "unlimited": { "title": "無制限の記録", "desc": "すべてのセッションを制限なく記録できます。" },
-      "stats": { "title": "高度な分析", "desc": "トレーニングの推移を詳細に分析できます。" },
-      "cloud": { "title": "クラウド同期", "desc": "デバイス間でデータを安全に同期します。" },
-      "programs": { "title": "限定プログラム", "desc": "プロのトレーニングプランにアクセスできます。" }
+      "unlimited": {
+        "title": "無制限の記録",
+        "desc": "すべてのセッションを制限なく記録できます。"
+      },
+      "stats": {
+        "title": "高度な分析",
+        "desc": "トレーニングの推移を詳細に分析できます。"
+      },
+      "cloud": {
+        "title": "クラウド同期",
+        "desc": "デバイス間でデータを安全に同期します。"
+      },
+      "programs": {
+        "title": "限定プログラム",
+        "desc": "プロのトレーニングプランにアクセスできます。"
+      }
     },
     "plans": {
       "annual": "年額プラン",
@@ -341,6 +353,8 @@
     }
   },
   "weeklyPlan": {
+    "searchPlaceholder": "プランを検索...",
+    "title": "週間プラン",
     "builder": "週間プランビルダー",
     "activePlan": "アクティブなプラン",
     "weekN": "第{{n}}週",
@@ -352,7 +366,7 @@
     "noSavedWorkouts": "保存されたワークアウトがありません。",
     "active": "アクティブ",
     "weeks": "週",
-    "setAsActive": "アクティブプランに設定",
+    "setAsActive": "有効にする",
     "deletePlan": "プランを削除",
     "deletePlanConfirm": "この週間プランを削除してもよろしいですか？",
     "createNewWorkout": "ワークアウトを新規作成",
@@ -361,12 +375,25 @@
     "starts": "開始日",
     "startDateNotSet": "開始日が未設定",
     "emptyPlans": "週間プランがありません。「追加」をタップして最初のプランを作成してください。",
+    "noPlansFound": "週間プランが見つかりません。",
     "addWeeklyPlan": "週間プランを追加",
     "editWeeklyPlan": "週間プランを編集",
     "dayN": "Day {{n}}",
     "restDay": "休息日",
     "markAsRestDay": "休息日にする",
-    "weekSummary": "ワークアウト {{workoutCount}}、休息日 {{restCount}}"
+    "weekSummary": "ワークアウト {{workoutCount}}、休息日 {{restCount}}",
+    "suggestTemplates": "おすすめプラン",
+    "suggestTemplatesButton": "プランテンプレートから選択",
+    "beginner": "初心者",
+    "experienced": "中・上級者",
+    "daysPerWeek": "週{{n}}日",
+    "applyThisTemplate": "プランを適用する",
+    "presetExercises": "種目",
+    "dayOfWeekTitle": "Day {{n}}",
+    "inactive": "非アクティブ",
+    "noPlansTitle": "プランがありません",
+    "activatedMessage": "プランを有効にしました: ",
+    "setActive": "アクティブにする"
   },
   "weeklyPlanBuilder": {
     "invalidWeeks": "無効な週数です。1から52までの数字を入力してください。",
@@ -387,5 +414,8 @@
     "todayWorkoutDesc": "今日行う種目を選んでワークアウトを作成します。",
     "weeklyPlansDesc": "週間トレーニングプランを作成し、いつでも利用できます。",
     "libraryDesc": "種目を閲覧したり、オリジナルの種目を作成できます。"
+  },
+  "nav": {
+    "weeklyPlans": "週間トレーニング"
   }
 }

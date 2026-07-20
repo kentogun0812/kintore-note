@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, Pressable, FlatList, Alert, Platform, ToastAndroid, TextInput } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -14,10 +14,17 @@ import { useIsFocused } from '@react-navigation/native';
 
 export default function WeeklyPlansListScreen() {
   const { t } = useTranslation();
-  const { weeklyPlans, fetchWeeklyPlans, createWeeklyPlan } = useWeeklyPlanStore();
+  const { weeklyPlans, fetchWeeklyPlans, createWeeklyPlan, activateWeeklyPlan, deactivateWeeklyPlan } = useWeeklyPlanStore();
   const isFocused = useIsFocused();
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredPlans = useMemo(() => {
+    if (!searchQuery.trim()) return weeklyPlans;
+    const query = searchQuery.toLowerCase().trim();
+    return weeklyPlans.filter(p => (p.name || '').toLowerCase().includes(query));
+  }, [weeklyPlans, searchQuery]);
 
   useEffect(() => {
     if (isFocused) {
@@ -28,12 +35,25 @@ export default function WeeklyPlansListScreen() {
   const loadPlans = async () => {
     setIsLoading(true);
     await fetchWeeklyPlans();
+    
+    // Cleanup garbage plans created during testing (unnamed and no assigned templates)
+    const store = useWeeklyPlanStore.getState();
+    const plansToCleanup = store.weeklyPlans.filter(p => !p.name && (!p.assigned_templates || p.assigned_templates.length === 0));
+    
+    if (plansToCleanup.length > 0) {
+      for (const p of plansToCleanup) {
+        await store.deleteWeeklyPlan(p.id);
+      }
+      // refetch after cleanup
+      await fetchWeeklyPlans();
+    }
+    
     setIsLoading(false);
   };
 
   const handleAddPlan = async () => {
     setIsCreating(true);
-    const newId = await createWeeklyPlan('', 0);
+    const newId = await createWeeklyPlan('', 1);
     setIsCreating(false);
     if (newId) {
       router.push({ pathname: `/training/weekly-plan/${newId}`, params: { isNew: 'true' } });
@@ -43,7 +63,7 @@ export default function WeeklyPlansListScreen() {
   const renderPlanItem = ({ item }: { item: WeeklyPlan }) => {
     return (
       <Pressable onPress={() => router.push(`/training/weekly-plan/${item.id}`)}>
-        <Card style={styles.planCard}>
+        <Card style={[styles.planCard, item.is_active && styles.planCardActive]}>
           <View style={styles.planCardInner}>
             <View style={styles.planContent}>
               <View style={styles.planHeaderRow}>
@@ -82,7 +102,6 @@ export default function WeeklyPlansListScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      
       <View style={styles.customHeader}>
         <Pressable 
           onPress={() => router.back()} 
@@ -95,16 +114,41 @@ export default function WeeklyPlansListScreen() {
         <View style={{ width: 40 }} />
       </View>
 
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Icon name="search" size={20} color={colors.dark.text.secondary} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder={t('weeklyPlan.searchPlaceholder')}
+            placeholderTextColor={colors.dark.text.tertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            clearButtonMode="while-editing"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchQuery.length > 0 && (
+            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: spacing.xs }}>
+              <Icon name="close-circle" size={18} color={colors.dark.text.secondary} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
       <FlatList
-        data={weeklyPlans}
+        data={filteredPlans}
         keyExtractor={(item) => item.id}
         renderItem={renderPlanItem}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           !isLoading ? (
             <View style={styles.emptyState}>
-              <Icon name="calendar-outline" size={48} color={colors.dark.border.subtle} />
-              <Text style={styles.emptyText}>{t('weeklyPlan.emptyPlans')}</Text>
+              <View style={styles.emptyIconContainer}>
+                <Icon name={searchQuery ? "search-outline" : "calendar-outline"} size={64} color={colors.dark.text.tertiary} />
+              </View>
+              <Text style={styles.emptyText}>
+                {searchQuery ? t('weeklyPlan.noPlansFound') : t('weeklyPlan.emptyPlans')}
+              </Text>
             </View>
           ) : null
         }
@@ -158,6 +202,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.dark.border.subtle,
   },
+  planCardActive: {
+    borderColor: colors.dark.accent.primary,
+    backgroundColor: colors.dark.accent.primary + '0A', // very subtle highlight
+  },
   planCardInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -166,7 +214,6 @@ const styles = StyleSheet.create({
   planContent: {
     flex: 1,
     gap: spacing.xs,
-    paddingRight: spacing.sm,
   },
   planHeaderRow: {
     flexDirection: 'row',
@@ -226,13 +273,23 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
-    marginTop: spacing.xl,
+    gap: spacing.sm,
+    marginTop: spacing.xxl,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.dark.bg.tertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
   },
   emptyText: {
     color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.md,
     textAlign: 'center',
+    lineHeight: 24,
   },
   footer: {
     padding: spacing.base,
@@ -240,5 +297,54 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dark.bg.primary,
     borderTopWidth: 1,
     borderTopColor: colors.dark.border.subtle,
+  },
+  activateButton: {
+    marginLeft: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  activateButtonActive: {
+    backgroundColor: colors.dark.accent.primary + '15',
+    borderColor: colors.dark.accent.primary,
+  },
+  activateButtonInactive: {
+    backgroundColor: colors.dark.bg.tertiary,
+    borderColor: colors.dark.border.subtle,
+  },
+  activateButtonText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: 'bold',
+  },
+  activateButtonTextActive: {
+    color: colors.dark.accent.primary,
+  },
+  activateButtonTextInactive: {
+    color: colors.dark.text.secondary,
+  },
+  searchContainer: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.dark.bg.primary,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.dark.bg.secondary,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.sm,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.dark.text.primary,
+    marginLeft: spacing.sm,
+    fontSize: typography.fontSize.md,
   },
 });

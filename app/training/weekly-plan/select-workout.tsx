@@ -189,6 +189,11 @@ export default function SelectWorkoutScreen() {
                 <Text style={styles.routineCardDetails}>
                   {item.exercises.length} {t('common.exercises')}
                 </Text>
+                {item.exercises.length > 0 && (
+                  <Text style={styles.routineCardExercisesList} numberOfLines={2}>
+                    {item.exercises.map((ex: any) => (i18n.language === 'ja' ? ex.name_ja : ex.name_en) || ex.name || ex).join(', ')}
+                  </Text>
+                )}
               </View>
               <Icon name="chevron-forward" size={20} color={colors.dark.accent.primary} />
             </Pressable>
@@ -274,6 +279,13 @@ const styles = StyleSheet.create({
   routineCardDetails: {
     color: colors.dark.text.secondary,
     fontSize: typography.fontSize.xs,
+  },
+  routineCardExercisesList: {
+    color: colors.dark.text.tertiary,
+    fontSize: typography.fontSize.xs,
+    fontStyle: 'italic',
+    marginTop: 2,
+    lineHeight: 16,
   },
   emptyText: {
     color: colors.dark.text.secondary,

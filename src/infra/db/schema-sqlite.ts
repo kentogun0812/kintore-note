@@ -180,6 +180,31 @@ export const SQLITE_SCHEMA = {
         FOREIGN KEY(weekly_plan_id) REFERENCES weekly_plans(id) ON DELETE CASCADE,
         FOREIGN KEY(workout_template_id) REFERENCES workout_templates(id) ON DELETE SET NULL
       );
+    `,
+    preset_weekly_plans: `
+      CREATE TABLE IF NOT EXISTS preset_weekly_plans (
+        id TEXT PRIMARY KEY,
+        name_ja TEXT NOT NULL,
+        name_en TEXT NOT NULL,
+        desc_ja TEXT NOT NULL,
+        desc_en TEXT NOT NULL,
+        days INTEGER NOT NULL,
+        weeks INTEGER NOT NULL,
+        level TEXT NOT NULL
+      );
+    `,
+    preset_weekly_plan_exercises: `
+      CREATE TABLE IF NOT EXISTS preset_weekly_plan_exercises (
+        id TEXT PRIMARY KEY,
+        preset_plan_id TEXT NOT NULL,
+        day_of_week INTEGER NOT NULL,
+        workout_name_ja TEXT NOT NULL,
+        workout_name_en TEXT NOT NULL,
+        exercise_id TEXT NOT NULL,
+        sort_order INTEGER NOT NULL,
+        FOREIGN KEY(preset_plan_id) REFERENCES preset_weekly_plans(id) ON DELETE CASCADE,
+        FOREIGN KEY(exercise_id) REFERENCES exercises(id)
+      );
     `
   }
 };
