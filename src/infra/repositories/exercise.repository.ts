@@ -1,5 +1,6 @@
 import { queryAll, queryOne, runExecute } from '../db/sqlite';
 import * as Crypto from 'expo-crypto';
+import { getExerciseDetailFallback, ExerciseDetailInfo } from '@/constants/exerciseDetails';
 
 export interface MuscleGroupModel {
   id: string;
@@ -16,6 +17,7 @@ export interface ExerciseModel {
   muscle_group_id: string;
   is_system: number; // 1 = system, 0 = custom
   muscle_groups?: MuscleGroupModel | null;
+  details?: ExerciseDetailInfo;
 }
 
 export const ExerciseRepository = {
@@ -70,14 +72,18 @@ export const ExerciseRepository = {
       mgMap.set(mg.id, mg);
     }
 
-    return rawExercises.map(ex => ({
-      id: ex.id,
-      name_ja: ex.name_ja,
-      name_en: ex.name_en,
-      muscle_group_id: ex.muscle_group_id,
-      is_system: ex.is_system,
-      muscle_groups: mgMap.get(ex.muscle_group_id) || null
-    }));
+    return rawExercises.map(ex => {
+      const mg = mgMap.get(ex.muscle_group_id) || null;
+      return {
+        id: ex.id,
+        name_ja: ex.name_ja,
+        name_en: ex.name_en,
+        muscle_group_id: ex.muscle_group_id,
+        is_system: ex.is_system,
+        muscle_groups: mg,
+        details: getExerciseDetailFallback(ex.id, ex.name_ja, ex.name_en, mg?.name_ja, mg?.name_en)
+      };
+    });
   },
 
   /**
@@ -217,7 +223,18 @@ export const ExerciseRepository = {
       name_en: ex.name_en,
       muscle_group_id: ex.muscle_group_id,
       is_system: ex.is_system,
-      muscle_groups: mg
+      muscle_groups: mg,
+      details: getExerciseDetailFallback(ex.id, ex.name_ja, ex.name_en, mg?.name_ja, mg?.name_en)
     };
+  },
+
+  /**
+   * Fetch exercise detail for an exercise ID
+   */
+  getExerciseDetails(id: string, userId: string = 'guest'): ExerciseDetailInfo {
+    const ex = this.getExerciseById(id, userId);
+    if (ex && ex.details) return ex.details;
+    return getExerciseDetailFallback(id);
   }
 };
+

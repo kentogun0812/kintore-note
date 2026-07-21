@@ -32,6 +32,7 @@ interface WorkoutBuilderState {
   saveCurrentWorkout: () => Promise<{ success: boolean; error?: string }>;
   fetchSavedWorkouts: () => Promise<void>;
   updateSavedWorkout: (id: string, name: string, exercises: WorkoutTemplateExercise[]) => Promise<{ success: boolean; error?: string }>;
+  deleteSavedWorkout: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useWorkoutStore = create<WorkoutBuilderState>()(
@@ -76,6 +77,17 @@ export const useWorkoutStore = create<WorkoutBuilderState>()(
         } catch (err: any) {
           console.error('[WorkoutStore] Failed to update Workout:', err);
           return { success: false, error: 'UPDATE_FAILED' };
+        }
+      },
+      deleteSavedWorkout: async (id) => {
+        try {
+          const userId = useAuthStore.getState().user?.id || 'guest';
+          await WorkoutTemplateRepository.deleteWorkoutTemplate(id, userId);
+          await get().fetchSavedWorkouts();
+          return { success: true };
+        } catch (err: any) {
+          console.error('[WorkoutStore] Failed to delete Workout:', err);
+          return { success: false, error: 'DELETE_FAILED' };
         }
       },
 

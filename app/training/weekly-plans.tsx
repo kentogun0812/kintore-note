@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, Alert, Platform, ToastAndroid, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
@@ -11,10 +11,12 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/Card';
 import { useIsFocused } from '@react-navigation/native';
+import { DismissibleBanner } from '@/components/DismissibleBanner';
+import { SearchBar } from '@/components/SearchBar';
 
 export default function WeeklyPlansListScreen() {
   const { t } = useTranslation();
-  const { weeklyPlans, fetchWeeklyPlans, createWeeklyPlan, activateWeeklyPlan, deactivateWeeklyPlan } = useWeeklyPlanStore();
+  const { weeklyPlans, fetchWeeklyPlans, createWeeklyPlan } = useWeeklyPlanStore();
   const isFocused = useIsFocused();
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -115,23 +117,16 @@ export default function WeeklyPlansListScreen() {
       </View>
 
       <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Icon name="search" size={20} color={colors.dark.text.secondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('weeklyPlan.searchPlaceholder')}
-            placeholderTextColor={colors.dark.text.tertiary}
+        <DismissibleBanner
+          bannerId="weeklyPlans"
+          description={t('banners.weeklyPlansDesc')}
+        />
+        <View style={styles.searchBarWrapper}>
+          <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
-            clearButtonMode="while-editing"
-            autoCapitalize="none"
-            autoCorrect={false}
+            placeholder={t('weeklyPlan.searchPlaceholder')}
           />
-          {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery('')} hitSlop={8} style={{ padding: spacing.xs }}>
-              <Icon name="close-circle" size={18} color={colors.dark.text.secondary} />
-            </Pressable>
-          )}
         </View>
       </View>
 
@@ -204,7 +199,7 @@ const styles = StyleSheet.create({
   },
   planCardActive: {
     borderColor: colors.dark.accent.primary,
-    backgroundColor: colors.dark.accent.primary + '0A', // very subtle highlight
+    backgroundColor: colors.dark.bg.tertiary,
   },
   planCardInner: {
     flexDirection: 'row',
@@ -328,23 +323,12 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.dark.bg.primary,
+    gap: spacing.md,
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.dark.bg.secondary,
-    borderRadius: radius.full,
-    paddingHorizontal: spacing.sm,
-    height: 48,
-    borderWidth: 1,
-    borderColor: colors.dark.border.subtle,
-  },
-  searchInput: {
-    flex: 1,
-    color: colors.dark.text.primary,
-    marginLeft: spacing.sm,
-    fontSize: typography.fontSize.md,
+  searchBarWrapper: {
+    width: '100%',
   },
 });

@@ -238,7 +238,11 @@
     "nameInvalidChars": "特殊文字（<, >, \", ', ;, \\ など）は使用できません。",
     "nameEmpty": "ワークアウト名を入力してください。",
     "exercisesRequired": "種目を1つ以上追加してください。",
-    "library": "ライブラリ"
+    "library": "ライブラリ",
+    "deleteTemplate": "テンプレートを削除",
+    "deleteTemplateConfirm": "このワークアウトテンプレートを削除してもよろしいですか？",
+    "updateFailed": "ワークアウトテンプレートの更新に失敗しました。",
+    "deleteFailed": "ワークアウトテンプレートの削除に失敗しました。"
   },
   "library": {
     "title": "種目ライブラリ",
@@ -247,8 +251,13 @@
     "noResults": "種目が見つかりません。"
   },
   "exerciseDetail": {
-    "title": "詳細",
-    "addToRoutine": "ルーティンに追加"
+    "title": "種目詳細",
+    "addToRoutine": "ルーティンに追加",
+    "selectExercise": "この種目を選択",
+    "primaryMuscle": "対象部位",
+    "description": "概要・説明",
+    "benefits": "主な効果・メリット",
+    "allCategories": "すべて"
   },
   "camera": {
     "permissionTitle": "カメラへのアクセスが必要です",

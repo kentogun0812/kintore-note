@@ -128,5 +128,35 @@ export const WorkoutTemplateRepository = {
         );
       }
     });
+  },
+
+  /**
+   * Delete a Workout Template locally
+   */
+  deleteWorkoutTemplate(templateId: string, userId: string): void {
+    const db = getSqliteDb();
+    const now = new Date().toISOString();
+
+    if (userId === 'guest') {
+      db.withTransactionSync(() => {
+        db.runSync('DELETE FROM workout_template_exercises WHERE workout_template_id = ?', [templateId]);
+        db.runSync('DELETE FROM workout_templates WHERE id = ?', [templateId]);
+      });
+    } else {
+      db.withTransactionSync(() => {
+        db.runSync(
+          `UPDATE workout_templates 
+           SET syncStatus = 'deleted', updatedAt = ? 
+           WHERE id = ? AND user_id = ?`,
+          [now, templateId, userId]
+        );
+        db.runSync(
+          `UPDATE workout_template_exercises 
+           SET syncStatus = 'deleted', updatedAt = ? 
+           WHERE workout_template_id = ?`,
+          [now, templateId]
+        );
+      });
+    }
   }
 };

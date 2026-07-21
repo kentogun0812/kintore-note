@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Pressable, Keyboard, TouchableWithoutFeedback, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { colors } from '@/constants/colors';
@@ -7,7 +7,7 @@ import { typography } from '@/constants/typography';
 import { spacing, radius } from '@/constants/spacing';
 import { useWorkoutStore } from '@/store/workout.store';
 import { useTranslation } from 'react-i18next';
-import { AppErrorHandler, ValidationError, BusinessError, DatabaseError } from '@/lib/error-handler';
+import { AppErrorHandler, ValidationError, DatabaseError } from '@/lib/error-handler';
 import { useExercisePicker } from '@/features/training/hooks/use-exercise-picker';
 import { ExercisePicker } from '@/features/training/components/ExercisePicker';
 import { CreateCustomMGModal } from '@/features/training/components/CreateCustomMGModal';
@@ -29,6 +29,7 @@ export default function EditTemplateScreen() {
     removeExerciseFromWorkout,
     reorderExercises,
     updateSavedWorkout,
+    deleteSavedWorkout,
     clearWorkoutBuilder
   } = useWorkoutStore();
 
@@ -52,11 +53,10 @@ export default function EditTemplateScreen() {
       setExercises(template.exercises);
       picker.setSelectedExerciseIds(template.exercises.map((e: any) => e.id));
     } else {
-      AppErrorHandler.handleError(new ValidationError(t('common.unknownError'), 'TEMPLATE_NOT_FOUND'));
+      AppErrorHandler.handleError(new ValidationError(t('common.unknownError')));
       router.back();
     }
     setIsLoading(false);
-
     return () => {
       clearWorkoutBuilder();
     };
@@ -64,11 +64,11 @@ export default function EditTemplateScreen() {
 
   const handleSave = async () => {
     if (!workoutName.trim()) {
-      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.nameEmpty'), 'NAME_EMPTY'));
+      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.nameEmpty')));
       return;
     }
     if (exercises.length === 0) {
-      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.exercisesRequired'), 'EXERCISES_REQUIRED'));
+      AppErrorHandler.handleError(new ValidationError(t('todayWorkout.exercisesRequired')));
       return;
     }
 
@@ -79,20 +79,38 @@ export default function EditTemplateScreen() {
     if (result.success) {
       router.back();
     } else {
-      AppErrorHandler.handleError(new DatabaseError(result.error || 'Failed to update template', 'UPDATE_FAILED'));
+      AppErrorHandler.handleError(new DatabaseError(t('todayWorkout.updateFailed')));
     }
   };
 
+  const handleDeleteConfirm = () => {
+    Alert.alert(
+      t('todayWorkout.deleteTemplate'),
+      t('todayWorkout.deleteTemplateConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            const res = await deleteSavedWorkout(id as string);
+            if (res.success) {
+              router.back();
+            } else {
+              AppErrorHandler.handleError(new DatabaseError(t('todayWorkout.deleteFailed')));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleFinishPicking = () => {
-    // Convert selected IDs to records
     const selectedRecords = picker.selectedExerciseIds.map(exId => {
       return picker.allExercises.find(e => e.id === exId);
     }).filter(Boolean);
-    
-    // Maintain the order of already existing exercises
     const existing = exercises.filter(e => picker.selectedExerciseIds.includes(e.id));
     const newRecords = selectedRecords.filter(r => !existing.find(e => e?.id === r?.id));
-    
     setExercises([...existing, ...newRecords] as any[]);
     setIsPicking(false);
   };
@@ -114,12 +132,12 @@ export default function EditTemplateScreen() {
           <Pressable 
             onPress={() => {
               removeExerciseFromWorkout(item.id);
-              picker.handleToggleSelectExercise(item.id); // uncheck from picker
+              picker.handleToggleSelectExercise(item.id);
             }}
             hitSlop={10}
             style={styles.deleteButton}
           >
-            <Icon name="trash-outline" size={20} color={colors.dark.accent.warning} />
+            <Icon name="trash-outline" size={20} color={colors.dark.accent.danger} />
           </Pressable>
         </Pressable>
       </ScaleDecorator>
@@ -149,7 +167,17 @@ export default function EditTemplateScreen() {
             <Icon name="chevron-back" size={24} color={colors.dark.text.primary} />
           </Pressable>
           <Text style={styles.headerTitle}>{t('session.editWorkoutTemplate')}</Text>
-          <View style={{ width: 40 }} />
+          {!isPicking ? (
+            <Pressable
+              onPress={handleDeleteConfirm}
+              hitSlop={8}
+              style={styles.headerDeleteButton}
+            >
+              <Icon name="trash-outline" size={22} color={colors.dark.accent.danger} />
+            </Pressable>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
         </View>
 
         {isPicking ? (
@@ -213,7 +241,7 @@ export default function EditTemplateScreen() {
 
             <View style={styles.footer}>
               <Button 
-                label={isSaving ? t('common.saving') || 'Saving...' : t('common.save')} 
+                label={isSaving ? t('common.saving') : t('common.save')} 
                 fullWidth 
                 onPress={handleSave}
                 disabled={isSaving || exercises.length === 0}
@@ -273,6 +301,12 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'flex-start',
+  },
+  headerDeleteButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
   },
   headerTitle: {
     fontSize: typography.fontSize.lg,

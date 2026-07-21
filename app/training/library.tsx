@@ -1,73 +1,97 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, SectionList, TextInput, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { View, Text, SectionList, ActivityIndicator, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
-import { spacing } from '@/constants/spacing';
+import { spacing, radius } from '@/constants/spacing';
 import { ExerciseCard } from '@/components/ExerciseCard';
-import { Icon } from '@/components/Icon';
+import { Icon, IconName } from '@/components/Icon';
+import { SearchBar } from '@/components/SearchBar';
+import { DismissibleBanner } from '@/components/DismissibleBanner';
+import { ExerciseDetailModal, ExerciseDetailItem } from '@/components/ExerciseDetailModal';
 import { ExerciseRepository } from '@/infra/repositories/exercise.repository';
 import { useAuthStore } from '@/store/auth.store';
-import { useQuery } from '@tanstack/react-query';
 import { useWorkoutStore } from '@/store/workout.store';
-import { useTranslation } from 'react-i18next';
-import { DismissibleBanner } from '@/components/DismissibleBanner';
-
-import { useLocalSearchParams } from 'expo-router';
 import { useTrainingStore } from '@/store/training.store';
-import { DEFAULT_EXERCISES, DEFAULT_MUSCLE_GROUPS } from '@/constants/defaultExercises';
-
-// Interface matching the joined query result
-interface ExerciseRow {
-  id: string;
-  name_en: string;
-  name_ja: string;
-  muscle_groups: {
-    id: string;
-    name_en: string;
-    name_ja: string;
-    sort_order: number;
-  };
-}
 
 export default function ExerciseLibraryScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [selectedExerciseForModal, setSelectedExerciseForModal] = useState<ExerciseDetailItem | null>(null);
+
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
+  const isSelectionMode = Boolean(mode);
+
   const { addExerciseToWorkout } = useWorkoutStore();
   const { addExercise } = useTrainingStore();
 
-  const handleSelectExercise = (exerciseId: string, exerciseNameJa: string, exerciseNameEn: string, exerciseName: string) => {
+  const handleConfirmSelectExercise = (exerciseItem: ExerciseDetailItem) => {
     if (mode === 'session') {
-      addExercise({ id: exerciseId, name: exerciseName });
+      addExercise({ id: exerciseItem.id, name: exerciseItem.name_ja });
     } else {
-      addExerciseToWorkout({ id: exerciseId, name_ja: exerciseNameJa, name_en: exerciseNameEn });
+      addExerciseToWorkout({ 
+        id: exerciseItem.id, 
+        name_ja: exerciseItem.name_ja, 
+        name_en: exerciseItem.name_en 
+      });
     }
+    setSelectedExerciseForModal(null);
     router.back();
   };
 
-  // Fetch exercises and their muscle groups from SQLite
-  const { data: exercises, isLoading, error } = useQuery({
-    queryKey: ['exercises'],
+  // Fetch exercises and muscle groups from SQLite
+  const { data: rawData, isLoading, error } = useQuery({
+    queryKey: ['exercises_library'],
     queryFn: async () => {
       const userId = useAuthStore.getState().user?.id || 'guest';
-      return ExerciseRepository.getAllExercises(userId);
+      const exercises = ExerciseRepository.getAllExercises(userId);
+      const muscleGroups = ExerciseRepository.getMuscleGroups(userId);
+      return { exercises, muscleGroups };
     }
   });
 
-  // Group and format data for SectionList
+  const muscleGroups = rawData?.muscleGroups || [];
+  const exercises = rawData?.exercises || [];
+
+  // Construct Category Tabs list
+  const categories = useMemo(() => {
+    const allTab = {
+      id: 'all',
+      name_ja: t('exerciseDetail.allCategories'),
+      name_en: t('exerciseDetail.allCategories'),
+    };
+    return [allTab, ...muscleGroups];
+  }, [muscleGroups, t]);
+
+  // Group and format data for SectionList based on search and category tab
   const groupedData = useMemo(() => {
     if (!exercises) return [];
 
+    const query = searchQuery.toLowerCase().trim();
+
     const filtered = exercises.filter(ex => {
-      const query = searchQuery.toLowerCase();
-      return ex.name_en.toLowerCase().includes(query) || 
-             ex.name_ja.includes(query) ||
-             ex.muscle_groups?.name_en.toLowerCase().includes(query);
+      // Category tab filter
+      if (selectedCategoryId !== 'all' && ex.muscle_group_id !== selectedCategoryId) {
+        return false;
+      }
+      // Search query filter
+      if (query) {
+        const matchNameEn = ex.name_en.toLowerCase().includes(query);
+        const matchNameJa = ex.name_ja.includes(query);
+        const matchGroupEn = ex.muscle_groups?.name_en.toLowerCase().includes(query) || false;
+        const matchGroupJa = ex.muscle_groups?.name_ja.includes(query) || false;
+        return matchNameEn || matchNameJa || matchGroupEn || matchGroupJa;
+      }
+      return true;
     });
 
-    const getIconForGroup = (groupNameEn: string = '') => {
+    const getIconForGroup = (groupNameEn: string = ''): IconName => {
       const g = groupNameEn.toLowerCase();
       if (g.includes('chest')) return 'body';
       if (g.includes('back')) return 'accessibility';
@@ -78,12 +102,14 @@ export default function ExerciseLibraryScreen() {
       return 'barbell-outline';
     };
 
-    const groups: Record<string, { title: string, order: number, data: any[] }> = {};
+    const groups: Record<string, { title: string, order: number, data: ExerciseDetailItem[] }> = {};
     
     filtered.forEach(ex => {
       const mgId = ex.muscle_groups?.id || 'unknown';
       const mgSort = ex.muscle_groups?.sort_order || 999;
-      const mgTitle = ex.muscle_groups ? `${ex.muscle_groups.name_ja} (${ex.muscle_groups.name_en})` : 'Other';
+      const mgTitle = ex.muscle_groups 
+        ? `${ex.muscle_groups.name_ja} (${ex.muscle_groups.name_en})` 
+        : 'Other';
       
       if (!groups[mgId]) {
         groups[mgId] = { title: mgTitle, order: mgSort, data: [] };
@@ -91,19 +117,27 @@ export default function ExerciseLibraryScreen() {
       
       groups[mgId].data.push({
         id: ex.id,
-        name: `${ex.name_ja} (${ex.name_en})`,
         name_ja: ex.name_ja,
         name_en: ex.name_en,
-        muscleGroup: ex.muscle_groups?.name_ja || 'Other',
-        iconName: getIconForGroup(ex.muscle_groups?.name_en)
+        muscle_group_ja: ex.muscle_groups?.name_ja,
+        muscle_group_en: ex.muscle_groups?.name_en,
+        muscleGroup: ex.muscle_groups ? (i18n.language === 'ja' ? ex.muscle_groups.name_ja : ex.muscle_groups.name_en) : 'Other',
+        iconName: getIconForGroup(ex.muscle_groups?.name_en),
+        details: ex.details,
       });
     });
 
     return Object.values(groups)
       .sort((a, b) => a.order - b.order)
-      .map(group => ({ title: group.title, data: group.data }));
+      .map(group => ({ 
+        title: group.title, 
+        data: group.data.map(item => ({
+          ...item,
+          name: `${item.name_ja} (${item.name_en})`,
+        })) 
+      }));
 
-  }, [exercises, searchQuery]);
+  }, [exercises, searchQuery, selectedCategoryId, i18n.language]);
 
   return (
     <View style={styles.container}>
@@ -125,22 +159,48 @@ export default function ExerciseLibraryScreen() {
         }} 
       />
       
-      <View style={styles.searchContainer}>
+      <View style={styles.topContainer}>
         <DismissibleBanner
           bannerId="library"
           description={t('banners.libraryDesc')}
         />
-        <View style={styles.searchBar}>
-          <Icon name="search" size={16} color={colors.dark.text.secondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={t('library.searchPlaceholder')}
-            placeholderTextColor={colors.dark.text.secondary}
+        <View style={styles.searchBarWrapper}>
+          <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
-            clearButtonMode="while-editing"
+            placeholder={t('library.searchPlaceholder')}
           />
         </View>
+
+        {/* Category Tab Panel */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryTabsContainer}
+        >
+          {categories.map(cat => {
+            const isSelected = selectedCategoryId === cat.id;
+            return (
+              <Pressable
+                key={cat.id}
+                onPress={() => setSelectedCategoryId(cat.id)}
+                style={[
+                  styles.categoryTab,
+                  isSelected && styles.categoryTabActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.categoryTabText,
+                    isSelected && styles.categoryTabTextActive,
+                  ]}
+                >
+                  {i18n.language === 'ja' ? cat.name_ja : cat.name_en}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {isLoading ? (
@@ -155,30 +215,45 @@ export default function ExerciseLibraryScreen() {
           </Text>
         </View>
       ) : (
-        <SectionList
-          contentInsetAdjustmentBehavior="automatic"
-          sections={groupedData}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.itemContainer}>
-              <ExerciseCard 
-                exercise={item} 
-                onPress={() => handleSelectExercise(item.id, item.name_ja, item.name_en, item.name)} 
-              />
-            </View>
-          )}
-          renderSectionHeader={({ section: { title } }) => (
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{title}</Text>
-            </View>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>{t('library.noResults')}</Text>
-            </View>
-          }
-        />
+        <Animated.View 
+          key={selectedCategoryId} 
+          entering={FadeInUp.duration(200)}
+          style={{ flex: 1 }}
+        >
+          <SectionList
+            contentInsetAdjustmentBehavior="automatic"
+            sections={groupedData}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.itemContainer}>
+                <ExerciseCard 
+                  exercise={item} 
+                  onPress={() => setSelectedExerciseForModal(item)} 
+                />
+              </View>
+            )}
+            renderSectionHeader={({ section: { title } }) => (
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+              </View>
+            )}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{t('library.noResults')}</Text>
+              </View>
+            }
+          />
+        </Animated.View>
       )}
+
+      {/* Exercise Detail Modal */}
+      <ExerciseDetailModal
+        visible={selectedExerciseForModal !== null}
+        exercise={selectedExerciseForModal}
+        isSelectionMode={isSelectionMode}
+        onClose={() => setSelectedExerciseForModal(null)}
+        onSelect={handleConfirmSelectExercise}
+      />
     </View>
   );
 }
@@ -198,23 +273,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: spacing.xs,
   },
-  searchContainer: {
-    padding: spacing.base,
+  topContainer: {
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.base,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.dark.bg.primary,
+    gap: spacing.md,
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.dark.bg.elevated,
-    borderRadius: 10,
-    paddingHorizontal: spacing.sm,
-    height: 40,
+  searchBarWrapper: {
+    width: '100%',
   },
-  searchInput: {
-    flex: 1,
-    color: colors.dark.text.primary,
-    marginLeft: spacing.sm,
+  categoryTabsContainer: {
+    gap: spacing.sm,
+    paddingRight: spacing.base,
+    paddingVertical: spacing.xs,
+  },
+  categoryTab: {
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: colors.dark.bg.secondary,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  categoryTabActive: {
+    backgroundColor: colors.dark.accent.primary + '20',
+    borderColor: colors.dark.accent.primary,
+  },
+  categoryTabText: {
     fontSize: typography.fontSize.base,
+    color: colors.dark.text.secondary,
+    fontWeight: '600',
+  },
+  categoryTabTextActive: {
+    color: colors.dark.accent.primary,
+    fontWeight: 'bold',
   },
   centerContainer: {
     flex: 1,
@@ -260,4 +353,3 @@ const styles = StyleSheet.create({
     color: colors.dark.text.secondary,
   },
 });
-
