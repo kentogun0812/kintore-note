@@ -61,7 +61,7 @@ export function initSqliteDb(): void {
         if (!exists) {
           const migrationId = `${row.weekly_plan_id}_${row.plan_week}_${row.id}`;
           db.runSync(
-            `INSERT INTO weekly_plan_assigned_templates (id, weekly_plan_id, plan_week, day_of_week, workout_template_id, syncStatus, createdAt, updatedAt)
+            `INSERT OR IGNORE INTO weekly_plan_assigned_templates (id, weekly_plan_id, plan_week, day_of_week, workout_template_id, syncStatus, createdAt, updatedAt)
              VALUES (?, ?, ?, 1, ?, 'pending', ?, ?)`,
             [migrationId, row.weekly_plan_id, row.plan_week, row.id, row.createdAt, row.updatedAt]
           );

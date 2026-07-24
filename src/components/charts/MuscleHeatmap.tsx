@@ -1,89 +1,156 @@
-import React from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import Svg, { Rect, Circle, G } from 'react-native-svg';
+import React, { useState, useMemo } from 'react';
+import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
-import { HeatmapRegionData } from '@/store/analytics.store';
+import { spacing } from '@/constants/spacing';
+import { DetailedMuscleStat } from '@/store/analytics.store';
+import { 
+  SvgMuscleKey, 
+  getMuscleColor, 
+  aggregateMuscleStats, 
+  SVG_MUSCLE_NAMES 
+} from '@/utils/muscleHeatmap';
+import { BodyFrontSvg } from './body-svg/BodyFrontSvg';
+import { BodyBackSvg } from './body-svg/BodyBackSvg';
+import { useTranslation } from 'react-i18next';
+import { Icon } from '@/components/Icon';
 
 interface MuscleHeatmapProps {
-  data: HeatmapRegionData[];
+  data: DetailedMuscleStat[];
 }
 
 export function MuscleHeatmap({ data }: MuscleHeatmapProps) {
-  // Find max volume to calculate intensity (0.0 to 1.0)
-  const maxVolume = data.length > 0 ? Math.max(...data.map(d => d.volume)) : 1;
+  const { i18n, t } = useTranslation();
+  const [viewMode, setViewMode] = useState<'front' | 'back'>('front');
+  const [selectedMuscleKey, setSelectedMuscleKey] = useState<SvgMuscleKey | null>(null);
 
-  // Helper to get color based on volume
-  const getColor = (muscleName: string) => {
-    const region = data.find(d => d.name.toLowerCase().includes(muscleName.toLowerCase()));
-    if (!region || region.volume === 0) return colors.dark.bg.tertiary;
-    
-    const intensity = region.volume / maxVolume;
-    
-    // Simple gradient: from light gray to primary accent (red)
-    // For MVP, we can just use opacity on the primary color or mix it.
-    // Let's use rgba for primary color with varying opacity
-    if (intensity < 0.2) return `${colors.dark.accent.primary}33`; // 20%
-    if (intensity < 0.4) return `${colors.dark.accent.primary}66`; // 40%
-    if (intensity < 0.6) return `${colors.dark.accent.primary}99`; // 60%
-    if (intensity < 0.8) return `${colors.dark.accent.primary}CC`; // 80%
-    return colors.dark.accent.primary; // 100%
+  // Aggregate raw DB stats into SVG muscle stats map
+  const { statsMap, maxVolume } = useMemo(() => aggregateMuscleStats(data), [data]);
+
+  const getFillColor = (key: SvgMuscleKey) => {
+    const stat = statsMap[key];
+    return getMuscleColor(stat ? stat.volume : 0, maxVolume);
+  };
+
+  const handleSelectMuscle = (key: SvgMuscleKey) => {
+    if (selectedMuscleKey === key) {
+      setSelectedMuscleKey(null);
+    } else {
+      setSelectedMuscleKey(key);
+    }
+  };
+
+  const selectedStat = selectedMuscleKey ? statsMap[selectedMuscleKey] : null;
+
+  // Format date
+  const formatLastActive = (isoStr: string | null) => {
+    if (!isoStr) return t('common.noData', 'No sessions recorded');
+    const d = new Date(isoStr);
+    return d.toLocaleDateString(i18n.language === 'ja' ? 'ja-JP' : 'en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   return (
     <View style={styles.container}>
-      <Svg width="200" height="400" viewBox="0 0 200 400">
-        <G id="stylized-body" stroke={colors.dark.border.default} strokeWidth="2">
-          {/* Head */}
-          <Circle cx="100" cy="40" r="25" fill={colors.dark.bg.tertiary} />
-          
-          {/* Shoulders */}
-          <Circle cx="60" cy="90" r="15" fill={getColor('shoulder')} />
-          <Circle cx="140" cy="90" r="15" fill={getColor('shoulder')} />
-          
-          {/* Chest */}
-          <Rect x="75" y="80" width="50" height="35" rx="5" fill={getColor('chest')} />
-          
-          {/* Back (hidden behind chest conceptually, but we can color both if needed, 
-              or just use Chest for front view. Let's make an abstract torso) */}
-          
-          {/* Core/Abs */}
-          <Rect x="80" y="120" width="40" height="50" rx="5" fill={getColor('core')} />
-          
-          {/* Arms (Biceps/Triceps) */}
-          <Rect x="45" y="110" width="18" height="60" rx="8" fill={getColor('arm')} />
-          <Rect x="137" y="110" width="18" height="60" rx="8" fill={getColor('arm')} />
-          
-          {/* Forearms */}
-          <Rect x="42" y="175" width="15" height="50" rx="6" fill={getColor('arm')} />
-          <Rect x="143" y="175" width="15" height="50" rx="6" fill={getColor('arm')} />
-          
-          {/* Pelvis/Glutes */}
-          <Rect x="70" y="175" width="60" height="30" rx="10" fill={getColor('leg')} />
-          
-          {/* Thighs/Quads */}
-          <Rect x="72" y="210" width="25" height="70" rx="10" fill={getColor('leg')} />
-          <Rect x="103" y="210" width="25" height="70" rx="10" fill={getColor('leg')} />
-          
-          {/* Calves */}
-          <Rect x="75" y="285" width="20" height="60" rx="8" fill={getColor('leg')} />
-          <Rect x="105" y="285" width="20" height="60" rx="8" fill={getColor('leg')} />
-        </G>
-      </Svg>
-      
+      {/* Front / Back Segmented Control */}
+      <View style={styles.segmentedControl}>
+        <TouchableOpacity
+          style={[styles.segmentBtn, viewMode === 'front' && styles.segmentBtnActive]}
+          onPress={() => setViewMode('front')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.segmentText, viewMode === 'front' && styles.segmentTextActive]}>
+            {t('stats.heatmapFront', 'Front')}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segmentBtn, viewMode === 'back' && styles.segmentBtnActive]}
+          onPress={() => setViewMode('back')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.segmentText, viewMode === 'back' && styles.segmentTextActive]}>
+            {t('stats.heatmapBack', 'Back')}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* SVG Canvas Container */}
+      <View style={styles.svgWrapper}>
+        {viewMode === 'front' ? (
+          <BodyFrontSvg
+            getFillColor={getFillColor}
+            selectedMuscle={selectedMuscleKey}
+            onSelectMuscle={handleSelectMuscle}
+          />
+        ) : (
+          <BodyBackSvg
+            getFillColor={getFillColor}
+            selectedMuscle={selectedMuscleKey}
+            onSelectMuscle={handleSelectMuscle}
+          />
+        )}
+      </View>
+
+      {/* Detailed Muscle Stats Popover / Card */}
+      {selectedStat ? (
+        <View style={styles.statCard}>
+          <View style={styles.statHeader}>
+            <View style={styles.statHeaderTitleRow}>
+              <View style={[styles.activeIndicatorDot, { backgroundColor: getFillColor(selectedStat.key) }]} />
+              <Text style={styles.statTitle}>
+                {i18n.language === 'ja' ? SVG_MUSCLE_NAMES[selectedStat.key].ja : SVG_MUSCLE_NAMES[selectedStat.key].en}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setSelectedMuscleKey(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Icon name="close" size={18} color={colors.dark.text.secondary} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.statGrid}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>{t('stats.workouts', 'Workouts')}</Text>
+              <Text style={styles.statValue}>{selectedStat.workoutCount}</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>{t('stats.sets', 'Total Sets')}</Text>
+              <Text style={styles.statValue}>{selectedStat.setCount}</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>{t('stats.volume', 'Volume')}</Text>
+              <Text style={styles.statValue}>{Math.round(selectedStat.volume).toLocaleString()} <Text style={styles.unitText}>kg</Text></Text>
+            </View>
+            <View style={styles.statBoxFull}>
+              <Text style={styles.statLabel}>{t('stats.lastTrained', 'Last Session')}</Text>
+              <Text style={styles.statValueDate}>{formatLastActive(selectedStat.lastActiveAt)}</Text>
+            </View>
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.hintText}>
+          {t('stats.tapMuscleHint', 'Tap any muscle group to view detailed training stats')}
+        </Text>
+      )}
+
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
-          <View style={[styles.colorBox, { backgroundColor: colors.dark.bg.tertiary }]} />
+          <View style={[styles.colorBox, { backgroundColor: '#1E1E1E' }]} />
           <Text style={styles.legendText}>0%</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.colorBox, { backgroundColor: `${colors.dark.accent.primary}66` }]} />
-          <Text style={styles.legendText}>Low</Text>
+          <View style={[styles.colorBox, { backgroundColor: '#1E5936' }]} />
+          <Text style={styles.legendText}>{t('stats.legendLow', 'Low')}</Text>
         </View>
         <View style={styles.legendItem}>
-          <View style={[styles.colorBox, { backgroundColor: colors.dark.accent.primary }]} />
-          <Text style={styles.legendText}>High</Text>
+          <View style={[styles.colorBox, { backgroundColor: '#2D824E' }]} />
+          <Text style={styles.legendText}>{t('stats.legendMed', 'Med')}</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <View style={[styles.colorBox, { backgroundColor: '#52D685' }]} />
+          <Text style={styles.legendText}>{t('stats.legendHigh', 'High')}</Text>
         </View>
       </View>
     </View>
@@ -94,11 +161,120 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: colors.dark.bg.tertiary,
+    borderRadius: 12,
+    padding: 3,
+    marginBottom: spacing.base,
+    width: 180,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderRadius: 9,
+  },
+  segmentBtnActive: {
+    backgroundColor: colors.dark.bg.secondary,
+  },
+  segmentText: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: 'bold',
+    color: colors.dark.text.secondary,
+  },
+  segmentTextActive: {
+    color: colors.dark.text.primary,
+  },
+  svgWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: spacing.xs,
+  },
+  hintText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.dark.text.tertiary,
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
+  },
+  statCard: {
+    backgroundColor: colors.dark.bg.tertiary,
+    borderRadius: 12,
+    padding: spacing.md,
+    width: '100%',
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+  },
+  statHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.border.subtle,
+    paddingBottom: spacing.xs,
+  },
+  statHeaderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  activeIndicatorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statTitle: {
+    fontSize: typography.fontSize.base,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+  },
+  statGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  statBox: {
+    flex: 1,
+    minWidth: '30%',
+    backgroundColor: colors.dark.bg.secondary,
+    padding: spacing.xs + 2,
+    borderRadius: 8,
+  },
+  statBoxFull: {
+    width: '100%',
+    backgroundColor: colors.dark.bg.secondary,
+    padding: spacing.xs + 2,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  statLabel: {
+    fontSize: 10,
+    color: colors.dark.text.secondary,
+    marginBottom: 2,
+  },
+  statValue: {
+    fontSize: typography.fontSize.sm,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+  },
+  statValueDate: {
+    fontSize: typography.fontSize.xs,
+    fontWeight: '600',
+    color: colors.dark.accent.info,
+  },
+  unitText: {
+    fontSize: 10,
+    fontWeight: 'normal',
+    color: colors.dark.text.secondary,
   },
   legend: {
     flexDirection: 'row',
-    marginTop: 20,
-    gap: 16,
+    marginTop: spacing.md,
+    gap: spacing.md,
   },
   legendItem: {
     flexDirection: 'row',
@@ -106,12 +282,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   colorBox: {
-    width: 16,
-    height: 16,
+    width: 14,
+    height: 14,
     borderRadius: 4,
   },
   legendText: {
     color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.sm,
+    fontSize: typography.fontSize.xs,
   },
 });
