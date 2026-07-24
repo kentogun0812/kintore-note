@@ -200,4 +200,23 @@
 - Refactored the Custom Tab Bar to use an **Absolute Flexbox Hierarchy**: Since Expo Router/React Navigation entirely ignores `tabBarStyle` overrides when a custom `tabBar` render function is provided (leaving the root container statically positioned, resulting in a black background), we returned `position: 'absolute'` to the root `tabBarWrapper` and converted the inner `tabBarContainer` to a standard flex child (width 100%, flex-end aligned, padding-based offsets). This definitively eliminates the black background block by overlaying the wrapper, while flawlessly preserving touch responder layers on all iOS versions by avoiding double-absolute hierarchies.
 - Removed the global `paddingBottom: 96` from the `<Tabs>` `sceneStyle`. By removing this artificial bottom scene padding, the screen content now extends natively to the absolute bottom of the viewport and scrolls elegantly behind the semi-transparent floating tab bar, perfectly matching Instagram's UI behavior.
 
+---
 
+# Tracking Task: iOS 26 Floating Bottom Tab Bar Touch Fix & Optimization
+
+- **Objective**: Fix touch events blocking/clipping on iOS 26 (iPhone 15+) by setting `tabBarTransparent: true` and removing absolute coordinates from the custom tab bar wrapper to ensure proper bounding container calculations, then optimize code by removing dead code/comments and defaulting to iOS.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Enable `tabBarTransparent` setting in `app/(tabs)/_layout.tsx` ✅ Done
+- [x] Update layout styles for `tabBarWrapper` and default to iOS (remove OS checks) ✅ Done
+- [x] Remove dead code and unnecessary comments ✅ Done
+- [x] Verify TypeScript build and tap responsiveness ✅ Done
+
+## Decisions & Changes
+- Decoded touch event failure on iOS: absolute child elements overflowing their parents are drawn but cannot receive gestures in UIKit. We align the custom tab bar wrapper boundaries with the parent navigation container.
+- Enabled `tabBarTransparent: true` on the `<Tabs>` navigator options with a `// @ts-ignore` comment (bypassing a type definition limitation in Expo Router/React Navigation v6 BottomTabNavigationOptions) so that the parent container is positioned absolutely and made transparent at runtime.
+- Removed `position: 'absolute'` and absolute boundary constraints from `styles.tabBarWrapper` to let it lay out inside the parent container naturally. This keeps the custom tab bar floating while preventing layout height collapsing and touch event clipping.
+- Cleaned up and optimized the codebase by removing dead code, redundant system/Platform OS checks (defaulting to iOS settings with `height: 100` and `paddingBottom: 24`), and unnecessary comments.

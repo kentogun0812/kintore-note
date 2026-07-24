@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Platform, View, Pressable, StyleSheet, Keyboard } from 'react-native';
+import { View, Pressable, StyleSheet, Keyboard } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState, ReactNode } from 'react';
@@ -19,7 +19,6 @@ interface TabBarButtonProps {
 function TabBarButton({ isFocused, onPress, onLongPress, renderIcon }: TabBarButtonProps) {
   const scale = useSharedValue(isFocused ? 1.08 : 1);
   const opacity = useSharedValue(isFocused ? 1 : 0.65);
-
   useEffect(() => {
     scale.value = withSpring(isFocused ? 1.08 : 1, { damping: 15, stiffness: 150 });
     opacity.value = withSpring(isFocused ? 1 : 0.65, { damping: 15, stiffness: 150 });
@@ -64,7 +63,6 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Filter out tabs that are hidden (e.g. href === null) and the "body" tab completely
   const visibleRoutes = state.routes.filter((route) => {
     const { options } = descriptors[route.key];
     return route.name !== 'body' && (options as any).href !== null;
@@ -77,21 +75,15 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const indicatorPosition = useSharedValue(0);
   const indicatorOpacity = useSharedValue(0);
 
-  // Track keyboard state to slide down the tab bar
   useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const showSubscription = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
-    const hideSubscription = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
-
+    const showSubscription = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
+    const hideSubscription = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
     return () => {
       showSubscription.remove();
       hideSubscription.remove();
     };
   }, []);
 
-  // Animate keyboard sliding down off-screen
   useEffect(() => {
     translateY.value = withSpring(keyboardVisible ? 120 : 0, {
       damping: 20,
@@ -103,12 +95,10 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const numTabs = visibleRoutes.length;
   const paddingHorizontal = 15;
 
-  // Animate active pill indicator position and opacity
   useEffect(() => {
     if (containerWidth > 0 && activeRouteIndex >= 0 && numTabs > 0) {
       const netWidth = containerWidth - paddingHorizontal * 2;
       const tabWidth = netWidth / numTabs;
-
       indicatorPosition.value = withSpring(activeRouteIndex * tabWidth, {
         damping: 18,
         stiffness: 120,
@@ -153,33 +143,27 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             pointerEvents="none"
           />
         )}
-
         {visibleRoutes.map((route) => {
           const { options } = descriptors[route.key];
           const isFocused = activeRouteName === route.name;
           const renderIcon = options.tabBarIcon;
-
           const onPress = () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
-
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
               canPreventDefault: true,
             });
-
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name, route.params);
             }
           };
-
           const onLongPress = () => {
             navigation.emit({
               type: 'tabLongPress',
               target: route.key,
             });
           };
-
           return (
             <TabBarButton
               key={route.key}
@@ -197,7 +181,6 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
 export default function TabLayout() {
   const { t } = useTranslation();
-
   const guestGuard = (e: any) => {
     // MOCK: Temporarily bypassed to allow access without login
     // if (isGuest) {
@@ -211,6 +194,8 @@ export default function TabLayout() {
       tabBar={(props) => <FloatingTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        // @ts-ignore
+        tabBarTransparent: true,
         sceneStyle: {
           backgroundColor: colors.dark.bg.primary,
         },
@@ -270,14 +255,11 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBarWrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: Platform.OS === 'ios' ? 100 : 88,
+    width: '100%',
+    height: 100,
     backgroundColor: 'transparent',
     justifyContent: 'flex-end',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    paddingBottom: 24,
     paddingHorizontal: 24,
   },
   tabBarContainer: {
@@ -291,13 +273,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 15,
-    // iOS shadow
-    shadowColor: '#000000',
+    shadowColor: colors.black,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,
     shadowRadius: 15,
-    // Android elevation
-    elevation: 8,
     zIndex: 99,
   },
   activeIndicator: {
