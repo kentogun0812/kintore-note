@@ -218,5 +218,17 @@
 ## Decisions & Changes
 - Decoded touch event failure on iOS: absolute child elements overflowing their parents are drawn but cannot receive gestures in UIKit. We align the custom tab bar wrapper boundaries with the parent navigation container.
 - Enabled `tabBarTransparent: true` on the `<Tabs>` navigator options with a `// @ts-ignore` comment (bypassing a type definition limitation in Expo Router/React Navigation v6 BottomTabNavigationOptions) so that the parent container is positioned absolutely and made transparent at runtime.
-- Removed `position: 'absolute'` and absolute boundary constraints from `styles.tabBarWrapper` to let it lay out inside the parent container naturally. This keeps the custom tab bar floating while preventing layout height collapsing and touch event clipping.
-- Cleaned up and optimized the codebase by removing dead code, redundant system/Platform OS checks (defaulting to iOS settings with `height: 100` and `paddingBottom: 24`), and unnecessary comments.
+- Solved iPhone 15 touch interception issue by dynamically calculating `paddingBottom` using `useSafeAreaInsets()` from `react-native-safe-area-context`. Fixed an issue where the hardcoded `paddingBottom: 24` placed the tab bar inside the 34pt iOS bottom home indicator zone, causing iOS to swallow touch events natively. The tab bar is now dynamically lifted above the safe area on notched devices (`Math.max(24, insets.bottom + 8)`).
+- Eliminated an iOS native touch-clipping race condition inside React Navigation: Previously, `tabBarStyle` was assigned a dynamic height. Because `useSafeAreaInsets` initializes at 0 on the first frame before measuring native dimensions, React Navigation permanently cached the wrapper's height at 100pt. When the tab bar correctly updated to 118pt, it overflowed the 100pt wrapper, causing UIKit to aggressively clip all touches falling into the overflow region (the buttons). Removing `height` from `tabBarStyle` completely forces the wrapper to flex dynamically around its relative content, perfectly solving the unclickable buttons on modern iPhones.
+- Reverted custom tab bar buttons from `react-native-gesture-handler`'s `Pressable` back to the standard React Native `TouchableOpacity`, providing universally reliable hit-testing for custom tab components without risking missing gesture contexts.
+- Removed nested `zIndex: 99` inside the tab container to prevent iOS from creating isolated stacking contexts that break hit-testing inside transparent absolute wrappers.
+- Cleaned up and optimized the codebase by removing dead code, redundant system/Platform OS checks, and unnecessary comments.
+- Inspected all screen layouts (`home.tsx`, `training.tsx`, `stats.tsx`, `settings.tsx`, `body.tsx`) and updated their `scrollContent` bottom paddings to `120` to ensure that content scrolls completely above the floating tab bar and no elements are covered.
+- ### [MODIFY] `app/(tabs)/_layout.tsx`
+- **Goal:** Resolve unclickable custom tab bar on iOS 26 (iPhone 15+).
+- **Final Fix:** Refactored the layout to use a **Headless Tab Bar Architecture**. React Navigation v7 ignores `tabBarStyle` bounds when a custom tab bar is used, which causes its invisible wrapper to collapse to 0-height on iOS. This irreversibly clips all absolute touches for notched devices natively inside UIKit.
+- **Implementation:** 
+  - Hid the default tab bar entirely using `tabBar={() => null}` in `<Tabs>`.
+  - Re-implemented `FloatingTabBar` as a completely standalone overlay (`StandaloneFloatingTabBar`) placed in a wrapper `View` *outside* of React Navigation's control.
+  - Used Expo Router's `usePathname` and `useRouter` to manually track active route indices and handle navigation without depending on `BottomTabBarProps`.
+  - The custom tab bar is now a pure absolute layout over the entire navigation tree, fully immune to any iOS hit-testing bounds clipping.

@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import { View, Pressable, StyleSheet, Keyboard } from 'react-native';
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import { View, StyleSheet, Keyboard, Pressable } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState, ReactNode } from 'react';
@@ -8,6 +8,9 @@ import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { Icon } from '@/components/Icon';
 import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FullWindowOverlay } from 'react-native-screens';
+import { Platform } from 'react-native';
 
 interface TabBarButtonProps {
   isFocused: boolean;
@@ -19,6 +22,7 @@ interface TabBarButtonProps {
 function TabBarButton({ isFocused, onPress, onLongPress, renderIcon }: TabBarButtonProps) {
   const scale = useSharedValue(isFocused ? 1.08 : 1);
   const opacity = useSharedValue(isFocused ? 1 : 0.65);
+
   useEffect(() => {
     scale.value = withSpring(isFocused ? 1.08 : 1, { damping: 15, stiffness: 150 });
     opacity.value = withSpring(isFocused ? 1 : 0.65, { damping: 15, stiffness: 150 });
@@ -37,43 +41,51 @@ function TabBarButton({ isFocused, onPress, onLongPress, renderIcon }: TabBarBut
       onPress={onPress}
       onLongPress={onLongPress}
       style={styles.tabButton}
-      accessibilityRole="button"
-      accessibilityState={isFocused ? { selected: true } : {}}
+      hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
     >
-      <Animated.View style={[styles.tabButtonContent, animatedStyle]}>
-        {renderIcon ? (
-          renderIcon({
-            focused: isFocused,
-            color: isFocused ? activeColor : inactiveColor,
-            size: 24,
-          })
-        ) : (
-          <Icon
-            name="help-circle-outline"
-            size={24}
-            color={isFocused ? activeColor : inactiveColor}
-          />
-        )}
-      </Animated.View>
+      <View style={styles.tabButtonInner}>
+        <Animated.View style={[styles.tabButtonContent, animatedStyle]} pointerEvents="none">
+          {renderIcon ? (
+            renderIcon({
+              focused: isFocused,
+              color: isFocused ? activeColor : inactiveColor,
+              size: 24,
+            })
+          ) : (
+            <Icon
+              name="help-circle-outline"
+              size={24}
+              color={isFocused ? activeColor : inactiveColor}
+            />
+          )}
+        </Animated.View>
+      </View>
     </Pressable>
   );
 }
 
-function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+const Overlay = Platform.OS === 'ios' ? FullWindowOverlay : View;
+
+const TAB_ROUTES = [
+  { name: 'home', route: '/home', icon: 'home', outlineIcon: 'home-outline' },
+  { name: 'training', route: '/training', icon: 'barbell', outlineIcon: 'barbell-outline' },
+  { name: 'stats', route: '/stats', icon: 'bar-chart', outlineIcon: 'bar-chart-outline' },
+  { name: 'settings', route: '/settings', icon: 'settings', outlineIcon: 'settings-outline' },
+] as const;
+
+function StandaloneFloatingTabBar({ paddingBottom }: { paddingBottom: number }) {
   const [containerWidth, setContainerWidth] = useState(0);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  const visibleRoutes = state.routes.filter((route) => {
-    const { options } = descriptors[route.key];
-    return route.name !== 'body' && (options as any).href !== null;
-  });
-
-  const activeRouteName = state.routes[state.index].name;
-  const activeRouteIndex = visibleRoutes.findIndex((r) => r.name === activeRouteName);
-
-  const translateY = useSharedValue(0);
   const indicatorPosition = useSharedValue(0);
   const indicatorOpacity = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Determine active route
+  const activeRouteIndex = TAB_ROUTES.findIndex(r => pathname.includes(r.name));
+  const activeRoute = TAB_ROUTES[activeRouteIndex];
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
@@ -92,12 +104,13 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     });
   }, [keyboardVisible]);
 
-  const numTabs = visibleRoutes.length;
+  const numTabs = TAB_ROUTES.length;
   const paddingHorizontal = 15;
+  const borderWidth = 1;
 
   useEffect(() => {
     if (containerWidth > 0 && activeRouteIndex >= 0 && numTabs > 0) {
-      const netWidth = containerWidth - paddingHorizontal * 2;
+      const netWidth = containerWidth - (paddingHorizontal * 2) - (borderWidth * 2);
       const tabWidth = netWidth / numTabs;
       indicatorPosition.value = withSpring(activeRouteIndex * tabWidth, {
         damping: 18,
@@ -119,147 +132,94 @@ function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   }));
 
   const animatedIndicatorStyle = useAnimatedStyle(() => {
-    if (containerWidth === 0 || numTabs === 0) {
+    if (containerWidth === 0) {
       return { opacity: 0 };
     }
-    const netWidth = containerWidth - paddingHorizontal * 2;
+    const netWidth = containerWidth - (paddingHorizontal * 2) - (borderWidth * 2);
     const tabWidth = netWidth / numTabs;
     return {
-      width: tabWidth + 12,
-      transform: [{ translateX: indicatorPosition.value - 6 }],
+      width: tabWidth + 16,
+      transform: [{ translateX: indicatorPosition.value - 8 }],
       opacity: indicatorOpacity.value,
     };
   });
 
+  if (keyboardVisible) return null;
+  if (activeRouteIndex === -1) return null;
+
   return (
-    <View style={styles.tabBarWrapper} pointerEvents="box-none">
-      <Animated.View
-        style={[styles.tabBarContainer, animatedContainerStyle]}
-        onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-      >
-        {containerWidth > 0 && numTabs > 0 && (
-          <Animated.View
-            style={[styles.activeIndicator, animatedIndicatorStyle]}
-            pointerEvents="none"
-          />
-        )}
-        {visibleRoutes.map((route) => {
-          const { options } = descriptors[route.key];
-          const isFocused = activeRouteName === route.name;
-          const renderIcon = options.tabBarIcon;
-          const onPress = () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
-            }
-          };
-          const onLongPress = () => {
-            navigation.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
-          };
-          return (
-            <TabBarButton
-              key={route.key}
-              isFocused={isFocused}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              renderIcon={renderIcon}
+    <Overlay style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+      <View style={[styles.tabBarWrapper, { paddingBottom }]} pointerEvents="box-none">
+        <Animated.View
+          style={[styles.tabBarContainer, animatedContainerStyle]}
+          onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
+        >
+          {containerWidth > 0 && numTabs > 0 && (
+            <Animated.View
+              style={[styles.activeIndicator, animatedIndicatorStyle]}
+              pointerEvents="none"
             />
-          );
-        })}
-      </Animated.View>
-    </View>
+          )}
+          {TAB_ROUTES.map((route) => {
+            const isFocused = route.name === activeRoute?.name;
+            const onPress = () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
+              if (!isFocused) {
+                router.navigate(route.route as any);
+              }
+            };
+            return (
+              <TabBarButton
+                key={route.name}
+                isFocused={isFocused}
+                onPress={onPress}
+                onLongPress={() => { }}
+                renderIcon={({ color, size, focused }) => (
+                  <Icon name={focused ? route.icon as any : route.outlineIcon as any} size={size} color={color} />
+                )}
+              />
+            );
+          })}
+        </Animated.View>
+      </View>
+    </Overlay>
   );
 }
 
 export default function TabLayout() {
   const { t } = useTranslation();
-  const guestGuard = (e: any) => {
-    // MOCK: Temporarily bypassed to allow access without login
-    // if (isGuest) {
-    //   e.preventDefault();
-    //   router.push('/auth/login');
-    // }
-  };
-
+  const insets = useSafeAreaInsets();
+  const dynamicPaddingBottom = Math.max(24, insets.bottom + 8);
   return (
-    <Tabs
-      tabBar={(props) => <FloatingTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-        // @ts-ignore
-        tabBarTransparent: true,
-        sceneStyle: {
-          backgroundColor: colors.dark.bg.primary,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: t('tabs.home'),
-          tabBarIcon: ({ color, focused, size }) => (
-            <Icon name={focused ? 'home' : 'home-outline'} color={color} size={size} />
-          ),
+    <View style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
+      <Tabs
+        tabBar={() => null}
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: {
+            backgroundColor: colors.dark.bg.primary,
+          },
         }}
-      />
-      <Tabs.Screen
-        name="training"
-        options={{
-          title: t('tabs.training'),
-          tabBarIcon: ({ color, focused, size }) => (
-            <Icon name={focused ? 'barbell' : 'barbell-outline'} color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="body"
-        options={{
-          title: t('tabs.body'),
-          tabBarIcon: ({ color, focused, size }) => (
-            <Icon name={focused ? 'body' : 'body-outline'} color={color} size={size} />
-          ),
-          href: null,
-        }}
-        listeners={{ tabPress: guestGuard }}
-      />
-      <Tabs.Screen
-        name="stats"
-        options={{
-          title: t('tabs.stats'),
-          tabBarIcon: ({ color, focused, size }) => (
-            <Icon name={focused ? 'stats-chart' : 'stats-chart-outline'} color={color} size={size} />
-          ),
-        }}
-        listeners={{ tabPress: guestGuard }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t('tabs.settings', 'Settings'),
-          tabBarIcon: ({ color, focused, size }) => (
-            <Icon name={focused ? 'settings' : 'settings-outline'} color={color} size={size} />
-          ),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen name="home" options={{ title: t('tabs.home') }} />
+        <Tabs.Screen name="training" options={{ title: t('tabs.training') }} />
+        <Tabs.Screen name="stats" options={{ title: t('tabs.stats') }} />
+        <Tabs.Screen name="settings" options={{ title: t('tabs.settings', 'Settings') }} />
+      </Tabs>
+
+      <StandaloneFloatingTabBar paddingBottom={dynamicPaddingBottom} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   tabBarWrapper: {
-    width: '100%',
-    height: 100,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: 'transparent',
     justifyContent: 'flex-end',
-    paddingBottom: 24,
     paddingHorizontal: 24,
   },
   tabBarContainer: {
@@ -277,20 +237,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,
     shadowRadius: 15,
-    zIndex: 99,
   },
   activeIndicator: {
     position: 'absolute',
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(210, 74, 66, 0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(210, 74, 66, 0.35)',
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    left: 15,
     top: '50%',
     marginTop: -24,
-    left: 15,
+    zIndex: 0,
   },
   tabButton: {
+    flex: 1,
+    height: '100%',
+  },
+  tabButtonInner: {
     flex: 1,
     height: '100%',
     alignItems: 'center',
@@ -299,6 +262,9 @@ const styles = StyleSheet.create({
   tabButtonContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    zIndex: 1,
   },
 });

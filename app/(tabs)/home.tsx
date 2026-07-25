@@ -356,6 +356,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.base,
+    paddingBottom: spacing.xl * 2,
     gap: spacing.md,
   },
   premiumHeader: {
