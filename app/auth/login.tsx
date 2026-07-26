@@ -23,14 +23,12 @@ export default function LoginScreen() {
       AppErrorHandler.handleError(new ValidationError(t('auth.login.errors.missingInfoDesc'), 'MISSING_INFO'));
       return;
     }
-    
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     setLoading(false);
-
     if (error) {
       AppErrorHandler.handleError(new BusinessError(t('auth.login.errors.loginFailedDesc'), 'LOGIN_FAILED', error));
     } else {
@@ -46,7 +44,6 @@ export default function LoginScreen() {
           AppleAuthentication.AppleAuthenticationScope.EMAIL,
         ],
       });
-      
       if (credential.identityToken) {
         setLoading(true);
         const { error } = await supabase.auth.signInWithIdToken({
@@ -225,7 +222,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dark.bg.secondary,
     color: colors.dark.text.primary,
     paddingHorizontal: spacing.base,
-    padding: spacing.medium,
+    padding: spacing.ld,
     borderRadius: 12,
     fontSize: typography.fontSize.md,
     borderWidth: 1,
@@ -233,7 +230,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: colors.dark.accent.primary,
-    padding: spacing.medium,
+    padding: spacing.ld,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -264,7 +261,7 @@ const styles = StyleSheet.create({
   },
   appleButton: {
     width: '100%',
-    height: 54,
+    padding: spacing.ld,
     backgroundColor: colors.white,
     borderRadius: 12,
     justifyContent: 'center',
@@ -297,7 +294,7 @@ const styles = StyleSheet.create({
   },
   guestButton: {
     width: '100%',
-    height: 54,
+    padding: spacing.ld,
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.dark.border.default,

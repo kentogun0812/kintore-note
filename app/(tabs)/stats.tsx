@@ -4,17 +4,16 @@ import { colors } from '@/constants/colors';
 import { typography } from '@/constants/typography';
 import { spacing } from '@/constants/spacing';
 import { Card } from '@/components/Card';
-import { Icon } from '@/components/Icon';
+import { Icon, IconName } from '@/components/Icon';
 import { useTranslation } from 'react-i18next';
 import { useAnalyticsStore, TimeRange } from '@/store/analytics.store';
 import { MuscleHeatmap } from '@/components/charts/MuscleHeatmap';
-import { LineChart } from '@/components/charts/LineChart';
-import { BarChart } from '@/components/charts/BarChart';
+import { ProgressChart } from '@/components/charts/ProgressChart';
 import { DonutChart } from '@/components/charts/DonutChart';
 import { useState, useEffect, useRef } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-type ActiveTab = 'heatmap' | 'charts';
+type ActiveTab = 'heatmap' | 'analytics' | 'history';
 
 const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
@@ -28,10 +27,11 @@ export default function StatsScreen() {
     workoutsTrend,
     volumeTrend,
     muscleSplit,
-    setsRepsTrend,
-    topExercises,
     streak,
     prs,
+    history,
+    avgDuration,
+    totalSetsCount,
     isLoading,
     fetchAnalyticsData,
     setDateRange
@@ -234,9 +234,6 @@ export default function StatsScreen() {
 
   const totalVolume = volumeTrend.reduce((sum, item) => sum + item.volume, 0);
   const totalWorkoutsCount = workoutsTrend.reduce((sum, item) => sum + item.count, 0);
-  const maxExerciseSets = topExercises.length > 0 ? topExercises[0].sets : 1;
-
-  // yearsList is defined above at the top level
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -320,35 +317,27 @@ export default function StatsScreen() {
       </View>
 
       {/* Main Tab Menu */}
-      <View style={styles.tabMenu}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'heatmap' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('heatmap')}
-          activeOpacity={0.7}
-        >
-          <Icon
-            name="body"
-            size={18}
-            color={activeTab === 'heatmap' ? colors.dark.accent.primary : colors.dark.text.secondary}
-          />
-          <Text style={[styles.tabText, activeTab === 'heatmap' && styles.tabTextActive]}>
-            {t('stats.heatmap', 'Heatmap')}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === 'charts' && styles.tabButtonActive]}
-          onPress={() => setActiveTab('charts')}
-          activeOpacity={0.7}
-        >
-          <Icon
-            name="stats-chart"
-            size={18}
-            color={activeTab === 'charts' ? colors.dark.accent.primary : colors.dark.text.secondary}
-          />
-          <Text style={[styles.tabText, activeTab === 'charts' && styles.tabTextActive]}>
-            {t('stats.charts', 'Charts')}
-          </Text>
-        </TouchableOpacity>
+      <View style={styles.tabMenuContainer}>
+        <View style={styles.tabMenu}>
+          {(['heatmap', 'analytics', 'history'] as ActiveTab[]).map((tab, index) => {
+            const isActive = activeTab === tab;
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  isActive ? styles.tabButtonActive : styles.tabButtonInactive,
+                  index > 0 && { marginLeft: -1 }
+                ]}
+                onPress={() => setActiveTab(tab)}
+                activeOpacity={0.7}
+              >
+                <Text style={isActive ? styles.tabTextActive : styles.tabTextInactive}>
+                  {t(`stats.${tab}`)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {/* Contents based on Tab */}
@@ -362,117 +351,78 @@ export default function StatsScreen() {
             <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
           </View>
         ) : activeTab === 'heatmap' ? (
-          <Card style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>{t('stats.muscleHeatmap', 'Muscle Heatmap')}</Text>
-            <MuscleHeatmap data={heatmapData} />
-          </Card>
-        ) : (
           <View style={styles.chartsWrapper}>
-            {/* 1. Summary Cards Row */}
+            <Card style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>{t('stats.muscleHeatmap')}</Text>
+              <MuscleHeatmap data={heatmapData} />
+            </Card>
+
+            {/* Muscle Split (Donut Chart) */}
+            <Card style={styles.chartCard}>
+              <Text style={styles.chartCardTitle}>{t('stats.muscleSplitTitle')}</Text>
+              <DonutChart
+                data={muscleSplit}
+                emptyMessage={t('common.noData')}
+              />
+            </Card>
+
+
+          </View>
+        ) : activeTab === 'analytics' ? (
+          <View style={styles.chartsWrapper}>
+            {/* 1. KPIs Grid */}
             <View style={styles.summaryRow}>
               <Card style={styles.summaryCard}>
-                <Text style={styles.summaryIcon}>🔥</Text>
-                <Text style={styles.summaryLabel}>{t('stats.currentStreak', 'Streak')}</Text>
-                <Text style={styles.summaryValue}>{streak.current}</Text>
-                <Text style={styles.summarySubText}>
-                  {t('stats.bestStreak', 'Best')}: {streak.best}
-                </Text>
-              </Card>
-
-              <Card style={styles.summaryCard}>
                 <Text style={styles.summaryIcon}>🏋️</Text>
-                <Text style={styles.summaryLabel}>{t('stats.totalWorkouts', 'Workouts')}</Text>
+                <Text style={styles.summaryLabel}>{t('stats.totalWorkouts')}</Text>
                 <Text style={styles.summaryValue}>{totalWorkoutsCount}</Text>
-                <Text style={styles.summarySubText}>{t('stats.workouts', 'Sessions')}</Text>
               </Card>
 
               <Card style={styles.summaryCard}>
                 <Text style={styles.summaryIcon}>⚖️</Text>
-                <Text style={styles.summaryLabel}>{t('stats.volume', 'Volume')}</Text>
+                <Text style={styles.summaryLabel}>{t('stats.volume')}</Text>
                 <Text style={styles.summaryValue}>{formatVolume(totalVolume)}</Text>
-                <Text style={styles.summarySubText}>kg</Text>
+              </Card>
+
+              <Card style={styles.summaryCard}>
+                <Text style={styles.summaryIcon}>🔢</Text>
+                <Text style={styles.summaryLabel}>{t('stats.totalSets')}</Text>
+                <Text style={styles.summaryValue}>{totalSetsCount}</Text>
               </Card>
             </View>
 
-            {/* 2. Workouts Line Chart */}
+            <View style={styles.summaryRow}>
+              <Card style={styles.summaryCard}>
+                <Text style={styles.summaryIcon}>⏱️</Text>
+                <Text style={styles.summaryLabel}>{t('stats.avgDuration')}</Text>
+                <Text style={styles.summaryValue}>{avgDuration}</Text>
+              </Card>
+
+              <Card style={styles.summaryCard}>
+                <Text style={styles.summaryIcon}>🔥</Text>
+                <Text style={styles.summaryLabel}>{t('stats.currentStreak')}</Text>
+                <Text style={styles.summaryValue}>{streak.current}</Text>
+              </Card>
+            </View>
+
+            {/* 2. Progress Chart */}
             <Card style={styles.chartCard}>
-              <Text style={styles.chartCardTitle}>{t('stats.workouts', 'Workouts over Time')}</Text>
-              <LineChart
-                data={workoutsTrend}
-                accentColor={colors.dark.accent.primary}
-                gradientId="workoutsGrad"
+              <Text style={styles.chartCardTitle}>{t('stats.progressChartTitle', 'Progress')}</Text>
+              <ProgressChart
+                workoutsTrend={workoutsTrend}
+                volumeTrend={volumeTrend}
+                timeRange={timeRange}
                 emptyMessage={t('common.noData', 'No sessions recorded')}
               />
             </Card>
 
-            {/* 3. Volume Bar Chart */}
-            <Card style={styles.chartCard}>
-              <Text style={styles.chartCardTitle}>{t('stats.volumeTrend', 'Volume Progression')}</Text>
-              <BarChart
-                data={volumeTrend}
-                accentColor={colors.dark.accent.info}
-                gradientId="volumeGrad"
-                emptyMessage={t('common.noData', 'No sessions recorded')}
-              />
-            </Card>
 
-            {/* 4. Muscle Split Donut Chart */}
-            <Card style={styles.chartCard}>
-              <Text style={styles.chartCardTitle}>{t('stats.muscleSplit', 'Muscle Distribution')}</Text>
-              <DonutChart
-                data={muscleSplit}
-                emptyMessage={t('common.noData', 'No training sets recorded')}
-              />
-            </Card>
 
-            {/* 5. Top Exercises Progress List */}
-            <Card style={styles.chartCard}>
-              <Text style={styles.chartCardTitle}>{t('stats.topExercises', 'Top Exercises')}</Text>
-              {topExercises.length > 0 ? (
-                <View style={styles.topExercisesList}>
-                  {topExercises.map((ex, index) => {
-                    const percentage = Math.round((ex.sets / maxExerciseSets) * 100);
-                    return (
-                      <View key={ex.id} style={styles.exerciseRow}>
-                        <View style={styles.exerciseHeader}>
-                          <Text style={styles.exerciseName} numberOfLines={1}>
-                            {i18n.language === 'ja' ? ex.nameJa : ex.nameEn}
-                          </Text>
-                          <Text style={styles.exerciseSets}>
-                            {ex.sets} {t('stats.topExercisesSets', 'sets')}
-                          </Text>
-                        </View>
-                        <View style={styles.progressBg}>
-                          <View
-                            style={[
-                              styles.progressFill,
-                              {
-                                width: `${percentage}%`,
-                                backgroundColor:
-                                  index === 0
-                                    ? colors.dark.accent.primary
-                                    : index === 1
-                                      ? colors.dark.accent.info
-                                      : colors.dark.text.secondary
-                              }
-                            ]}
-                          />
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : (
-                <Text style={styles.emptyText}>{t('common.noData', 'No exercises logged')}</Text>
-              )}
-            </Card>
-
-            {/* 6. Personal Records Card */}
             <Card style={styles.chartCard}>
               <Text style={styles.chartCardTitle}>{t('stats.prs', 'Personal Records (PRs)')}</Text>
               {prs.length > 0 ? (
                 <View style={styles.prsList}>
-                  {prs.slice(0, 5).map((pr) => (
+                  {prs.map((pr) => (
                     <View key={pr.exerciseId} style={styles.prRow}>
                       <View style={styles.prBadge}>
                         <Text style={styles.prBadgeText}>🏆</Text>
@@ -493,6 +443,72 @@ export default function StatsScreen() {
                 <Text style={styles.emptyText}>{t('stats.noPrs', 'No new PRs achieved')}</Text>
               )}
             </Card>
+          </View>
+        ) : (
+          <View style={styles.chartsWrapper}>
+            {history.length > 0 ? (
+              <View style={styles.historyList}>
+                {history.map((session) => {
+                  const start = new Date(session.startedAt).getTime();
+                  const end = new Date(session.completedAt).getTime();
+                  const durMin = Math.round((end - start) / (1000 * 60));
+                  
+                  return (
+                    <Card key={session.id} style={styles.historyCard}>
+                      <View style={styles.historyCardHeader}>
+                        <View style={styles.historyCardTitleCol}>
+                          <Text style={styles.historyCardTitle}>
+                            {session.templateName || t('session.title')}
+                          </Text>
+                          <Text style={styles.historyCardDate}>
+                            {getLocalizedDateString(session.completedAt.split('T')[0])}
+                          </Text>
+                        </View>
+                        {session.notes && (
+                          <View style={styles.notesIndicator}>
+                            <Icon name="document-text" size={16} color={colors.dark.text.secondary} />
+                          </View>
+                        )}
+                      </View>
+
+                      {session.notes ? (
+                        <Text style={styles.historyNotesText}>
+                          "{session.notes}"
+                        </Text>
+                      ) : null}
+
+                      <View style={styles.historyCardStatsRow}>
+                        <View style={styles.historyCardStatItem}>
+                          <Icon name="time-outline" size={14} color={colors.dark.text.secondary} />
+                          <Text style={styles.historyCardStatText}>
+                            {t('stats.durationMin', { minutes: durMin })}
+                          </Text>
+                        </View>
+                        <View style={styles.historyCardStatItem}>
+                          <Icon name="barbell-outline" size={14} color={colors.dark.text.secondary} />
+                          <Text style={styles.historyCardStatText}>
+                            {formatVolume(session.totalVolume)} kg
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.historyExercisesPreview}>
+                        {session.exercises.map((ex) => (
+                          <View key={ex.id} style={styles.historyExerciseRow}>
+                            <Text style={styles.historyExerciseBullet}>•</Text>
+                            <Text style={styles.historyExerciseName} numberOfLines={1}>
+                              {ex.setsCount}x {i18n.language === 'ja' ? ex.nameJa : ex.nameEn}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </Card>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>{t('stats.noWorkoutsHistory')}</Text>
+            )}
           </View>
         )}
       </ScrollView>
@@ -780,42 +796,62 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     width: '100%',
   },
-  iosDatePicker: {
-    width: 140,
-    transform: [{ scale: 1.0 }],
-  },
   dateSeparator: {
     color: colors.dark.text.secondary,
     fontSize: typography.fontSize.lg,
     fontWeight: 'bold',
     marginHorizontal: 4,
   },
-  tabMenu: {
+  tabButtonActive: {
+    flex: 1,
     flexDirection: 'row',
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    gap: spacing.base,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.dark.border.subtle,
-  },
-  tabButton: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: colors.dark.bg.primary,
+    borderWidth: 1,
+    borderColor: colors.dark.accent.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.bg.primary,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 0,
+    marginBottom: -1,
+    zIndex: 10,
   },
-  tabButtonActive: {
+  tabButtonInactive: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
     backgroundColor: colors.dark.bg.tertiary,
-  },
-  tabText: {
-    color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: 'bold',
+    borderWidth: 1,
+    borderColor: colors.dark.border.default,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingVertical: 10,
+    paddingHorizontal: 0,
+    marginBottom: 0,
+    opacity: 0.8,
   },
   tabTextActive: {
     color: colors.dark.text.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  tabTextInactive: {
+    color: colors.dark.text.secondary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   scrollContent: {
     padding: spacing.base,
@@ -874,11 +910,6 @@ const styles = StyleSheet.create({
     fontWeight: 'heavy',
     color: colors.dark.text.primary,
   },
-  summarySubText: {
-    fontSize: 9,
-    color: colors.dark.text.tertiary,
-    fontWeight: 'bold',
-  },
   chartCard: {
     padding: spacing.md,
     gap: spacing.sm,
@@ -889,40 +920,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.dark.text.primary,
     marginBottom: spacing.xs,
-  },
-  topExercisesList: {
-    gap: spacing.sm,
-  },
-  exerciseRow: {
-    gap: 6,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  exerciseName: {
-    fontSize: typography.fontSize.xs,
-    fontWeight: 'bold',
-    color: colors.dark.text.primary,
-    flex: 1,
-    marginRight: spacing.sm,
-  },
-  exerciseSets: {
-    fontSize: typography.fontSize.xs,
-    color: colors.dark.text.secondary,
-    fontWeight: 'bold',
-  },
-  progressBg: {
-    height: 8,
-    backgroundColor: colors.dark.bg.tertiary,
-    borderRadius: 4,
-    overflow: 'hidden',
-    width: '100%',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
   },
   prsList: {
     gap: spacing.xs,
@@ -995,18 +992,6 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     alignItems: 'center',
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: spacing.md,
-  },
-  modalYearText: {
-    fontSize: typography.fontSize.base,
-    fontWeight: 'heavy',
-    color: colors.dark.text.primary,
-  },
   scrollPickerContainer: {
     flexDirection: 'row',
     height: 220,
@@ -1044,55 +1029,6 @@ const styles = StyleSheet.create({
     opacity: 1,
     fontSize: typography.fontSize.lg,
   },
-  modalHeaderPopover: {
-    width: '100%',
-    alignItems: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  modalHeaderTitleActive: {
-    color: colors.dark.accent.primary,
-    fontSize: typography.fontSize.lg,
-    fontWeight: 'bold',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  modalCancelButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.dark.border.default,
-    alignItems: 'center',
-  },
-  modalCancelText: {
-    color: colors.dark.text.secondary,
-    fontSize: typography.fontSize.sm,
-    fontWeight: '600',
-  },
-  modalConfirmButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: colors.dark.accent.primary,
-    alignItems: 'center',
-  },
-  modalConfirmText: {
-    color: colors.white,
-    fontSize: typography.fontSize.sm,
-    fontWeight: 'bold',
-  },
-  monthYearSelectorRow: {
-    marginTop: spacing.xs,
-    width: '100%',
-    alignItems: 'center',
-  },
   pickerTriggerButton: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1127,5 +1063,94 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.88 }],
     marginTop: -10,
     marginBottom: -10,
+  },
+  tabMenuContainer: {
+    backgroundColor: colors.dark.bg.primary,
+  },
+  tabMenu: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.base,
+    paddingTop: spacing.sm,
+    paddingBottom: 0,
+    gap: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.dark.accent.primary,
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  historyList: {
+    gap: spacing.base,
+  },
+  historyCard: {
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  historyCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  historyCardTitleCol: {
+    flex: 1,
+    gap: 2,
+  },
+  historyCardTitle: {
+    fontSize: typography.fontSize.base,
+    fontWeight: 'bold',
+    color: colors.dark.text.primary,
+  },
+  historyCardDate: {
+    fontSize: typography.fontSize.xs,
+    color: colors.dark.text.tertiary,
+    fontWeight: '500',
+  },
+  notesIndicator: {
+    padding: 2,
+  },
+  historyNotesText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.dark.text.secondary,
+    fontStyle: 'italic',
+    backgroundColor: colors.dark.bg.tertiary,
+    padding: spacing.xs,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.dark.border.subtle,
+  },
+  historyCardStatsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: colors.dark.border.subtle,
+    paddingVertical: spacing.xs,
+    marginVertical: 2,
+  },
+  historyCardStatItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  historyCardStatText: {
+    fontSize: typography.fontSize.xs,
+    color: colors.dark.text.secondary,
+    fontWeight: '600',
+  },
+  historyExercisesPreview: {
+    gap: 4,
+  },
+  historyExerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  historyExerciseBullet: {
+    color: colors.dark.accent.primary,
+    fontSize: 14,
+  },
+  historyExerciseName: {
+    fontSize: typography.fontSize.xs,
+    color: colors.dark.text.primary,
+    fontWeight: '500',
   },
 });

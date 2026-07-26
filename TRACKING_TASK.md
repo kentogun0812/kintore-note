@@ -232,3 +232,185 @@
   - Re-implemented `FloatingTabBar` as a completely standalone overlay (`StandaloneFloatingTabBar`) placed in a wrapper `View` *outside* of React Navigation's control.
   - Used Expo Router's `usePathname` and `useRouter` to manually track active route indices and handle navigation without depending on `BottomTabBarProps`.
   - The custom tab bar is now a pure absolute layout over the entire navigation tree, fully immune to any iOS hit-testing bounds clipping.
+
+---
+
+# Tracking Task: Statistics UX/UI Improvements & 4-Tab Restructuring
+
+- **Objective**: Overhaul the Statistics screen with a 4-tab layout, training duration calculations, detailed workout history cards, and new analytical KPIs.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Create `task.md` in artifacts ✅ Done
+- [x] Update `workout.repository.ts` to fetch started_at, completed_at, notes, and template name ✅ Done
+- [x] Update `analytics.store.ts` to calculate training time, average duration, and workout history ✅ Done
+- [x] Modify `stats.tsx` to implement the 4 tabs and respective component layouts ✅ Done
+- [x] Add localization keys in `en.json` & `ja.json` ✅ Done
+- [x] Validate TypeScript compilation via `npx tsc --noEmit` ✅ Done
+
+## Decisions & Changes
+- Restructured the Statistics screen into 4 distinct, scrollable tabs: **Muscle Heatmap**, **Workout Analysis**, **Training Volume**, and **Workout History** to align with modern gym apps like Hevy and Strong.
+- Enhanced the `getRawWorkoutDataInRange` SQLite query in [workout.repository.ts](file:///d:/Workspace/kintore-note/src/infra/repositories/workout.repository.ts) to retrieve `started_at`, `completed_at`, `notes`, and join `workout_templates` for custom template names in a single database roundtrip, optimizing performance.
+- Decoupled duration calculations at the store level in [analytics.store.ts](file:///d:/Workspace/kintore-note/src/store/analytics.store.ts), computing total training time, average session duration, and unique sessions dynamically based on date range selection.
+- Created chronological workout cards in the Workout History tab showing template names, formatted date strings, notes, training durations, total volume, and a bulleted list of completed exercises with set counts.
+- Replaced the simple tab row in [stats.tsx](file:///d:/Workspace/kintore-note/app/(tabs)/stats.tsx) with a horizontal scrollable menu container to ensure snug fitting and flawless scrolling on small screen sizes.
+- Added comprehensive localization strings in both [en.json](file:///d:/Workspace/kintore-note/src/i18n/locales/en.json) and [ja.json](file:///d:/Workspace/kintore-note/src/i18n/locales/ja.json) matching coding standards.
+
+---
+
+# Tracking Task: Statistics Analytics Merge
+
+- **Objective**: Merge the Workout Analysis and Training Volume tabs into a single Analytics tab, update layout to a 2x3 Grid for KPIs, and reduce spacing between tabs.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md`
+- [x] Edit `stats.tsx`
+  - [x] Update `ActiveTab` type and initial states
+  - [x] Merge `analysis` and `volume` views into `analytics` view with a 2x3 Grid layout for KPIs
+  - [x] Add `LineChart` and `BarChart` to the new view
+  - [x] Add `Top Exercises` and `PRs` lists
+  - [x] Reduce `gap` and `paddingHorizontal` in `tabButtonActive` and `tabButtonInactive`
+- [x] Edit `en.json` and `ja.json` for new translation key `stats.analytics`
+- [x] Run TypeScript verification (`npx tsc --noEmit`)
+
+## Decisions & Changes
+- Merged Analysis and Volume into "Analytics" for a cleaner 3-tab layout.
+
+---
+
+# Tracking Task: Progress Chart Refactoring
+
+- **Objective**: Refactor the Analytics tab to use a single Line Chart (Progress Chart) with a Segmented Control/Chips metric selector (Sessions vs. Volume) above it, supporting animated transitions, dynamic X/Y axis units, and customized pointer tooltips.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Add localization keys in `en.json` and `ja.json` ✅ Done
+- [x] Create `use-progress-chart.ts` hook ✅ Done
+- [x] Create `ProgressChart.tsx` component ✅ Done
+- [x] Modify `stats.tsx` to integrate `ProgressChart` ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+## Decisions & Changes
+- Decided to create a custom hook `useProgressChart` to separate metric state and data parsing logic.
+- Decided to reuse `react-native-gifted-charts` for animations by enabling `animateOnDataChange={true}`.
+
+---
+
+# Tracking Task: Progress Chart UI/UX Improvements
+
+- **Objective**: Refine the Progress Chart UI/UX by styling the metric selector as horizontal legend chips with color squares, rotating the Y-axis unit vertically, clipping the overflowing chart line, rotating X-axis time unit labels by -45 degrees, and dynamically calculating/formatting Y-axis subdivisions.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Modify `use-progress-chart.ts` to calculate Y-axis sections and labels dynamically ✅ Done
+- [x] Modify `ProgressChart.tsx` to implement legend chips, vertical Y-axis unit, clipped overflow, and diagonal X-axis labels ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+---
+
+# Tracking Task: X-Axis Label Style & Rotation Improvement
+
+- **Objective**: Improve the X-axis date labels layout to match the user's reference style (rotated diagonally, fully readable without truncation like `0..`) by formatting dates cleanly (e.g. `Jul 26` / `7/26`) and setting `labelWidth={50}`.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Modify `use-progress-chart.ts` to format X-axis date labels cleanly (e.g. `Jul 26` / `7/26`) ✅ Done
+- [x] Modify `ProgressChart.tsx` to apply styling fix for label width instead of invalid `labelWidth` prop ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+---
+
+# Tracking Task: X-Axis Label Rotation Direction Correction
+
+- **Objective**: Correct the rotation direction of the X-axis labels to slope upwards-right by applying `transform: [{ rotate: '-45deg' }]` to the style and removing `rotateLabel={true}`.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Modify `ProgressChart.tsx` to apply `transform: [{ rotate: '-45deg' }]` to `xAxisLabelTextStyle` and remove `rotateLabel={true}` ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+---
+
+# Tracking Task: Fix ProgressChart xAxisLabelWidth Type Error
+
+- **Objective**: Resolve the TypeScript compilation error in `ProgressChart.tsx` caused by the invalid `xAxisLabelWidth` property.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Investigate alternative props or methods to specify label width or style in `react-native-gifted-charts` ✅ Done
+- [x] Modify `ProgressChart.tsx` to remove or correct the invalid prop ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+## Decisions & Changes
+- Identified that `xAxisLabelWidth` is not a valid prop supported by `<LineChart>` in `react-native-gifted-charts`, causing the TypeScript compile error.
+- Verified that removing `xAxisLabelWidth={120}` from `<GiftedLineChart>` is completely safe and resolves the compiler error without affecting the layout, as the prop was ignored by the library.
+- Updated `use-progress-chart.tsx` comment referencing `xAxisLabelWidth` to avoid developer confusion.
+
+---
+
+# Tracking Task: X-Axis Label Alignment Fix
+
+- **Objective**: Fix the alignment of the first and last X-axis labels in `ProgressChart` so they align perfectly with the edges of the chart without overflowing or being improperly shifted.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Fix `marginLeft` offsets for `isFirst` and `isLast` labels in `use-progress-chart.tsx` ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+## Decisions & Changes
+- Adjusted the `marginLeft` offsets in `use-progress-chart.tsx` for custom label rendering.
+- `react-native-gifted-charts` automatically centers the label container on the data point.
+- For `isFirst` (x=0), the label `View` extended out of bounds (`-width/2`), so we shifted it exactly by `labelWidth / 2` to the right to perfectly align its left edge with the Y-axis.
+- For `isLast` (x=chartWidth), the label `View` overflowed the right boundary by `width/2`, so we shifted it exactly by `-labelWidth / 2` to the left to perfectly align its right edge with the chart boundary.
+
+---
+
+# Tracking Task: Statistics Screen Refactor and Optimization
+
+- **Objective**: Clean up unused variables, dead code, unused styles, and unused Zustand store properties from the Statistics screen while keeping the UI/UX and functionality identical.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Analyze requirements and identify dead code/unused styles ✅ Done
+- [x] Clean up unused properties (`setsRepsTrend`, `topExercises`, `totalDuration`, `streak.best`) and calculations from `src/store/analytics.store.ts` ✅ Done
+- [x] Clean up unused variables and 26 unused styles from `app/(tabs)/stats.tsx` ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+- [x] Create `walkthrough.md` summary ✅ Done
+
+## Decisions & Changes
+- Determined that the Statistics screen does not use any mock data; it pulls directly from the local SQLite repository via the `useAnalyticsStore`.
+- Removed calculated fields (`setsRepsTrend`, `topExercises`, and `streak.best`) from the Zustand store since they were not being rendered anywhere in the application. This saves CPU time and memory on every analytics fetch.
+- Cleaned up the destructuring assignment in `app/(tabs)/stats.tsx` and removed 26 style definitions that were defined but not referenced in the JSX code.
+
+---
+
+# Tracking Task: Muscle Group Icon Removal in Session Screen
+
+- **Objective**: Remove the visual icons rendered next to the names of muscle groups in the custom exercise selector picker within the session screen.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Identify MuscleGroupIcon usage in `app/training/session.tsx` picker ✅ Done
+- [x] Remove the `<MuscleGroupIcon />` component rendering from `ExercisePicker.tsx` ✅ Done
+- [x] Clean up unused imports of `MuscleGroupIcon` in `ExercisePicker.tsx` ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+

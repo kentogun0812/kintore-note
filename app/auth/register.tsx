@@ -27,18 +27,12 @@ export default function RegisterScreen() {
       AppErrorHandler.handleError(new ValidationError(t('auth.register.errors.missingInfoDesc'), 'MISSING_INFO'));
       return;
     }
-
     if (password !== confirmPassword) {
       AppErrorHandler.handleError(new ValidationError(t('auth.register.errors.passwordMismatchDesc'), 'PASSWORD_MISMATCH'));
       return;
     }
-    
     setLoading(true);
-    
-    // Reset onboarding state for the new account so _layout doesn't redirect to Home
-    // (Only reset onboarding, keep hasSeenIntro = true)
     useOnboardingStore.getState().resetOnboardingAccount();
-    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -50,9 +44,6 @@ export default function RegisterScreen() {
     } else if (!data.session) {
       Alert.alert(t('auth.register.errors.registerSuccessTitle'), t('auth.register.errors.registerSuccessDesc'));
       router.replace('/auth/login');
-    } else {
-      // If session exists, _layout.tsx will automatically detect !hasCompletedOnboarding and route to /auth/onboarding
-      // We don't need to manually push, avoiding a race condition.
     }
   };
 
@@ -290,7 +281,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dark.bg.secondary,
     color: colors.dark.text.primary,
     paddingHorizontal: spacing.base,
-    padding: spacing.medium,
+    padding: spacing.ld,
     borderRadius: 12,
     fontSize: typography.fontSize.md,
     borderWidth: 1,
@@ -298,7 +289,7 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: colors.dark.accent.primary,
-    padding: spacing.medium,
+    padding: spacing.ld,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -329,7 +320,7 @@ const styles = StyleSheet.create({
   },
   appleButton: {
     width: '100%',
-    height: 54,
+    padding: spacing.ld,
     backgroundColor: colors.white,
     borderRadius: 12,
     justifyContent: 'center',
@@ -362,7 +353,7 @@ const styles = StyleSheet.create({
   },
   guestButton: {
     width: '100%',
-    height: 54,
+    padding: spacing.ld,
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: colors.dark.border.default,

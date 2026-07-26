@@ -41,22 +41,8 @@ export interface MuscleSplitPoint {
   color: string;
 }
 
-export interface SetsRepsTrendPoint {
-  date: string;
-  sets: number;
-  avgReps: number;
-}
-
-export interface TopExercisePoint {
-  id: string;
-  nameEn: string;
-  nameJa: string;
-  sets: number;
-}
-
 export interface StreakInfo {
   current: number;
-  best: number;
 }
 
 export interface PRInfo {
@@ -65,6 +51,21 @@ export interface PRInfo {
   exerciseNameJa: string;
   weight: number;
   date: string;
+}
+
+export interface WorkoutHistoryItem {
+  id: string;
+  templateName: string | null;
+  startedAt: string;
+  completedAt: string;
+  totalVolume: number;
+  notes: string | null;
+  exercises: {
+    id: string;
+    nameEn: string;
+    nameJa: string;
+    setsCount: number;
+  }[];
 }
 
 interface AnalyticsState {
@@ -76,10 +77,11 @@ interface AnalyticsState {
   workoutsTrend: WorkoutsTrendPoint[];
   volumeTrend: VolumeTrendPoint[];
   muscleSplit: MuscleSplitPoint[];
-  setsRepsTrend: SetsRepsTrendPoint[];
-  topExercises: TopExercisePoint[];
   streak: StreakInfo;
   prs: PRInfo[];
+  history: WorkoutHistoryItem[];
+  avgDuration: number;
+  totalSetsCount: number;
   
   isLoading: boolean;
   
@@ -107,11 +109,11 @@ function getGroupedTrendData(raw: any[], startDateStr: string, endDateStr: strin
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 
   if (diffDays <= 31) {
-    const daysMap = new Map<string, { workouts: Set<string>; volume: number; sets: number; reps: number }>();
+    const daysMap = new Map<string, { workouts: Set<string>; volume: number }>();
     const curr = new Date(start);
     while (curr <= end) {
       const dStr = curr.toISOString().split('T')[0];
-      daysMap.set(dStr, { workouts: new Set(), volume: 0, sets: 0, reps: 0 });
+      daysMap.set(dStr, { workouts: new Set(), volume: 0 });
       curr.setDate(curr.getDate() + 1);
     }
 
@@ -120,27 +122,23 @@ function getGroupedTrendData(raw: any[], startDateStr: string, endDateStr: strin
       if (entry) {
         entry.workouts.add(set.sessionId);
         entry.volume += set.weight * set.reps;
-        entry.sets += 1;
-        entry.reps += set.reps;
       }
     }
 
     const workoutsTrend: WorkoutsTrendPoint[] = [];
     const volumeTrend: VolumeTrendPoint[] = [];
-    const setsRepsTrend: SetsRepsTrendPoint[] = [];
 
     for (const [date, val] of daysMap.entries()) {
-      const label = date.substring(5); // MM-DD
+      const label = date.replace(/-/g, '/'); // YYYY/MM/DD
       workoutsTrend.push({ date: label, count: val.workouts.size });
       volumeTrend.push({ date: label, volume: val.volume });
-      setsRepsTrend.push({ date: label, sets: val.sets, avgReps: val.sets > 0 ? Math.round(val.reps / val.sets) : 0 });
     }
 
-    return { workoutsTrend, volumeTrend, setsRepsTrend };
+    return { workoutsTrend, volumeTrend };
   } else {
     const numBuckets = 6;
     const bucketSizeDays = Math.floor(diffDays / numBuckets);
-    const buckets: { start: Date; end: Date; label: string; workouts: Set<string>; volume: number; sets: number; reps: number }[] = [];
+    const buckets: { start: Date; end: Date; label: string; workouts: Set<string>; volume: number }[] = [];
 
     const curr = new Date(start);
     for (let i = 0; i < numBuckets; i++) {
@@ -148,15 +146,13 @@ function getGroupedTrendData(raw: any[], startDateStr: string, endDateStr: strin
       const bEnd = new Date(curr);
       bEnd.setDate(bEnd.getDate() + (i === numBuckets - 1 ? (diffDays - (numBuckets - 1) * bucketSizeDays - 1) : (bucketSizeDays - 1)));
       
-      const label = `${bStart.getMonth() + 1}/${bStart.getDate()}`;
+      const label = `${bStart.getFullYear()}/${String(bStart.getMonth() + 1).padStart(2, '0')}/${String(bStart.getDate()).padStart(2, '0')}`;
       buckets.push({
         start: bStart,
         end: bEnd,
         label,
         workouts: new Set(),
-        volume: 0,
-        sets: 0,
-        reps: 0
+        volume: 0
       });
 
       curr.setDate(curr.getDate() + bucketSizeDays);
@@ -168,8 +164,6 @@ function getGroupedTrendData(raw: any[], startDateStr: string, endDateStr: strin
         if (setDate >= bucket.start && setDate <= bucket.end) {
           bucket.workouts.add(set.sessionId);
           bucket.volume += set.weight * set.reps;
-          bucket.sets += 1;
-          bucket.reps += set.reps;
           break;
         }
       }
@@ -177,13 +171,8 @@ function getGroupedTrendData(raw: any[], startDateStr: string, endDateStr: strin
 
     const workoutsTrend: WorkoutsTrendPoint[] = buckets.map(b => ({ date: b.label, count: b.workouts.size }));
     const volumeTrend: VolumeTrendPoint[] = buckets.map(b => ({ date: b.label, volume: b.volume }));
-    const setsRepsTrend: SetsRepsTrendPoint[] = buckets.map(b => ({
-      date: b.label,
-      sets: b.sets,
-      avgReps: b.sets > 0 ? Math.round(b.reps / b.sets) : 0
-    }));
 
-    return { workoutsTrend, volumeTrend, setsRepsTrend };
+    return { workoutsTrend, volumeTrend };
   }
 }
 
@@ -201,10 +190,11 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
   workoutsTrend: [],
   volumeTrend: [],
   muscleSplit: [],
-  setsRepsTrend: [],
-  topExercises: [],
-  streak: { current: 0, best: 0 },
+  streak: { current: 0 },
   prs: [],
+  history: [],
+  avgDuration: 0,
+  totalSetsCount: 0,
   isLoading: false,
 
   fetchAnalyticsData: async (startDate: string, endDate: string, range: TimeRange) => {
@@ -261,8 +251,8 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
       }
       const heatmapData = Array.from(heatmapMap.values());
 
-      // 3. Workouts Trend, Volume Trend, Sets & Reps
-      const { workoutsTrend, volumeTrend, setsRepsTrend } = getGroupedTrendData(raw, startDate, endDate);
+      // 3. Workouts Trend, Volume Trend
+      const { workoutsTrend, volumeTrend } = getGroupedTrendData(raw, startDate, endDate);
 
       // 4. Muscle Split (Donut Chart)
       const muscleSplitMap = new Map<string, { count: number; nameEn: string; nameJa: string }>();
@@ -290,60 +280,12 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
         color: MUSCLE_COLORS[id] || '#95A5A6'
       })).sort((a, b) => b.count - a.count);
 
-      // 5. Top Exercises
-      const exerciseSetsMap = new Map<string, { nameEn: string; nameJa: string; sets: number }>();
-      for (const setItem of raw) {
-        const existing = exerciseSetsMap.get(setItem.exerciseId);
-        if (existing) {
-          existing.sets++;
-        } else {
-          exerciseSetsMap.set(setItem.exerciseId, {
-            nameEn: setItem.exerciseNameEn,
-            nameJa: setItem.exerciseNameJa,
-            sets: 1
-          });
-        }
-      }
-      
-      const topExercises: TopExercisePoint[] = Array.from(exerciseSetsMap.entries()).map(([id, info]) => ({
-        id,
-        nameEn: info.nameEn,
-        nameJa: info.nameJa,
-        sets: info.sets
-      })).sort((a, b) => b.sets - a.sets).slice(0, 5);
-
-      // 6. Streak Info
+      // 5. Streak Info (Current active streak only)
       const allTrainedDates = WorkoutRepository.getHankoStampedDates(userId);
       const uniqueDates = Array.from(new Set(allTrainedDates)).sort();
       let currentStreak = 0;
-      let bestStreak = 0;
       
       if (uniqueDates.length > 0) {
-        let tempStreak = 1;
-        let maxStreak = 1;
-        
-        for (let i = 1; i < uniqueDates.length; i++) {
-          const prev = new Date(uniqueDates[i - 1]);
-          const curr = new Date(uniqueDates[i]);
-          const diffTime = Math.abs(curr.getTime() - prev.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
-          if (diffDays === 1) {
-            tempStreak++;
-          } else if (diffDays > 1) {
-            if (tempStreak > maxStreak) {
-              maxStreak = tempStreak;
-            }
-            tempStreak = 1;
-          }
-        }
-        
-        if (tempStreak > maxStreak) {
-          maxStreak = tempStreak;
-        }
-        bestStreak = maxStreak;
-        
-        // Calculate current active streak
         const lastDateStr = uniqueDates[uniqueDates.length - 1];
         const lastDate = new Date(lastDateStr);
         const today = new Date();
@@ -408,6 +350,71 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
         }
       }
 
+      // 8. Workout History, total/average duration, and total sets count
+      const sessionsMap = new Map<string, {
+        id: string;
+        templateName: string | null;
+        startedAt: string;
+        completedAt: string;
+        notes: string | null;
+        totalVolume: number;
+        exercisesMap: Map<string, { id: string; nameEn: string; nameJa: string; setsCount: number }>;
+      }>();
+
+      for (const setItem of raw) {
+        let session = sessionsMap.get(setItem.sessionId);
+        if (!session) {
+          session = {
+            id: setItem.sessionId,
+            templateName: setItem.templateName || null,
+            startedAt: setItem.startedAt,
+            completedAt: setItem.completedAt,
+            notes: setItem.sessionNotes || null,
+            totalVolume: 0,
+            exercisesMap: new Map()
+          };
+          sessionsMap.set(setItem.sessionId, session);
+        }
+        
+        session.totalVolume += setItem.weight * setItem.reps;
+        
+        let ex = session.exercisesMap.get(setItem.exerciseId);
+        if (!ex) {
+          ex = {
+            id: setItem.exerciseId,
+            nameEn: setItem.exerciseNameEn,
+            nameJa: setItem.exerciseNameJa,
+            setsCount: 0
+          };
+          session.exercisesMap.set(setItem.exerciseId, ex);
+        }
+        ex.setsCount += 1;
+      }
+
+      const history: WorkoutHistoryItem[] = Array.from(sessionsMap.values()).map(s => ({
+        id: s.id,
+        templateName: s.templateName,
+        startedAt: s.startedAt,
+        completedAt: s.completedAt,
+        totalVolume: s.totalVolume,
+        notes: s.notes,
+        exercises: Array.from(s.exercisesMap.values())
+      })).sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+
+      let totalDuration = 0;
+      for (const s of sessionsMap.values()) {
+        if (s.startedAt && s.completedAt) {
+          const start = new Date(s.startedAt).getTime();
+          const end = new Date(s.completedAt).getTime();
+          const durMin = (end - start) / (1000 * 60);
+          if (durMin > 0 && durMin < 1440) {
+            totalDuration += durMin;
+          }
+        }
+      }
+      const avgDuration = sessionsMap.size > 0 ? Math.round(totalDuration / sessionsMap.size) : 0;
+      const totalSetsCount = raw.length;
+
       set({
         startDate,
         endDate,
@@ -416,10 +423,11 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
         workoutsTrend,
         volumeTrend,
         muscleSplit,
-        setsRepsTrend,
-        topExercises,
-        streak: { current: currentStreak, best: bestStreak },
-        prs: prs.sort((a, b) => b.weight - a.weight)
+        streak: { current: currentStreak },
+        prs: prs.sort((a, b) => b.weight - a.weight),
+        history,
+        avgDuration,
+        totalSetsCount
       });
     } catch (err) {
       console.log('[Analytics] Error calculating analytical data:', err);

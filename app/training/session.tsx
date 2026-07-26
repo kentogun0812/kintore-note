@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, Pressable, FlatList, ActivityIndicator, Animated, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Pressable, Animated, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { colors } from '@/constants/colors';
@@ -62,12 +62,10 @@ export default function SessionScreen() {
     width,
   } = useActiveSession();
 
-  // Calculate dynamic width for muscle group items to ensure perfect fit across all devices
   const gridContainerWidth = width - (spacing.base * 2 + spacing.md * 2);
   const minItemWidth = 90;
   const gridGap = spacing.sm;
   const numColumns = Math.max(2, Math.floor((gridContainerWidth + gridGap) / (minItemWidth + gridGap)));
-  const itemWidth = (gridContainerWidth - (numColumns - 1) * gridGap) / numColumns;
 
   const renderItem = useCallback(({ item: ex, drag, isActive }: RenderItemParams<any>) => {
     return (
@@ -127,7 +125,6 @@ export default function SessionScreen() {
         {isEditingTemplate ? (
           <>
             <ExercisePicker picker={picker} />
-
             {/* Sticky Submit Button */}
             {picker.selectedExerciseIds.length > 0 && (
               <View style={styles.submitButtonContainer}>

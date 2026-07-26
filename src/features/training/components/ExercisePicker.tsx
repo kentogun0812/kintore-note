@@ -6,7 +6,6 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { styles } from '@/features/training/session.styles';
-import { MuscleGroupIcon } from '@/components/MuscleGroupIcon';
 import { useExercisePicker } from '@/features/training/hooks/use-exercise-picker';
 
 interface ExercisePickerProps {
@@ -115,11 +114,6 @@ export function ExercisePicker({ picker }: ExercisePickerProps) {
                       }}
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <MuscleGroupIcon
-                          id={mg.id}
-                          size={20}
-                          color={isSelected ? colors.white : colors.dark.text.primary}
-                        />
                         <Text style={[
                           styles.muscleGroupText,
                           { color: isSelected ? colors.white : colors.dark.text.primary }

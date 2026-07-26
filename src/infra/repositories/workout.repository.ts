@@ -317,6 +317,10 @@ export const WorkoutRepository = {
     setId: string;
     weight: number;
     reps: number;
+    startedAt: string;
+    completedAt: string;
+    sessionNotes: string | null;
+    templateName: string | null;
   }[] {
     const sql = `
       WITH all_exercises AS (
@@ -335,12 +339,17 @@ export const WorkoutRepository = {
         mg.name_en as muscleNameEn,
         s.id as setId,
         s.weight,
-        s.reps
+        s.reps,
+        ws.started_at as startedAt,
+        ws.completed_at as completedAt,
+        ws.notes as sessionNotes,
+        wt.name as templateName
       FROM workout_sessions ws
       JOIN workout_exercises we ON ws.id = we.session_id
       JOIN workout_sets s ON we.id = s.workout_exercise_id
       JOIN all_exercises ae ON we.exercise_id = ae.id
       JOIN muscle_groups mg ON ae.muscle_group_id = mg.id
+      LEFT JOIN workout_templates wt ON ws.workout_template_id = wt.id
       WHERE ws.user_id = ? 
         AND ws.syncStatus != 'deleted' 
         AND we.syncStatus != 'deleted' 
