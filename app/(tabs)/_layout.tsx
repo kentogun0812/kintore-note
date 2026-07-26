@@ -1,8 +1,8 @@
 import { Tabs, usePathname, useRouter } from 'expo-router';
 import { View, StyleSheet, Keyboard, Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withSequence, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useState, ReactNode } from 'react';
+import { useEffect, useState, ReactNode, useRef } from 'react';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
@@ -78,7 +78,9 @@ function StandaloneFloatingTabBar({ paddingBottom }: { paddingBottom: number }) 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const indicatorPosition = useSharedValue(0);
   const indicatorOpacity = useSharedValue(0);
+  const indicatorScale = useSharedValue(1);
   const translateY = useSharedValue(0);
+  const isFirstRender = useRef(true);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -117,6 +119,15 @@ function StandaloneFloatingTabBar({ paddingBottom }: { paddingBottom: number }) 
         stiffness: 120,
         mass: 0.8,
       });
+
+      if (!isFirstRender.current) {
+        indicatorScale.value = withSequence(
+          withTiming(1.15, { duration: 150 }),
+          withTiming(1, { duration: 150 })
+        );
+      } else {
+        isFirstRender.current = false;
+      }
     }
   }, [activeRouteIndex, containerWidth, numTabs]);
 
@@ -138,8 +149,11 @@ function StandaloneFloatingTabBar({ paddingBottom }: { paddingBottom: number }) 
     const netWidth = containerWidth - (paddingHorizontal * 2) - (borderWidth * 2);
     const tabWidth = netWidth / numTabs;
     return {
-      width: tabWidth + 16,
-      transform: [{ translateX: indicatorPosition.value - 8 }],
+      width: tabWidth + 12,
+      transform: [
+        { translateX: indicatorPosition.value - 6 },
+        { scale: indicatorScale.value }
+      ],
       opacity: indicatorOpacity.value,
     };
   });
