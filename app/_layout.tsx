@@ -1,6 +1,7 @@
 import '@/i18n';
-import { initSqliteDb } from '@/infra/db/sqlite';
-import { seedDefaultDataSqlite, seedPresetTemplatesSqlite } from '@/infra/db/seed-sqlite';
+import { initSqliteDb, getSqliteDb } from '@/infra/db/sqlite';
+import { seedPresetTemplatesSqlite } from '@/infra/db/seed-sqlite';
+import { SyncService } from '@/infra/db/sync-service';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -44,12 +45,50 @@ function RootLayout() {
       const minDelay = new Promise(resolve => setTimeout(resolve, 3500));
       const authInit = initialize();
 
-      // Initialize SQLite database tables and seed default data
       initSqliteDb();
-      const didSeed = seedDefaultDataSqlite();
+
+      const db = getSqliteDb();
+      let isEmpty = false;
+      try {
+        const countRes = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM exercises WHERE is_system = 1;');
+        isEmpty = !countRes || countRes.count === 0;
+      } catch (e) {
+        isEmpty = true;
+      }
+
+      let didSeed = false;
+      if (isEmpty) {
+        console.log('[Layout] Exercises database is empty. Attempting initial sync from Supabase...');
+        try {
+          const didSync = await SyncService.syncMasterExercises();
+          if (didSync) {
+            console.log('[Layout] Initial sync from Supabase succeeded.');
+            didSeed = true;
+          } else {
+            console.warn('[Layout] Initial sync from Supabase returned false (no internet or server error).');
+          }
+        } catch (error) {
+          console.error('[Layout] Initial remote sync failed:', error);
+        }
+      } else {
+        // Background Monthly Master Exercises Sync
+        setTimeout(async () => {
+          try {
+            const didSync = await SyncService.syncMasterExercises();
+            if (didSync) {
+              queryClient.invalidateQueries({ queryKey: ['exercises'] });
+              queryClient.invalidateQueries({ queryKey: ['exercises_library'] });
+            }
+          } catch (e) {
+            console.warn('[SQLite] Background exercise sync failed:', e);
+          }
+        }, 5000);
+      }
+
       seedPresetTemplatesSqlite();
       if (didSeed) {
         queryClient.invalidateQueries({ queryKey: ['exercises'] });
+        queryClient.invalidateQueries({ queryKey: ['exercises_library'] });
       }
 
       await Promise.all([minDelay, authInit]);

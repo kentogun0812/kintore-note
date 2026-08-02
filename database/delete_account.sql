@@ -23,10 +23,9 @@
 -- CASCADE behavior (from init.sql foreign keys):
 --   auth.users → profiles (ON DELETE CASCADE)
 --   profiles → weekly_plans, workout_templates, training_sessions,
---              hanko_stamps, body_photos, friendships, posts (ON DELETE CASCADE)
+--              hanko_stamps, body_photos (ON DELETE CASCADE)
 --   training_sessions → session_sets (ON DELETE CASCADE)
 --   workout_templates → workout_template_exercises (ON DELETE CASCADE)
---   posts → reactions, comments (ON DELETE CASCADE)
 --
 -- This means deleting the auth.users row cascades through ALL user data.
 -- ============================================================

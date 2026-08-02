@@ -324,8 +324,11 @@
     "selectExercise": "Select Exercise",
     "primaryMuscle": "Primary Muscle Group",
     "description": "Description",
+    "instructions": "Instructions",
     "benefits": "Key Benefits",
-    "allCategories": "All"
+    "allCategories": "All",
+    "video": "Form Video",
+    "image": "Image"
   },
   "camera": {
     "permissionTitle": "Camera Access Required",
@@ -491,7 +494,7 @@
   "banners": {
     "todayWorkoutDesc": "Create today's workout by selecting the exercises you plan to do.",
     "weeklyPlansDesc": "Build a weekly training plan and reuse it anytime.",
-    "libraryDesc": "Browse exercises or create your own custom exercises."
+    "libraryDesc": "Learn how to perform each exercise correctly."
   },
   "nav": {
     "weeklyPlans": "Weekly Plans"

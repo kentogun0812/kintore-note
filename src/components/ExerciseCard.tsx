@@ -11,7 +11,7 @@ export interface ExerciseProps {
   id: string;
   name: string;
   muscleGroup: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: any;
   iconName?: any;
 }
 
@@ -27,7 +27,7 @@ export function ExerciseCard({ exercise, onPress }: { exercise: ExerciseProps, o
       <View style={styles.imageContainer}>
         {exercise.thumbnailUrl ? (
           <Image 
-            source={{ uri: exercise.thumbnailUrl }} 
+            source={exercise.thumbnailUrl} 
             style={styles.thumbnail} 
             contentFit="cover" 
           />
@@ -37,7 +37,7 @@ export function ExerciseCard({ exercise, onPress }: { exercise: ExerciseProps, o
       </View>
       
       <View style={styles.textContainer}>
-        <Text style={styles.name}>
+        <Text style={styles.name} numberOfLines={2} ellipsizeMode="tail">
           {exercise.name}
         </Text>
         <Text style={styles.muscleGroup}>
@@ -50,12 +50,12 @@ export function ExerciseCard({ exercise, onPress }: { exercise: ExerciseProps, o
   );
 
   if (onPress) {
-         return content;
-     }
+    return content;
+  }
 
   return (
     <Link href={`/training/exercise/${exercise.id}`} asChild>
-        {content}
+      {content}
     </Link>
   );
 }

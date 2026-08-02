@@ -397,5 +397,167 @@ export const SyncService = {
       });
       console.log(`[SyncService] Integrated ${remoteRows.length} remote records into local "${tableName}"`);
     }
+  },
+
+  /**
+   * Performs a background sync of the master exercise library if online, 
+   * checking if there is a remote version update and if 30 days have elapsed.
+   */
+  async syncMasterExercises(): Promise<boolean> {
+    try {
+      const db = getSqliteDb();
+      
+      // 1. Check sync metadata
+      const lastFetchedRecord = queryOne<{ value: string }>('SELECT value FROM exercise_sync_metadata WHERE key = "last_fetched_at";');
+      const versionRecord = queryOne<{ value: string }>('SELECT value FROM exercise_sync_metadata WHERE key = "version";');
+      
+      const lastFetchedAt = lastFetchedRecord ? new Date(lastFetchedRecord.value) : new Date(0);
+      const currentVersion = versionRecord ? parseInt(versionRecord.value, 10) : 0;
+      
+      const daysSinceSync = (new Date().getTime() - lastFetchedAt.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Check if 30 days have elapsed or if it's the first sync online
+      if (daysSinceSync < 30 && currentVersion > 0) {
+        console.log('[SyncService] Master exercise library sync is up to date. Days since last sync:', Math.floor(daysSinceSync));
+        return false;
+      }
+      
+      console.log('[SyncService] Checking for remote exercise library updates...');
+      
+      // 2. Query remote version from Supabase
+      const { data: versionData, error: versionError } = await supabase
+        .from('exercise_dataset_versions')
+        .select('version_number')
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .single();
+        
+      if (versionError) {
+        console.warn('[SyncService] Failed to fetch remote exercise version (offline or table missing):', versionError.message);
+        return false;
+      }
+      
+      const remoteVersion = versionData ? versionData.version_number : 0;
+      if (remoteVersion <= currentVersion) {
+        console.log('[SyncService] Local exercise library is already at the latest version:', currentVersion);
+        // Update last fetched timestamp
+        runExecute('INSERT OR REPLACE INTO exercise_sync_metadata (key, value) VALUES ("last_fetched_at", ?);', [new Date().toISOString()]);
+        return false;
+      }
+      
+      console.log(`[SyncService] Downloading newer exercise library version ${remoteVersion}...`);
+      
+      // 3. Fetch remote library datasets
+      const [mgsRes, eqRes, catRes, exRes, emRes, eeRes, ecRes] = await Promise.all([
+        supabase.from('muscle_groups').select('*'),
+        supabase.from('equipment').select('*'),
+        supabase.from('categories').select('*'),
+        supabase.from('exercises').select('*'),
+        supabase.from('exercise_muscles').select('*'),
+        supabase.from('exercise_equipment').select('*'),
+        supabase.from('exercise_categories').select('*'),
+      ]);
+      
+      // If any of the pulls failed, abort and run fallback
+      if (mgsRes.error || eqRes.error || catRes.error || exRes.error || emRes.error || eeRes.error || ecRes.error) {
+        console.error('[SyncService] Failed to pull some remote master tables:', {
+          mgs: mgsRes.error?.message,
+          eq: eqRes.error?.message,
+          cat: catRes.error?.message,
+          ex: exRes.error?.message,
+          em: emRes.error?.message,
+          ee: eeRes.error?.message,
+          ec: ecRes.error?.message,
+        });
+        return false;
+      }
+      
+      // 4. Update local SQLite database in a transaction
+      db.withTransactionSync(() => {
+        db.runSync('DELETE FROM exercise_muscles;');
+        db.runSync('DELETE FROM exercise_equipment;');
+        db.runSync('DELETE FROM exercise_categories;');
+        db.runSync('DELETE FROM exercises WHERE is_system = 1;');
+        db.runSync('DELETE FROM muscle_groups;');
+        db.runSync('DELETE FROM equipment;');
+        db.runSync('DELETE FROM categories;');
+        
+        // Seed Muscle Groups
+        for (const mg of mgsRes.data || []) {
+          db.runSync(
+            `INSERT INTO muscle_groups (id, name_ja, name_en, body_region, sort_order) VALUES (?, ?, ?, ?, ?)`,
+            [mg.id, mg.name_ja, mg.name_en, mg.body_region, mg.sort_order]
+          );
+        }
+        
+        // Seed Equipment
+        for (const eq of eqRes.data || []) {
+          db.runSync(
+            `INSERT INTO equipment (id, name_ja, name_en) VALUES (?, ?, ?)`,
+            [eq.id, eq.name_ja, eq.name_en]
+          );
+        }
+        
+        // Seed Categories
+        for (const cat of catRes.data || []) {
+          db.runSync(
+            `INSERT INTO categories (id, name_ja, name_en) VALUES (?, ?, ?)`,
+            [cat.id, cat.name_ja, cat.name_en]
+          );
+        }
+        
+        // Seed Exercises
+        for (const ex of exRes.data || []) {
+          db.runSync(
+            `INSERT INTO exercises (id, slug, name_ja, name_en, description_ja, description_en, muscle_group_id, difficulty, mechanics, force, body_region, instructions, image, gif_url, is_default, sort_order, is_system) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            [
+              ex.id, ex.slug, ex.name_ja, ex.name_en, ex.description_ja, ex.description_en,
+              ex.muscle_group_id, ex.difficulty, ex.mechanics, ex.force, ex.body_region,
+              typeof ex.instructions === 'string' ? ex.instructions : JSON.stringify(ex.instructions),
+              ex.image, ex.gif_url, ex.is_default ? 1 : 0, ex.sort_order,
+            ]
+          );
+        }
+        
+        // Seed Mappings
+        for (const em of emRes.data || []) {
+          db.runSync(
+            `INSERT INTO exercise_muscles (exercise_id, muscle_group_id, is_primary) VALUES (?, ?, ?)`,
+            [em.exercise_id, em.muscle_group_id, em.is_primary ? 1 : 0]
+          );
+        }
+        
+        for (const ee of eeRes.data || []) {
+          db.runSync(
+            `INSERT INTO exercise_equipment (exercise_id, equipment_id) VALUES (?, ?)`,
+            [ee.exercise_id, ee.equipment_id]
+          );
+        }
+        
+        for (const ec of ecRes.data || []) {
+          db.runSync(
+            `INSERT INTO exercise_categories (exercise_id, category_id) VALUES (?, ?)`,
+            [ec.exercise_id, ec.category_id]
+          );
+        }
+        
+        // Update local metadata
+        db.runSync(
+          `INSERT OR REPLACE INTO exercise_sync_metadata (key, value) VALUES ("version", ?);`,
+          [remoteVersion.toString()]
+        );
+        db.runSync(
+          `INSERT OR REPLACE INTO exercise_sync_metadata (key, value) VALUES ("last_fetched_at", ?);`,
+          [new Date().toISOString()]
+        );
+      });
+      
+      console.log(`[SyncService] Master exercise library successfully synced to version ${remoteVersion}!`);
+      return true;
+    } catch (e) {
+      console.error('[SyncService] Error during master exercise sync:', e);
+      return false;
+    }
   }
 };

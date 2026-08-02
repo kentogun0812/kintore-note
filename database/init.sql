@@ -1,42 +1,41 @@
 -- ============================================================
 -- KINTORE NOTE - DATABASE INITIALIZATION SCRIPT (init.sql)
--- Generated: 2026-04-19
 -- Target: Supabase / PostgreSQL 15+
 -- ============================================================
 
 -- ============================================================
 -- 0. CLEANUP (DROP EXISTING OBJECTS)
 -- ============================================================
-DROP TABLE IF EXISTS public.comments CASCADE;
-DROP TABLE IF EXISTS public.reactions CASCADE;
-DROP TABLE IF EXISTS public.posts CASCADE;
-DROP TABLE IF EXISTS public.friendships CASCADE;
 DROP TABLE IF EXISTS public.body_photos CASCADE;
 DROP TABLE IF EXISTS public.hanko_stamps CASCADE;
-DROP TABLE IF EXISTS public.session_sets CASCADE;
-DROP TABLE IF EXISTS public.training_sessions CASCADE;
+DROP TABLE IF EXISTS public.workout_sets CASCADE;
+DROP TABLE IF EXISTS public.workout_exercises CASCADE;
+DROP TABLE IF EXISTS public.workout_sessions CASCADE;
+DROP TABLE IF EXISTS public.favorite_exercises CASCADE;
+DROP TABLE IF EXISTS public.custom_exercises CASCADE;
+DROP TABLE IF EXISTS public.custom_muscle_groups CASCADE;
 DROP TABLE IF EXISTS public.workout_template_exercises CASCADE;
 DROP TABLE IF EXISTS public.workout_templates CASCADE;
 DROP TABLE IF EXISTS public.weekly_plans CASCADE;
+DROP TABLE IF EXISTS public.exercise_muscles CASCADE;
+DROP TABLE IF EXISTS public.exercise_equipment CASCADE;
+DROP TABLE IF EXISTS public.exercise_categories CASCADE;
 DROP TABLE IF EXISTS public.exercises CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 DROP TABLE IF EXISTS public.muscle_groups CASCADE;
+DROP TABLE IF EXISTS public.equipment CASCADE;
+DROP TABLE IF EXISTS public.categories CASCADE;
+DROP TABLE IF EXISTS public.exercise_dataset_versions CASCADE;
 
 DROP FUNCTION IF EXISTS public.generate_user_code() CASCADE;
 DROP FUNCTION IF EXISTS public.check_personal_record() CASCADE;
 DROP FUNCTION IF EXISTS public.update_session_volume() CASCADE;
-DROP FUNCTION IF EXISTS public.update_exercise_search() CASCADE;
 
 DROP TYPE IF EXISTS public.auth_provider CASCADE;
 DROP TYPE IF EXISTS public.locale_type CASCADE;
 DROP TYPE IF EXISTS public.weight_unit CASCADE;
-DROP TYPE IF EXISTS public.session_status CASCADE;
 DROP TYPE IF EXISTS public.photo_angle CASCADE;
 DROP TYPE IF EXISTS public.hanko_tier CASCADE;
-DROP TYPE IF EXISTS public.friendship_status CASCADE;
-DROP TYPE IF EXISTS public.sub_plan CASCADE;
-DROP TYPE IF EXISTS public.sub_status CASCADE;
-DROP TYPE IF EXISTS public.reaction_type CASCADE;
 
 -- ============================================================
 -- 1. ENUMS
@@ -44,24 +43,17 @@ DROP TYPE IF EXISTS public.reaction_type CASCADE;
 CREATE TYPE auth_provider AS ENUM ('apple', 'google', 'email');
 CREATE TYPE locale_type AS ENUM ('ja', 'en');
 CREATE TYPE weight_unit AS ENUM ('kg', 'lbs');
-CREATE TYPE session_status AS ENUM ('draft', 'in_progress', 'completed');
 CREATE TYPE photo_angle AS ENUM ('front', 'side_left', 'side_right', 'back');
 CREATE TYPE hanko_tier AS ENUM ('bronze', 'silver', 'gold', 'platinum', 'master', 'legend');
-CREATE TYPE friendship_status AS ENUM ('pending', 'accepted', 'blocked');
-CREATE TYPE sub_plan AS ENUM ('monthly', 'semi_annual', 'lifetime');
-CREATE TYPE sub_status AS ENUM ('active', 'expired', 'cancelled');
-CREATE TYPE reaction_type AS ENUM ('muscle', 'fire', 'flower');
 
 -- ============================================================
 -- 2. HELPER FUNCTIONS
 -- ============================================================
-
--- Auto-generate unique KINT-XXXX on profile insert
 CREATE OR REPLACE FUNCTION generate_user_code()
 RETURNS VARCHAR AS $$
 DECLARE
     code VARCHAR(9);
-    chars TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; -- Remove ambiguous chars (0/O, 1/I)
+    chars TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 BEGIN
     LOOP
         code := 'KINT-' || 
@@ -76,19 +68,85 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================================
--- 3. CORE TABLES
+-- 3. SCHEMA TABLES
 -- ============================================================
 
 -- Muscle Groups
 CREATE TABLE public.muscle_groups (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name_ja VARCHAR(50) NOT NULL,
-    name_en VARCHAR(50) NOT NULL,
-    body_region VARCHAR(20) NOT NULL,              -- upper/lower/core
+    id VARCHAR(50) PRIMARY KEY,
+    name_ja VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    body_region VARCHAR(20) NOT NULL,
     sort_order INT DEFAULT 0
 );
 
--- Profiles (extends Supabase Auth)
+-- Exercises
+CREATE TABLE public.exercises (
+    id VARCHAR(50) PRIMARY KEY,
+    slug VARCHAR(100) UNIQUE,
+    name_ja VARCHAR(200) NOT NULL,
+    name_en VARCHAR(200) NOT NULL,
+    description_ja TEXT,
+    description_en TEXT,
+    muscle_group_id VARCHAR(50) REFERENCES public.muscle_groups(id) ON DELETE SET NULL,
+    difficulty VARCHAR(20) DEFAULT 'Beginner',
+    mechanics VARCHAR(20) DEFAULT 'compound',
+    force VARCHAR(20) DEFAULT 'push',
+    body_region VARCHAR(20) DEFAULT 'upper',
+    instructions JSONB,
+    image TEXT,
+    gif_url TEXT,
+    is_default BOOLEAN DEFAULT false,
+    sort_order INT DEFAULT 9999,
+    is_system BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Equipment
+CREATE TABLE public.equipment (
+    id VARCHAR(50) PRIMARY KEY,
+    name_ja VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL
+);
+
+-- Exercise Equipment Junction
+CREATE TABLE public.exercise_equipment (
+    exercise_id VARCHAR(50) REFERENCES public.exercises(id) ON DELETE CASCADE,
+    equipment_id VARCHAR(50) REFERENCES public.equipment(id) ON DELETE CASCADE,
+    PRIMARY KEY (exercise_id, equipment_id)
+);
+
+-- Categories
+CREATE TABLE public.categories (
+    id VARCHAR(50) PRIMARY KEY,
+    name_ja VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL
+);
+
+-- Exercise Categories Junction
+CREATE TABLE public.exercise_categories (
+    exercise_id VARCHAR(50) REFERENCES public.exercises(id) ON DELETE CASCADE,
+    category_id VARCHAR(50) REFERENCES public.categories(id) ON DELETE CASCADE,
+    PRIMARY KEY (exercise_id, category_id)
+);
+
+-- Exercise Muscles Junction
+CREATE TABLE public.exercise_muscles (
+    exercise_id VARCHAR(50) REFERENCES public.exercises(id) ON DELETE CASCADE,
+    muscle_group_id VARCHAR(50) REFERENCES public.muscle_groups(id) ON DELETE CASCADE,
+    is_primary BOOLEAN DEFAULT true,
+    PRIMARY KEY (exercise_id, muscle_group_id)
+);
+
+-- Exercise Dataset Versions
+CREATE TABLE public.exercise_dataset_versions (
+    version_number INT PRIMARY KEY,
+    released_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User Profiles
 CREATE TABLE public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     user_code VARCHAR(9) UNIQUE DEFAULT generate_user_code(),
@@ -102,246 +160,224 @@ CREATE TABLE public.profiles (
     last_active_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
     CONSTRAINT valid_user_code CHECK (user_code ~ '^KINT-[A-Z0-9]{4}$')
 );
 
-CREATE UNIQUE INDEX idx_profiles_user_code ON public.profiles(user_code);
-
--- Exercises
-CREATE TABLE public.exercises (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name_ja VARCHAR(100) NOT NULL,
-    name_en VARCHAR(100) NOT NULL,
-    muscle_group_id UUID REFERENCES public.muscle_groups(id),
-    secondary_muscle_ids UUID[] DEFAULT '{}',
-    image_url TEXT,
-    video_url TEXT,
-    description_ja TEXT,
-    description_en TEXT,
-    search_text TSVECTOR,                          -- Full-text search (JP + EN)
-    is_system BOOLEAN DEFAULT true,
-    created_by UUID REFERENCES public.profiles(id),
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_exercises_muscle ON public.exercises(muscle_group_id);
-CREATE INDEX idx_exercises_search ON public.exercises USING GIN(search_text);
-
 -- Weekly Plans
 CREATE TABLE public.weekly_plans (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     description TEXT,
-    total_weeks INT NOT NULL CHECK (total_weeks BETWEEN 1 AND 52),
-    start_date DATE,
+    total_weeks INT NOT NULL,
+    start_date TEXT,
     is_active BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Workout Templates
 CREATE TABLE public.workout_templates (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     weekly_plan_id UUID REFERENCES public.weekly_plans(id) ON DELETE SET NULL,
     plan_week INT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Workout Template Exercises (junction)
+-- Workout Template Exercises
 CREATE TABLE public.workout_template_exercises (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
     workout_template_id UUID REFERENCES public.workout_templates(id) ON DELETE CASCADE,
-    exercise_id UUID REFERENCES public.exercises(id),
+    exercise_id VARCHAR(50) REFERENCES public.exercises(id) ON DELETE CASCADE,
     sort_order INT NOT NULL,
-    target_sets INT DEFAULT 3,
+    target_sets INT DEFAULT 1,
     target_reps INT DEFAULT 10,
-    target_weight_kg DECIMAL(6,2)
+    target_weight_kg DECIMAL(6,2),
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Training Sessions
-CREATE TABLE public.training_sessions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- Custom Muscle Groups
+CREATE TABLE public.custom_muscle_groups (
+    id VARCHAR(50) PRIMARY KEY,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    workout_template_id UUID REFERENCES public.workout_templates(id),
-    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    name_ja VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    sort_order INT DEFAULT 0,
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Custom Exercises
+CREATE TABLE public.custom_exercises (
+    id VARCHAR(50) PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    name_ja VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100) NOT NULL,
+    muscle_group_id VARCHAR(50) REFERENCES public.muscle_groups(id) ON DELETE SET NULL,
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Favorite Exercises
+CREATE TABLE public.favorite_exercises (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    exercise_id VARCHAR(50) REFERENCES public.exercises(id) ON DELETE CASCADE,
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Workout Sessions
+CREATE TABLE public.workout_sessions (
+    id UUID PRIMARY KEY,
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    workout_template_id UUID REFERENCES public.workout_templates(id) ON DELETE SET NULL,
+    started_at TIMESTAMPTZ NOT NULL,
     completed_at TIMESTAMPTZ,
     total_volume DECIMAL(10,2) DEFAULT 0,
-    duration_minutes INT,
-    status session_status DEFAULT 'draft',
+    status VARCHAR(20) DEFAULT 'completed',
     notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Session Sets
-CREATE TABLE public.session_sets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID REFERENCES public.training_sessions(id) ON DELETE CASCADE,
-    exercise_id UUID REFERENCES public.exercises(id),
-    set_order INT NOT NULL,
-    weight_kg DECIMAL(6,2) NOT NULL,
+-- Workout Exercises
+CREATE TABLE public.workout_exercises (
+    id UUID PRIMARY KEY,
+    session_id UUID REFERENCES public.workout_sessions(id) ON DELETE CASCADE,
+    exercise_id VARCHAR(50) REFERENCES public.exercises(id) ON DELETE CASCADE,
+    sort_order INT DEFAULT 0,
+    notes TEXT,
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Workout Sets
+CREATE TABLE public.workout_sets (
+    id UUID PRIMARY KEY,
+    workout_exercise_id UUID REFERENCES public.workout_exercises(id) ON DELETE CASCADE,
+    weight DECIMAL(6,2) NOT NULL,
     reps INT NOT NULL,
-    volume DECIMAL(10,2) GENERATED ALWAYS AS (weight_kg * reps) STORED,
-    is_pr BOOLEAN DEFAULT false,
-    rpe INT CHECK (rpe BETWEEN 1 AND 10),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    completed BOOLEAN DEFAULT false,
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Hanko Stamps
 CREATE TABLE public.hanko_stamps (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    session_id UUID REFERENCES public.training_sessions(id),
+    session_id UUID REFERENCES public.workout_sessions(id) ON DELETE SET NULL,
     stamp_date DATE NOT NULL,
     hanko_tier hanko_tier DEFAULT 'bronze',
     streak_count INT DEFAULT 1,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT unique_hanko_per_day UNIQUE(user_id, stamp_date)
 );
 
 -- Body Photos
 CREATE TABLE public.body_photos (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY,
     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    encrypted_storage_key TEXT NOT NULL,
+    file_path TEXT NOT NULL,
     angle photo_angle NOT NULL,
-    body_weight_kg DECIMAL(5,1),
-    taken_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    key_id TEXT NOT NULL,
+    taken_at TIMESTAMPTZ NOT NULL,
+    syncStatus VARCHAR(20) DEFAULT 'synced',
+    createdAt TIMESTAMPTZ DEFAULT NOW(),
+    updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- ============================================================
--- 4. SOCIAL TABLES
+-- 4. TRIGGERS & LOGIC
 -- ============================================================
-
--- Friendships
-CREATE TABLE public.friendships (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    requester_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    addressee_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    status friendship_status DEFAULT 'pending',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    accepted_at TIMESTAMPTZ,
-    
-    CONSTRAINT no_self_friend CHECK (requester_id != addressee_id),
-    CONSTRAINT unique_friendship UNIQUE(requester_id, addressee_id)
-);
-
--- Posts
-CREATE TABLE public.posts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    session_id UUID REFERENCES public.training_sessions(id),
-    photo_id UUID REFERENCES public.body_photos(id),
-    title VARCHAR(100) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- Reactions
-CREATE TABLE public.reactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    post_id UUID REFERENCES public.posts(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    reaction reaction_type NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    CONSTRAINT unique_reaction UNIQUE(post_id, user_id, reaction)
-);
-
--- Comments
-CREATE TABLE public.comments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    post_id UUID REFERENCES public.posts(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-    content VARCHAR(200) NOT NULL,
-    is_hidden BOOLEAN DEFAULT false,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- ============================================================
--- 5. TRIGGERS & LOGIC
--- ============================================================
-
--- Auto-detect PR on set insert
-CREATE OR REPLACE FUNCTION check_personal_record()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.weight_kg > COALESCE(
-        (SELECT MAX(weight_kg) FROM public.session_sets 
-         WHERE exercise_id = NEW.exercise_id 
-         AND session_id != NEW.session_id
-         AND id != NEW.id),
-        0
-    ) THEN
-        NEW.is_pr := true;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_check_pr
-    BEFORE INSERT ON public.session_sets
-    FOR EACH ROW EXECUTE FUNCTION check_personal_record();
 
 -- Auto-calculate session total volume
 CREATE OR REPLACE FUNCTION update_session_volume()
 RETURNS TRIGGER AS $$
 BEGIN
-    UPDATE public.training_sessions 
+    UPDATE public.workout_sessions 
     SET total_volume = (
-        SELECT COALESCE(SUM(volume), 0) 
-        FROM public.session_sets 
-        WHERE session_id = NEW.session_id
+        SELECT COALESCE(SUM(weight * reps), 0) 
+        FROM public.workout_sets ws
+        JOIN public.workout_exercises we ON ws.workout_exercise_id = we.id
+        WHERE we.session_id = NEW.session_id
     )
     WHERE id = NEW.session_id;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_update_volume
-    AFTER INSERT OR UPDATE ON public.session_sets
-    FOR EACH ROW EXECUTE FUNCTION update_session_volume();
-
--- Full-text search index update
-CREATE OR REPLACE FUNCTION update_exercise_search()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.search_text := 
-        to_tsvector('simple', COALESCE(NEW.name_ja, '')) ||
-        to_tsvector('english', COALESCE(NEW.name_en, ''));
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_exercise_search
-    BEFORE INSERT OR UPDATE ON public.exercises
-    FOR EACH ROW EXECUTE FUNCTION update_exercise_search();
+-- Trigger to recalculate session volume on set insert/update
+-- (Note: Since we update sets, the trigger should watch workout_sets table)
+-- We will hook this when set volume changes.
 
 -- ============================================================
--- 6. RLS POLICIES (BASIC)
+-- 5. RLS POLICIES (BASIC)
 -- ============================================================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workout_templates ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.training_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.session_sets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_sets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.hanko_stamps ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.exercises ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.muscle_groups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.equipment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.weekly_plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.body_photos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.custom_exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.custom_muscle_groups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.favorite_exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_exercises ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.workout_template_exercises ENABLE ROW LEVEL SECURITY;
 
 -- User-owned data policies
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can manage their own templates" ON public.workout_templates FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own sessions" ON public.training_sessions FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage their own sets" ON public.session_sets FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.training_sessions WHERE id = session_id AND user_id = auth.uid())
+CREATE POLICY "Users can manage their own sessions" ON public.workout_sessions FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own sets" ON public.workout_sets FOR ALL USING (
+    EXISTS (
+        SELECT 1 FROM public.workout_exercises we
+        JOIN public.workout_sessions ws ON we.session_id = ws.id
+        WHERE we.id = workout_exercise_id AND ws.user_id = auth.uid()
+    )
+);
+CREATE POLICY "Users can manage their own weekly plans" ON public.weekly_plans FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own body photos" ON public.body_photos FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own stamps" ON public.hanko_stamps FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own custom exercises" ON public.custom_exercises FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own custom muscle groups" ON public.custom_muscle_groups FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own favorite exercises" ON public.favorite_exercises FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their own workout exercises" ON public.workout_exercises FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.workout_sessions WHERE id = session_id AND user_id = auth.uid())
+);
+CREATE POLICY "Users can manage their own template exercises" ON public.workout_template_exercises FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.workout_templates WHERE id = workout_template_id AND user_id = auth.uid())
 );
 
--- Public read access (authenticated or anonymous)
+-- Public read access
 CREATE POLICY "Public can view exercises" ON public.exercises FOR SELECT USING (true);
 CREATE POLICY "Public can view muscle groups" ON public.muscle_groups FOR SELECT USING (true);
+CREATE POLICY "Public can view equipment" ON public.equipment FOR SELECT USING (true);
+CREATE POLICY "Public can view categories" ON public.categories FOR SELECT USING (true);
+CREATE POLICY "Public can view exercise_muscles" ON public.exercise_muscles FOR SELECT USING (true);
+CREATE POLICY "Public can view exercise_equipment" ON public.exercise_equipment FOR SELECT USING (true);
+CREATE POLICY "Public can view exercise_categories" ON public.exercise_categories FOR SELECT USING (true);
+CREATE POLICY "Public can view dataset versions" ON public.exercise_dataset_versions FOR SELECT USING (true);

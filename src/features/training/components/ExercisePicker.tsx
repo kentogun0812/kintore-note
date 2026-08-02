@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import { View, Text, Pressable, FlatList, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import * as Haptics from 'expo-haptics';
@@ -7,6 +8,7 @@ import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/spacing';
 import { styles } from '@/features/training/session.styles';
 import { useExercisePicker } from '@/features/training/hooks/use-exercise-picker';
+import { EXERCISE_MEDIA } from '@/constants/exerciseMedia';
 
 interface ExercisePickerProps {
   picker: ReturnType<typeof useExercisePicker>;
@@ -15,7 +17,6 @@ interface ExercisePickerProps {
 export function ExercisePicker({ picker }: ExercisePickerProps) {
   const { t, i18n } = useTranslation();
   const { width } = useWindowDimensions();
-  // Calculate dynamic width for muscle group items to ensure perfect fit across all devices
   const gridContainerWidth = width - (spacing.base * 2 + spacing.md * 2);
   const minItemWidth = 90;
   const gridGap = spacing.sm;
@@ -155,6 +156,9 @@ export function ExercisePicker({ picker }: ExercisePickerProps) {
                 renderItem={({ item }) => {
                   const name = i18n.language === 'ja' ? item.name_ja : item.name_en;
                   const isChecked = selectedExerciseIds.includes(item.id);
+                  const media = EXERCISE_MEDIA[item.id];
+                  const thumbnailUrl = media?.image;
+
                   return (
                     <Pressable
                       style={[
@@ -163,8 +167,21 @@ export function ExercisePicker({ picker }: ExercisePickerProps) {
                       ]}
                       onPress={() => handleToggleSelectExercise(item.id)}
                     >
-                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Text style={[styles.exerciseSelectName, { flexShrink: 1 }]}>{name}</Text>
+                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <View style={styles.thumbnailContainer}>
+                          {thumbnailUrl ? (
+                            <Image
+                              source={thumbnailUrl}
+                              style={styles.thumbnail}
+                              contentFit="cover"
+                            />
+                          ) : (
+                            <Ionicons name="barbell-outline" size={20} color={colors.dark.text.tertiary} />
+                          )}
+                        </View>
+                        <Text style={[styles.exerciseSelectName, { flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">
+                          {name}
+                        </Text>
                         {item.id.startsWith('ex-custom') && (
                           <Pressable onPress={() => handleDeleteCustomExercise(item.id)} hitSlop={12} style={{ padding: 4 }}>
                             <Ionicons name="close-circle" size={20} color={colors.dark.accent.warning} />

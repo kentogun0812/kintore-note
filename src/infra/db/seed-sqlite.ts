@@ -1,47 +1,5 @@
 import { getSqliteDb } from './sqlite';
-import { DEFAULT_EXERCISES, DEFAULT_MUSCLE_GROUPS } from '@/constants/defaultExercises';
 import * as Crypto from 'expo-crypto';
-
-export function seedDefaultDataSqlite(): boolean {
-  const db = getSqliteDb();
-  try {
-    // Check if seeded already
-    const mgCount = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM muscle_groups;');
-    const exCount = db.getFirstSync<{ count: number }>('SELECT COUNT(*) as count FROM exercises;');
-
-    if (mgCount && mgCount.count === 0 && exCount && exCount.count === 0) {
-      console.log('[SQLite] Seeding default muscle groups and exercises...');
-
-      db.withTransactionSync(() => {
-        // Seed Muscle Groups
-        for (const mg of DEFAULT_MUSCLE_GROUPS) {
-          db.runSync(
-            `INSERT INTO muscle_groups (id, name_ja, name_en, body_region, sort_order) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [mg.id, mg.nameJa, mg.nameEn, mg.bodyRegion, mg.sortOrder]
-          );
-        }
-
-        // Seed Exercises
-        for (const ex of DEFAULT_EXERCISES) {
-          db.runSync(
-            `INSERT INTO exercises (id, name_ja, name_en, muscle_group_id, is_system) 
-             VALUES (?, ?, ?, ?, ?)`,
-            [ex.id, ex.nameJa, ex.nameEn, ex.primaryGroup, ex.isDefault ? 1 : 0]
-          );
-        }
-      });
-
-      console.log('[SQLite] Default data seeded successfully!');
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('[SQLite] Error seeding default data:', error);
-    return false;
-  }
-}
 
 export function seedPresetTemplatesSqlite(): boolean {
   const db = getSqliteDb();
@@ -51,7 +9,7 @@ export function seedPresetTemplatesSqlite(): boolean {
       return false;
     }
 
-    console.log('[SQLite] Seeding preset templates...');
+    console.log('[SQLite] Seeding preset templates with new exercise IDs...');
 
     const presets = [
       {
@@ -64,9 +22,9 @@ export function seedPresetTemplatesSqlite(): boolean {
         weeks: 4,
         level: 'beginner',
         workouts: [
-          { day: 1, name_ja: '全身 A', name_en: 'Full Body A', exercises: ['ex-legs-01', 'ex-chest-01', 'ex-back-02', 'ex-shoulders-01', 'ex-core-01'] },
-          { day: 3, name_ja: '全身 B', name_en: 'Full Body B', exercises: ['ex-back-01', 'ex-chest-02', 'ex-back-03', 'ex-shoulders-04', 'ex-core-03'] },
-          { day: 5, name_ja: '全身 A', name_en: 'Full Body A', exercises: ['ex-legs-01', 'ex-chest-01', 'ex-back-02', 'ex-shoulders-01', 'ex-core-01'] },
+          { day: 1, name_ja: '全身 A', name_en: 'Full Body A', exercises: ['0043', '0025', '0818', '0091', '0274'] },
+          { day: 3, name_ja: '全身 B', name_en: 'Full Body B', exercises: ['0032', '0047', '0652', '0334', '0865'] },
+          { day: 5, name_ja: '全身 A', name_en: 'Full Body A', exercises: ['0043', '0025', '0818', '0091', '0274'] },
         ]
       },
       {
@@ -79,9 +37,9 @@ export function seedPresetTemplatesSqlite(): boolean {
         weeks: 4,
         level: 'beginner',
         workouts: [
-          { day: 1, name_ja: '上半身 A', name_en: 'Upper Body A', exercises: ['ex-chest-01', 'ex-back-02', 'ex-shoulders-01'] },
-          { day: 3, name_ja: '下半身 A', name_en: 'Lower Body A', exercises: ['ex-legs-01', 'ex-legs-03', 'ex-core-01'] },
-          { day: 5, name_ja: '上半身 B', name_en: 'Upper Body B', exercises: ['ex-chest-04', 'ex-back-05', 'ex-arms-02'] },
+          { day: 1, name_ja: '上半身 A', name_en: 'Upper Body A', exercises: ['0025', '0818', '0091'] },
+          { day: 3, name_ja: '下半身 A', name_en: 'Lower Body A', exercises: ['0043', '0739', '0274'] },
+          { day: 5, name_ja: '上半身 B', name_en: 'Upper Body B', exercises: ['0289', '0027', '0294'] },
         ]
       },
       {
@@ -94,9 +52,9 @@ export function seedPresetTemplatesSqlite(): boolean {
         weeks: 4,
         level: 'beginner',
         workouts: [
-          { day: 1, name_ja: '脂肪燃焼 A', name_en: 'Fat Burn A', exercises: ['ex-cardio-01', 'ex-chest-09', 'ex-core-01', 'ex-core-05'] },
-          { day: 3, name_ja: '脂肪燃焼 B', name_en: 'Fat Burn B', exercises: ['ex-legs-01', 'ex-back-03', 'ex-core-03'] },
-          { day: 5, name_ja: '脂肪燃焼 A', name_en: 'Fat Burn A', exercises: ['ex-cardio-01', 'ex-chest-09', 'ex-core-01', 'ex-core-05'] },
+          { day: 1, name_ja: '脂肪燃焼 A', name_en: 'Fat Burn A', exercises: ['0685', '0662', '0274', '0464'] },
+          { day: 3, name_ja: '脂肪燃焼 B', name_en: 'Fat Burn B', exercises: ['0043', '0652', '0865'] },
+          { day: 5, name_ja: '脂肪燃焼 A', name_en: 'Fat Burn A', exercises: ['0685', '0662', '0274', '0464'] },
         ]
       },
       {
@@ -109,12 +67,12 @@ export function seedPresetTemplatesSqlite(): boolean {
         weeks: 4,
         level: 'experienced',
         workouts: [
-          { day: 1, name_ja: 'プッシュの日', name_en: 'Push Day', exercises: ['ex-chest-01', 'ex-chest-02', 'ex-shoulders-03', 'ex-shoulders-04', 'ex-arms-07'] },
-          { day: 2, name_ja: 'プルの日', name_en: 'Pull Day', exercises: ['ex-back-01', 'ex-back-02', 'ex-back-07', 'ex-arms-02', 'ex-shoulders-07'] },
-          { day: 3, name_ja: '脚の日', name_en: 'Legs Day', exercises: ['ex-legs-01', 'ex-legs-03', 'ex-legs-04', 'ex-core-01', 'ex-core-05'] },
-          { day: 4, name_ja: 'プッシュの日', name_en: 'Push Day', exercises: ['ex-chest-01', 'ex-chest-02', 'ex-shoulders-03', 'ex-shoulders-04', 'ex-arms-07'] },
-          { day: 5, name_ja: 'プルの日', name_en: 'Pull Day', exercises: ['ex-back-01', 'ex-back-02', 'ex-back-07', 'ex-arms-02', 'ex-shoulders-07'] },
-          { day: 6, name_ja: '脚の日', name_en: 'Legs Day', exercises: ['ex-legs-01', 'ex-legs-03', 'ex-legs-04', 'ex-core-01', 'ex-core-05'] },
+          { day: 1, name_ja: 'プッシュの日', name_en: 'Push Day', exercises: ['0025', '0047', '0405', '0334', '0201'] },
+          { day: 2, name_ja: 'プルの日', name_en: 'Pull Day', exercises: ['0032', '0818', '0027', '0294', '0203'] },
+          { day: 3, name_ja: '脚の日', name_en: 'Legs Day', exercises: ['0043', '0739', '0410', '0274', '0464'] },
+          { day: 4, name_ja: 'プッシュの日', name_en: 'Push Day', exercises: ['0025', '0047', '0405', '0334', '0201'] },
+          { day: 5, name_ja: 'プルの日', name_en: 'Pull Day', exercises: ['0032', '0818', '0027', '0294', '0203'] },
+          { day: 6, name_ja: '脚の日', name_en: 'Legs Day', exercises: ['0043', '0739', '0410', '0274', '0464'] },
         ]
       },
       {
@@ -127,11 +85,11 @@ export function seedPresetTemplatesSqlite(): boolean {
         weeks: 4,
         level: 'experienced',
         workouts: [
-          { day: 1, name_ja: '胸 & 背中', name_en: 'Chest & Back', exercises: ['ex-chest-01', 'ex-chest-02', 'ex-back-02', 'ex-back-05'] },
-          { day: 2, name_ja: '肩 & 腕', name_en: 'Shoulders & Arms', exercises: ['ex-shoulders-01', 'ex-shoulders-04', 'ex-arms-01', 'ex-arms-07'] },
-          { day: 3, name_ja: '脚 & 腹筋', name_en: 'Legs & Core', exercises: ['ex-legs-01', 'ex-legs-03', 'ex-core-01', 'ex-core-05'] },
-          { day: 4, name_ja: '胸 & 背中', name_en: 'Chest & Back', exercises: ['ex-chest-01', 'ex-chest-02', 'ex-back-02', 'ex-back-05'] },
-          { day: 5, name_ja: '肩 & 腕', name_en: 'Shoulders & Arms', exercises: ['ex-shoulders-01', 'ex-shoulders-04', 'ex-arms-01', 'ex-arms-07'] },
+          { day: 1, name_ja: '胸 & 背中', name_en: 'Chest & Back', exercises: ['0025', '0047', '0818', '0027'] },
+          { day: 2, name_ja: '肩 & 腕', name_en: 'Shoulders & Arms', exercises: ['0091', '0334', '0031', '0201'] },
+          { day: 3, name_ja: '脚 & 腹筋', name_en: 'Legs & Core', exercises: ['0043', '0739', '0274', '0464'] },
+          { day: 4, name_ja: '胸 & 背中', name_en: 'Chest & Back', exercises: ['0025', '0047', '0818', '0027'] },
+          { day: 5, name_ja: '肩 & 腕', name_en: 'Shoulders & Arms', exercises: ['0091', '0334', '0031', '0201'] },
         ]
       },
       {
@@ -144,10 +102,10 @@ export function seedPresetTemplatesSqlite(): boolean {
         weeks: 4,
         level: 'experienced',
         workouts: [
-          { day: 1, name_ja: 'スクワット重視', name_en: 'Squat Focus', exercises: ['ex-legs-01', 'ex-legs-03', 'ex-core-05'] },
-          { day: 2, name_ja: 'ベンチプレス重視', name_en: 'Bench Focus', exercises: ['ex-chest-01', 'ex-chest-02', 'ex-shoulders-04', 'ex-arms-07'] },
-          { day: 4, name_ja: 'デッドリフト重視', name_en: 'Deadlift Focus', exercises: ['ex-back-01', 'ex-back-05', 'ex-core-03'] },
-          { day: 5, name_ja: 'プレス重視', name_en: 'Press Focus', exercises: ['ex-shoulders-02', 'ex-shoulders-01', 'ex-back-03', 'ex-arms-02'] },
+          { day: 1, name_ja: 'スクワット重視', name_en: 'Squat Focus', exercises: ['0043', '0739', '0464'] },
+          { day: 2, name_ja: 'ベンチプレス重視', name_en: 'Bench Focus', exercises: ['0025', '0047', '0334', '0201'] },
+          { day: 4, name_ja: 'デッドリフト重視', name_en: 'Deadlift Focus', exercises: ['0032', '0027', '0865'] },
+          { day: 5, name_ja: 'プレス重視', name_en: 'Press Focus', exercises: ['0091', '0091', '0652', '0294'] },
         ]
       }
     ];

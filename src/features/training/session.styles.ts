@@ -38,6 +38,7 @@ export const styles = StyleSheet.create({
   exerciseSection: {
     gap: spacing.md,
     marginBottom: spacing.xl,
+    width: '100%',
   },
   swipeableContainer: {
     overflow: 'visible',
@@ -66,11 +67,14 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    width: '100%',
   },
   exerciseSectionHeaderLeft: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.sm,
+    flex: 1,
+    minWidth: 0,
   },
   exerciseIconWrapper: {
     width: 28,
@@ -79,12 +83,14 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.dark.accent.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    marginTop: 2,
   },
   exerciseName: {
     color: colors.dark.text.primary,
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.md,
     fontWeight: 'bold',
     textTransform: 'capitalize',
+    flexShrink: 1,
   },
   headerCheckCircle: {
     width: 28,
@@ -383,5 +389,18 @@ export const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3,
     zIndex: 100,
+  },
+  thumbnailContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+    backgroundColor: colors.dark.bg.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
   },
 });

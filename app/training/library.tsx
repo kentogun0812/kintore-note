@@ -14,6 +14,7 @@ import { SearchBar } from '@/components/SearchBar';
 import { DismissibleBanner } from '@/components/DismissibleBanner';
 import { ExerciseDetailModal, ExerciseDetailItem } from '@/components/ExerciseDetailModal';
 import { ExerciseRepository } from '@/infra/repositories/exercise.repository';
+import { EXERCISE_MEDIA } from '@/constants/exerciseMedia';
 import { useAuthStore } from '@/store/auth.store';
 import { useWorkoutStore } from '@/store/workout.store';
 import { useTrainingStore } from '@/store/training.store';
@@ -45,12 +46,11 @@ export default function ExerciseLibraryScreen() {
     router.back();
   };
 
-  // Fetch exercises and muscle groups from SQLite
   const { data: rawData, isLoading, error } = useQuery({
     queryKey: ['exercises_library'],
     queryFn: async () => {
       const userId = useAuthStore.getState().user?.id || 'guest';
-      const exercises = ExerciseRepository.getAllExercises(userId);
+      const exercises = ExerciseRepository.getAllExercises(userId, { onlySystem: true });
       const muscleGroups = ExerciseRepository.getMuscleGroups(userId);
       return { exercises, muscleGroups };
     }
@@ -59,7 +59,6 @@ export default function ExerciseLibraryScreen() {
   const muscleGroups = rawData?.muscleGroups || [];
   const exercises = rawData?.exercises || [];
 
-  // Construct Category Tabs list
   const categories = useMemo(() => {
     const allTab = {
       id: 'all',
@@ -69,7 +68,6 @@ export default function ExerciseLibraryScreen() {
     return [allTab, ...muscleGroups];
   }, [muscleGroups, t]);
 
-  // Group and format data for SectionList based on search and category tab
   const groupedData = useMemo(() => {
     if (!exercises) return [];
 
@@ -115,6 +113,7 @@ export default function ExerciseLibraryScreen() {
         groups[mgId] = { title: mgTitle, order: mgSort, data: [] };
       }
       
+      const media = EXERCISE_MEDIA[ex.id];
       groups[mgId].data.push({
         id: ex.id,
         name_ja: ex.name_ja,
@@ -124,6 +123,8 @@ export default function ExerciseLibraryScreen() {
         muscleGroup: ex.muscle_groups ? (i18n.language === 'ja' ? ex.muscle_groups.name_ja : ex.muscle_groups.name_en) : 'Other',
         iconName: getIconForGroup(ex.muscle_groups?.name_en),
         details: ex.details,
+        thumbnailUrl: media ? media.image : undefined,
+        instructions: ex.instructions,
       });
     });
 
@@ -133,7 +134,7 @@ export default function ExerciseLibraryScreen() {
         title: group.title, 
         data: group.data.map(item => ({
           ...item,
-          name: `${item.name_ja} (${item.name_en})`,
+          name: i18n.language === 'ja' ? item.name_ja : item.name_en,
         })) 
       }));
 
@@ -164,15 +165,12 @@ export default function ExerciseLibraryScreen() {
           bannerId="library"
           description={t('banners.libraryDesc')}
         />
-        <View style={styles.searchBarWrapper}>
-          <SearchBar
+        <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder={t('library.searchPlaceholder')}
           />
-        </View>
 
-        {/* Category Tab Panel */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -246,7 +244,6 @@ export default function ExerciseLibraryScreen() {
         </Animated.View>
       )}
 
-      {/* Exercise Detail Modal */}
       <ExerciseDetailModal
         visible={selectedExerciseForModal !== null}
         exercise={selectedExerciseForModal}
@@ -279,9 +276,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     backgroundColor: colors.dark.bg.primary,
     gap: spacing.md,
-  },
-  searchBarWrapper: {
-    width: '100%',
   },
   categoryTabsContainer: {
     gap: spacing.sm,

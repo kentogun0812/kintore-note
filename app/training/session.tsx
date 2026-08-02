@@ -62,11 +62,6 @@ export default function SessionScreen() {
     width,
   } = useActiveSession();
 
-  const gridContainerWidth = width - (spacing.base * 2 + spacing.md * 2);
-  const minItemWidth = 90;
-  const gridGap = spacing.sm;
-  const numColumns = Math.max(2, Math.floor((gridContainerWidth + gridGap) / (minItemWidth + gridGap)));
-
   const renderItem = useCallback(({ item: ex, drag, isActive }: RenderItemParams<any>) => {
     return (
       <ScaleDecorator>
@@ -118,7 +113,7 @@ export default function SessionScreen() {
           >
             <Icon name="chevron-back" size={24} color={colors.dark.text.primary} />
           </Pressable>
-          <Text style={styles.headerTitle}>{t('session.title')}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">{t('session.title')}</Text>
           <View style={styles.headerRight} />
         </View>
 
@@ -146,7 +141,7 @@ export default function SessionScreen() {
         ) : (
           <View style={{ flex: 1 }}>
             <Pressable
-              style={[styles.globalAddExerciseBtn, { marginHorizontal: spacing.base, marginTop: spacing.base, marginBottom: 0, zIndex: 10 }]}
+              style={[styles.globalAddExerciseBtn, { marginHorizontal: spacing.base, marginTop: spacing.base, marginBottom: 10, zIndex: 10 }]}
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 setIsEditingTemplate(true);

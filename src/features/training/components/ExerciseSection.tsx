@@ -7,7 +7,6 @@ import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { SCREEN_CONSTANTS } from '@/constants/screens';
 import { styles } from '../session.styles';
 
-// Memoized exercise section component to prevent unnecessary re-renders of other cards
 export const ExerciseSection = React.memo(({
   ex,
   drag,

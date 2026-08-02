@@ -1,3 +1,29 @@
+# Tracking Task: Master Exercise Library Redesign & Synchronization
+
+- **Objective**: Normalize the exercise dataset, introduce offline-first SQLite database tables, implement versioned monthly sync with Supabase, prepare repository layers, and build seed fallbacks.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Preprocess and normalize dataset (merge duplicates, translate English names, infer compound/isolation and force fields) ✅ Done
+- [x] Update SQLite schema and define migrations for new columns and tables in [schema-sqlite.ts](file:///d:/Workspace/kintore-note/src/infra/db/schema-sqlite.ts) ✅ Done
+- [x] Implement database initialization and column migration logic in [sqlite.ts](file:///d:/Workspace/kintore-note/src/infra/db/sqlite.ts) ✅ Done
+- [x] Implement master data seeding from JSON bundle in [seed-sqlite.ts](file:///d:/Workspace/kintore-note/src/infra/db/seed-sqlite.ts) ✅ Done
+- [x] Refactor `ExerciseRepository` to load full exercise metadata and detail views dynamically in [exercise.repository.ts](file:///d:/Workspace/kintore-note/src/infra/repositories/exercise.repository.ts) ✅ Done
+- [x] Simplify and clean static fallbacks in [exerciseDetails.ts](file:///d:/Workspace/kintore-note/src/constants/exerciseDetails.ts) ✅ Done
+- [x] Implement background synchronization service for master exercise library tables in [sync-service.ts](file:///d:/Workspace/kintore-note/src/infra/db/sync-service.ts) ✅ Done
+- [x] Hook synchronization checks into app layout bootstrap in [_layout.tsx](file:///d:/Workspace/kintore-note/app/_layout.tsx) ✅ Done
+- [x] Verify TypeScript compilation and runtime database seeding ✅ Done
+
+## Decisions & Changes
+- Wiped the static default exercises inside [defaultExercises.ts](file:///d:/Workspace/kintore-note/src/constants/defaultExercises.ts) to focus exclusively on the new preprocessed ExerciseDB CSV dataset of 686 exercises.
+- Mapped all workout preset templates in [seed-sqlite.ts](file:///d:/Workspace/kintore-note/src/infra/db/seed-sqlite.ts) to use the new CSV exercise IDs, preserving the default workouts and programs.
+- Implemented column migrations for `exercises` and index creation for relational tables in a secure transaction.
+- Programmed memory-mapped joints in `ExerciseRepository` to fetch primary/secondary muscles, equipment, and categories without causing N+1 query loop performance degradation.
+- Hooked versioned synchronization logic to check for remote updates from Supabase every 30 days.
+
+---
+
 # Tracking Task: Custom SVG Muscle Body Heatmap
 
 - **Objective**: Implement a custom-built SVG Muscle Body Heatmap (Front & Back) with react-native-svg, decoupling UI rendering from data mapping, color gradients, smooth animations, and interactive muscle stats popover.
@@ -412,5 +438,33 @@
 - [x] Remove the `<MuscleGroupIcon />` component rendering from `ExercisePicker.tsx` ✅ Done
 - [x] Clean up unused imports of `MuscleGroupIcon` in `ExercisePicker.tsx` ✅ Done
 - [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+---
+
+# Tracking Task: Exercise Library Dataset Integration & Synchronization
+
+- **Objective**: Integrate 1,324 exercises from the new crawler dataset, package images and video loops locally in the workspace, configure schema migrations, and implement a high-fidelity detail layout with a togglable media player.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Write and run the dataset preprocessing script (`preprocess-dataset.js`) ✅ Done
+- [x] Update SQLite schema and migrations in `schema-sqlite.ts` and `sqlite.ts` ✅ Done
+- [x] Update seeding logic in `seed-sqlite.ts` and monthly check in `sync-service.ts` ✅ Done
+- [x] Refactor `ExerciseRepository` to expose `image` and `gif_url` ✅ Done
+- [x] Update `library.tsx` to render thumbnails dynamically ✅ Done
+- [x] Update `ExerciseDetailModal.tsx` to display togglable media views (GIF/Image) ✅ Done
+- [x] Update localization strings in `en.json` & `ja.json` ✅ Done
+- [x] Verify clean TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+## Decisions & Changes
+- Extracted 1,324 exercises, 10 muscle groups, and equipment types from the raw dataset, cleaning up unnecessary languages.
+- Translated names into Japanese using previous seed data mappings and custom suffix replacement rules.
+- Copied 8.87 MB of static images and 128.7 MB of animated GIFs to `assets/exercises/images` and `assets/exercises/videos` to support completely offline rendering.
+- Created `src/constants/exerciseMedia.ts` dynamically with standard require statements, making all assets importable via Metro.
+- Added `image` and `gif_url` columns to the `exercises` SQLite schema, configured migration paths in `initSqliteDb`, and bumped schema version to `3` to trigger database re-creation on startup.
+- Refactored `ExerciseRepository` query mappings, `library.tsx` exercise card layouts, and `ExerciseDetailModal.tsx` overlay components to support loop videos and images with custom tab selector views.
+
 
 

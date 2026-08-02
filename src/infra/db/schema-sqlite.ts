@@ -1,5 +1,5 @@
 export const SQLITE_SCHEMA = {
-  version: 1,
+  version: 3,
   tables: {
     muscle_groups: `
       CREATE TABLE IF NOT EXISTS muscle_groups (
@@ -13,11 +13,24 @@ export const SQLITE_SCHEMA = {
     exercises: `
       CREATE TABLE IF NOT EXISTS exercises (
         id TEXT PRIMARY KEY,
+        slug TEXT UNIQUE,
         name_ja TEXT NOT NULL,
         name_en TEXT NOT NULL,
+        description_ja TEXT,
+        description_en TEXT,
         muscle_group_id TEXT,
+        difficulty TEXT DEFAULT 'Beginner',
+        mechanics TEXT DEFAULT 'compound',
+        force TEXT DEFAULT 'push',
+        body_region TEXT DEFAULT 'upper',
+        instructions TEXT,
+        image TEXT,
+        gif_url TEXT,
+        is_default INTEGER DEFAULT 0,
+        sort_order INTEGER DEFAULT 9999,
         is_system INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(muscle_group_id) REFERENCES muscle_groups(id)
       );
     `,
@@ -204,6 +217,54 @@ export const SQLITE_SCHEMA = {
         sort_order INTEGER NOT NULL,
         FOREIGN KEY(preset_plan_id) REFERENCES preset_weekly_plans(id) ON DELETE CASCADE,
         FOREIGN KEY(exercise_id) REFERENCES exercises(id)
+      );
+    `,
+    equipment: `
+      CREATE TABLE IF NOT EXISTS equipment (
+        id TEXT PRIMARY KEY,
+        name_ja TEXT NOT NULL,
+        name_en TEXT NOT NULL
+      );
+    `,
+    exercise_equipment: `
+      CREATE TABLE IF NOT EXISTS exercise_equipment (
+        exercise_id TEXT NOT NULL,
+        equipment_id TEXT NOT NULL,
+        PRIMARY KEY (exercise_id, equipment_id),
+        FOREIGN KEY(exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+        FOREIGN KEY(equipment_id) REFERENCES equipment(id) ON DELETE CASCADE
+      );
+    `,
+    categories: `
+      CREATE TABLE IF NOT EXISTS categories (
+        id TEXT PRIMARY KEY,
+        name_ja TEXT NOT NULL,
+        name_en TEXT NOT NULL
+      );
+    `,
+    exercise_categories: `
+      CREATE TABLE IF NOT EXISTS exercise_categories (
+        exercise_id TEXT NOT NULL,
+        category_id TEXT NOT NULL,
+        PRIMARY KEY (exercise_id, category_id),
+        FOREIGN KEY(exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+        FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
+      );
+    `,
+    exercise_muscles: `
+      CREATE TABLE IF NOT EXISTS exercise_muscles (
+        exercise_id TEXT NOT NULL,
+        muscle_group_id TEXT NOT NULL,
+        is_primary INTEGER DEFAULT 1,
+        PRIMARY KEY (exercise_id, muscle_group_id),
+        FOREIGN KEY(exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+        FOREIGN KEY(muscle_group_id) REFERENCES muscle_groups(id) ON DELETE CASCADE
+      );
+    `,
+    exercise_sync_metadata: `
+      CREATE TABLE IF NOT EXISTS exercise_sync_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT
       );
     `
   }

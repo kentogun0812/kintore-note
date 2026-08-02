@@ -85,8 +85,11 @@ function StandaloneFloatingTabBar({ paddingBottom }: { paddingBottom: number }) 
   const pathname = usePathname();
   const router = useRouter();
 
-  // Determine active route
-  const activeRouteIndex = TAB_ROUTES.findIndex(r => pathname.includes(r.name));
+  // Determine active route — only match exact tab roots, not sub-screens
+  const activeRouteIndex = TAB_ROUTES.findIndex(r => {
+    const tabRoot = r.route; // e.g. '/home', '/training'
+    return pathname === tabRoot || pathname === tabRoot + '/index';
+  });
   const activeRoute = TAB_ROUTES[activeRouteIndex];
 
   useEffect(() => {
@@ -203,7 +206,7 @@ function StandaloneFloatingTabBar({ paddingBottom }: { paddingBottom: number }) 
 export default function TabLayout() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const dynamicPaddingBottom = Math.max(24, insets.bottom + 8);
+  const dynamicPaddingBottom = Math.max(12, insets.bottom + 2);
   return (
     <View style={{ flex: 1, backgroundColor: colors.dark.bg.primary }}>
       <Tabs

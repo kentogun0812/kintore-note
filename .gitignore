@@ -46,3 +46,7 @@ supabase_schema.sql
 
 # design docs
 /docs
+
+# exercises large assets
+assets/exercises/images/
+assets/exercises/videos/

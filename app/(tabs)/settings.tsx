@@ -336,6 +336,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.base,
+    paddingBottom: 100,
     gap: spacing.lg,
   },
   premiumCard: {
