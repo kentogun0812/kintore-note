@@ -15,11 +15,13 @@
     },
     "ios": {
       "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSFaceIDUsageDescription": "筋トレノートはアプリロック機能でFace IDを使用し、あなたのトレーニングデータとボディ写真を保護します。"
       }
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -42,7 +44,9 @@
         }
       ],
       "expo-sqlite",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "@react-native-firebase/app",
+      "@react-native-firebase/messaging"
     ]
   }
 }

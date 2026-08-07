@@ -3,6 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "experimentalDecorators": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "jsx": "react-native",
     "paths": {

@@ -2,6 +2,7 @@ import '@/i18n';
 import { initSqliteDb, getSqliteDb } from '@/infra/db/sqlite';
 import { seedPresetTemplatesSqlite } from '@/infra/db/seed-sqlite';
 import { SyncService } from '@/infra/db/sync-service';
+import { registerFCMToken, setupFCMListeners } from '@/lib/fcm';
 import { useEffect, useState } from 'react';
 import { Platform, LogBox, AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -29,6 +30,20 @@ LogBox.ignoreLogs([
 SplashScreen.preventAutoHideAsync().catch(() => { });
 const queryClient = new QueryClient();
 
+// Route segment constants
+const SEGMENT_TABS       = '(tabs)';
+const SEGMENT_AUTH       = 'auth';
+const SEGMENT_HOME       = 'home';
+const SEGMENT_INTRO      = 'intro';
+const SEGMENT_ONBOARDING = 'onboarding';
+const SEGMENT_LOGIN      = 'login';
+const SEGMENT_REGISTER   = 'register';
+
+// Full route path constants
+const ROUTE_HOME         = '/(tabs)/home';
+const ROUTE_AUTH_INTRO   = '/auth/intro';
+const ROUTE_AUTH_ONBOARD = '/auth/onboarding';
+
 function RootLayout() {
   const router = useRouter();
   const segments = useSegments();
@@ -46,7 +61,6 @@ function RootLayout() {
       const authInit = initialize();
 
       initSqliteDb();
-
       const db = getSqliteDb();
       let isEmpty = false;
       try {
@@ -58,14 +72,10 @@ function RootLayout() {
 
       let didSeed = false;
       if (isEmpty) {
-        console.log('[Layout] Exercises database is empty. Attempting initial sync from Supabase...');
         try {
           const didSync = await SyncService.syncMasterExercises();
           if (didSync) {
-            console.log('[Layout] Initial sync from Supabase succeeded.');
             didSeed = true;
-          } else {
-            console.warn('[Layout] Initial sync from Supabase returned false (no internet or server error).');
           }
         } catch (error) {
           console.error('[Layout] Initial remote sync failed:', error);
@@ -84,19 +94,15 @@ function RootLayout() {
           }
         }, 5000);
       }
-
       seedPresetTemplatesSqlite();
       if (didSeed) {
         queryClient.invalidateQueries({ queryKey: ['exercises'] });
         queryClient.invalidateQueries({ queryKey: ['exercises_library'] });
       }
-
       await Promise.all([minDelay, authInit]);
       setIsPreloading(false);
     }
-
     preload();
-
     if (Platform.OS === 'android') {
       SystemUI.setBackgroundColorAsync(colors.dark.bg.primary);
     }
@@ -104,20 +110,39 @@ function RootLayout() {
 
   // Version check listener on app mount and foreground resume
   useEffect(() => {
-    // Initial check (non-blocking)
     checkAppVersion();
-
-    // AppState listener for subsequent resumes
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
-        checkAppVersion(true); // force check on foreground resume
+        checkAppVersion(true);
       }
     });
-
     return () => {
       subscription.remove();
     };
   }, []);
+
+  // Initialize FCM listeners globally
+  useEffect(() => {
+    const cleanup = setupFCMListeners();
+    return () => cleanup();
+  }, []);
+
+  // Register FCM token ONLY when user lands on the Home screen
+  useEffect(() => {
+    if (isLoading || isPreloading) return;
+
+    const routeSegments = segments as string[];
+    const isHome = routeSegments[0] === SEGMENT_TABS && routeSegments[1] === SEGMENT_HOME;
+    if (!isHome) return;
+
+    // 500ms delay to guarantee that the splash screen fade-out
+    const timer = setTimeout(() => {
+      registerFCMToken(session?.user?.id ?? 'guest');
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [session, segments, isLoading, isPreloading]);
 
   useEffect(() => {
     if (i18n.language !== language) {
@@ -129,31 +154,31 @@ function RootLayout() {
     if (isLoading || isPreloading) return;
 
     const routeSegments = segments as string[];
-    const inAuthGroup = routeSegments[0] === 'auth';
-    const isIntro = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === 'intro';
-    const isOnboarding = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === 'onboarding';
+    const inAuthGroup  = routeSegments[0] === SEGMENT_AUTH;
+    const isIntro      = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === SEGMENT_INTRO;
+    const isOnboarding = inAuthGroup && routeSegments.length > 1 && routeSegments[1] === SEGMENT_ONBOARDING;
 
     const effectiveHasSeenIntro = isMockAdminMode || hasSeenIntro;
     const effectiveHasCompletedOnboarding = isMockAdminMode || hasCompletedOnboarding;
 
     if (!effectiveHasSeenIntro && !isIntro) {
-      router.replace('/auth/intro');
+      router.replace(ROUTE_AUTH_INTRO);
       SplashScreen.hideAsync().catch(() => { });
       return;
     }
     if (effectiveHasSeenIntro) {
       if (!session) {
-        if (inAuthGroup && !isIntro && routeSegments.length > 1 && routeSegments[1] !== 'login' && routeSegments[1] !== 'register') {
-          router.replace('/(tabs)/home');
+        if (inAuthGroup && !isIntro && routeSegments.length > 1 && routeSegments[1] !== SEGMENT_LOGIN && routeSegments[1] !== SEGMENT_REGISTER) {
+          router.replace(ROUTE_HOME);
         }
       } else {
         if (!effectiveHasCompletedOnboarding) {
           if (!isOnboarding) {
-            router.replace('/auth/onboarding');
+            router.replace(ROUTE_AUTH_ONBOARD);
           }
         } else {
           if (inAuthGroup) {
-            router.replace('/(tabs)/home');
+            router.replace(ROUTE_HOME);
           }
         }
       }
@@ -188,7 +213,6 @@ function RootLayout() {
             <Stack.Screen name="modals/session-summary" options={{ presentation: 'formSheet', headerShown: false }} />
           </Stack>
 
-          {/* App Lock Overlay — only for logged-in users, renders on top of everything */}
           {isLocked && !!session && <AppLockScreen onUnlock={unlock} />}
         </QueryClientProvider>
       </SafeAreaProvider>

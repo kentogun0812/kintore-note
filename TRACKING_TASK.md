@@ -489,3 +489,88 @@
 - Caching last check timestamps for 12 hours via `AsyncStorage` to avoid performance degradation and server resource exhaustion.
 - Successfully verified zero TypeScript compilation warnings/errors (`npx tsc --noEmit`).
 
+---
+
+# Tracking Task: Firebase Cloud Messaging Integration
+
+- **Objective**: Implement FCM push notifications for marketing campaigns. Store FCM tokens on Supabase for logged-in users, and subscribe devices to the `'all_users'` topic for broadcasting marketing notifications even when the app is closed.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize TRACKING_TASK.md in root ✅ Done
+- [x] Install npm packages: `@react-native-firebase/app`, `@react-native-firebase/messaging` ✅ Done
+- [x] Modify `app.json` to configure Firebase plugins and credentials ✅ Done
+- [x] Create Supabase migration script `database/add_fcm_tokens_table.sql` ✅ Done
+- [x] Create client FCM helper `src/lib/fcm.ts` ✅ Done
+- [x] Update state store `src/store/auth.store.ts` to register/unregister user-token mapping on login/logout ✅ Done
+- [x] Integrate initialization in `app/_layout.tsx` ✅ Done
+- [x] Verify compilation and complete walkthrough ✅ Done
+
+## Decisions & Changes
+- Selected Option 1 (Device-level Marketing Subscription) where devices remain subscribed to `'all_users'` marketing topic on logout, but the user-token mapping is removed from Supabase to protect user privacy.
+- Enabled `esModuleInterop` and `allowSyntheticDefaultImports` in `tsconfig.json` to support default imports from external packages.
+- Migrated code in `src/lib/fcm.ts` to use Invertase React Native Firebase version 26+ modular API structure (`getMessaging`, `getToken`, `subscribeToTopic`, etc.), guaranteeing compliance with modern SDK patterns and types.
+
+---
+
+# Tracking Task: Remove Obsolete Database Seed File
+
+- **Objective**: Remove the obsolete `database/seed.sql` file containing old mock exercises, muscle groups, and workout templates, as they are superseded by the master exercise library in `database/seed_server.sql`.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Implementation
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Delete obsolete `database/seed.sql` ✅ Done
+- [x] Verify no remaining references or compile issues ✅ Done
+
+## Decisions & Changes
+- Deleted `database/seed.sql` because its mock data (including static UUID muscle groups and exercises) is completely obsolete and superseded by the 1,324 exercises in `database/seed_server.sql` and the client-side presets in `seed-sqlite.ts`.
+
+---
+
+# Tracking Task: Muscular Silhouette SVG Heatmap Integration
+
+- **Objective**: Overhaul the SVG Muscle Body Heatmaps (Front & Back) using high-fidelity vector coordinates processed from a professional muscular man silhouette illustration, ensuring seamless, beautifully curved lines and complete selectability.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Implementation
+
+## Task List
+- [x] Analyze muscular bodybuilder vector asset (EPS/JPEG) ✅ Done
+- [x] Develop a Python script to segment muscle groups via morphological erosion and contour tracing ✅ Done
+- [x] Map coordinates to a high-resolution symmetrical coordinate viewport ✅ Done
+- [x] Update `src/components/charts/body-svg/BodyFrontSvg.tsx` with high-fidelity, contour-traced front muscle paths ✅ Done
+- [x] Update `src/components/charts/body-svg/BodyBackSvg.tsx` with matched, high-fidelity back muscle paths and mirrored front limbs ✅ Done
+- [x] Verify clean TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+## Decisions & Changes
+- Scaled the original, professionally designed EPS vector outline (Path 2) and muscle paths, resolving all jagged/low-poly contours on the head, hands, and feet to make them look completely natural.
+- Implemented perfect horizontal symmetry (`x_left = 1920 - x_right`) for all limbs and muscle groups (shoulders, biceps, forearms, quads, calves, chest, traps), eliminating any asymmetry caused by the original artwork's lighting effects.
+- Added non-interactive aesthetic lines for the head (neck and jaw outlines) to add structural definition and realism to the head shape.
+- Outlined all muscle segments with a subtle semi-transparent border (`stroke='rgba(255,255,255,0.2)'`) so they are clearly visible and structured even when filled with the 0% trained dark grey color.
+- Restored the original, professionally designed EPS vector paths for quads (Path 12) and calves (Path 17) and mirrored them horizontally. This removes any custom blocky shapes, ensuring the pelvis, groin, and inner thigh regions remain clean and anatomical without any strange overlapping artifacts.
+- Overlayed the original chest and shoulder highlight lines (Path 3 and Path 5) as thin semi-transparent cosmetic paths, adding crisp, high-fidelity anatomical muscle definition to the pectorals and deltoids even when they are filled with the 0% trained dark grey color.
+
+---
+
+# Tracking Task: FCM Expo Bypass
+
+- **Objective**: Bypass push notification logic when running the application in the Expo Go client app to prevent startup or function execution errors in non-native environments.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Implementation
+
+## Task List
+- [x] Integrate `expo-constants` to check `Constants.appOwnership` ✅ Done
+- [x] Add early returns to all FCM methods if the app runs in the Expo Go client (`isFCMSupported`) ✅ Done
+- [x] Verify clean TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+
+## Decisions & Changes
+- Added helper `isFCMSupported()` checking `Constants.appOwnership === 'expo' || Platform.OS === 'web'`.
+- Inserted early return checks at the beginning of `requestUserPermission`, `registerFCMToken`, `unregisterFCMToken`, `subscribeToTopicWrapper`, `unsubscribeFromTopicWrapper`, and `setupFCMListeners`.
+- Maintains static imports of `@react-native-firebase/messaging` per the coding structure requested by the user, while preventing runtime execution errors when running inside the Expo Go app.
+
+
+
+
+

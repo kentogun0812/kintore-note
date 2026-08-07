@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { unregisterFCMToken } from '@/lib/fcm';
 import { isMockAdminMode, mockAdminSession, mockAdminUser } from '@/constants/mockAdmin';
 
 interface AuthState {
@@ -8,19 +9,11 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   isGuest: boolean;
-  
-  /** Whether the session token has expired and needs re-authentication */
   isSessionExpired: boolean;
   
   setSession: (session: Session | null) => void;
   signOut: () => Promise<void>;
   initialize: () => Promise<void>;
-  
-  /**
-   * Check if the current session is still valid.
-   * Supabase JWTs have `expires_at` (Unix timestamp in seconds).
-   * Returns true if the session is valid and not expired.
-   */
   isSessionValid: () => boolean;
 }
 
@@ -31,28 +24,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isGuest: !isMockAdminMode,
   isSessionExpired: false,
 
-  setSession: (session) => set({ 
-    session, 
-    user: session?.user ?? null, 
-    isGuest: !session,
-    isSessionExpired: false,
-    isLoading: false 
-  }),
+  setSession: (session) => {
+    set({ 
+      session, 
+      user: session?.user ?? null, 
+      isGuest: !session,
+      isSessionExpired: false,
+      isLoading: false 
+    });
+  },
 
   isSessionValid: () => {
     const { session } = get();
     if (!session) return false;
     
-    // Supabase session.expires_at is a Unix timestamp in seconds
     const expiresAt = session.expires_at;
-    if (!expiresAt) return true; // If no expiry info, assume valid
+    if (!expiresAt) return true;
     
     const now = Math.floor(Date.now() / 1000);
-    // Consider expired if less than 60 seconds remain
     return expiresAt > now + 60;
   },
 
   signOut: async () => {
+    try {
+      await unregisterFCMToken();
+    } catch (e) {
+      console.warn('[AuthStore] Failed to unregister FCM token during sign out:', e);
+    }
     await supabase.auth.signOut();
     set({ session: null, user: null, isGuest: true, isSessionExpired: false });
   },
@@ -71,8 +69,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
-      // Check if session has expired
       let isExpired = false;
       if (session?.expires_at) {
         const now = Math.floor(Date.now() / 1000);
@@ -81,8 +77,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       set({ 
         session: isExpired ? null : session, 
-        user: isExpired ? null : (session?.user ?? null), 
-        isGuest: !session || isExpired,
+        user: isExpired ? null : session?.user, 
+        isGuest: isExpired || !session,
         isSessionExpired: isExpired,
         isLoading: false 
       });
@@ -112,7 +108,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             isLoading: false 
           });
         } else {
-          // USER_UPDATED, etc.
           set({ 
             session, 
             user: session?.user ?? null, 
