@@ -3,10 +3,10 @@ import { initSqliteDb, getSqliteDb } from '@/infra/db/sqlite';
 import { seedPresetTemplatesSqlite } from '@/infra/db/seed-sqlite';
 import { SyncService } from '@/infra/db/sync-service';
 import { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, LogBox, AppState } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LogBox } from 'react-native';
+import { checkAppVersion } from '@/utils/versionCheck';
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/store/auth.store';
 import { useOfflineSync } from '@/hooks/use-offline-sync';
@@ -101,6 +101,23 @@ function RootLayout() {
       SystemUI.setBackgroundColorAsync(colors.dark.bg.primary);
     }
   }, [initialize]);
+
+  // Version check listener on app mount and foreground resume
+  useEffect(() => {
+    // Initial check (non-blocking)
+    checkAppVersion();
+
+    // AppState listener for subsequent resumes
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        checkAppVersion(true); // force check on foreground resume
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (i18n.language !== language) {

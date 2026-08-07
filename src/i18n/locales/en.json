@@ -498,5 +498,11 @@
   },
   "nav": {
     "weeklyPlans": "Weekly Plans"
+  },
+  "versionCheck": {
+    "softTitle": "New Version Available",
+    "softMessage": "A new version of Kintore Note is available. Would you like to update to get the latest features?",
+    "updateNow": "Update Now",
+    "later": "Later"
   }
 }

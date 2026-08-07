@@ -466,5 +466,26 @@
 - Added `image` and `gif_url` columns to the `exercises` SQLite schema, configured migration paths in `initSqliteDb`, and bumped schema version to `3` to trigger database re-creation on startup.
 - Refactored `ExerciseRepository` query mappings, `library.tsx` exercise card layouts, and `ExerciseDetailModal.tsx` overlay components to support loop videos and images with custom tab selector views.
 
+---
 
+# Tracking Task: Centralized Static Hosting & Native Version Checking
+
+- **Objective**: Implement a centralized static config and policy hosting in the repository (`public/` directory), and implement native device alert version checks (for force and soft updates) in `app/_layout.tsx` on bootstrap and app resume, with AsyncStorage caching to optimize performance.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
+
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Create static files (`public/version.json`, `public/privacy.html`, `public/terms.html`) ✅ Done
+- [x] Add static URL constants in `src/constants/app.ts` ✅ Done
+- [x] Add localization keys in `en.json` & `ja.json` ✅ Done
+- [x] Implement version check utility in `src/utils/versionCheck.ts` ✅ Done
+- [x] Integrate checks on app load and resume in `app/_layout.tsx` ✅ Done
+- [x] Verify compilation and functionality ✅ Done
+
+## Decisions & Changes
+- Determined to use a separate static `/public` directory inside the repository to allow Vercel or GitHub Pages to serve configurations and policy pages under the same deployment URL.
+- Decided to use `Alert.alert` with standard device styling to guarantee a native iOS/Android look and feel.
+- Caching last check timestamps for 12 hours via `AsyncStorage` to avoid performance degradation and server resource exhaustion.
+- Successfully verified zero TypeScript compilation warnings/errors (`npx tsc --noEmit`).
 

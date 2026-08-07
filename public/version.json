@@ -1,0 +1,10 @@
+{
+  "ios": {
+    "latestVersion": "1.0.0",
+    "storeUrl": "itms-apps://itunes.apple.com/app/id64XXXXXXXX"
+  },
+  "android": {
+    "latestVersion": "1.0.0",
+    "storeUrl": "market://details?id=com.kentogun0812.kintorenote"
+  }
+}
