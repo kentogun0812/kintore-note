@@ -354,7 +354,18 @@ export default function StatsScreen() {
           <View style={styles.chartsWrapper}>
             <Card style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>{t('stats.muscleHeatmap')}</Text>
-              <MuscleHeatmap data={heatmapData} />
+              <MuscleHeatmap data={[
+                { muscleGroupId: 'mg-chest', exerciseId: 'ex-chest-01', exerciseNameEn: 'Bench Press', exerciseNameJa: 'ベンチプレス', muscleNameEn: 'Chest', muscleNameJa: '大胸筋', workoutCount: 10, setCount: 30, volume: 15000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-shoulders', exerciseId: 'ex-shoulders-01', exerciseNameEn: 'Overhead Press', exerciseNameJa: 'オーバーヘッドプレス', muscleNameEn: 'Shoulders', muscleNameJa: '三角筋', workoutCount: 5, setCount: 15, volume: 5000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-arms', exerciseId: 'ex-arms-01', exerciseNameEn: 'Bicep Curl', exerciseNameJa: 'バイセップスカール', muscleNameEn: 'Biceps', muscleNameJa: '上腕二頭筋', workoutCount: 8, setCount: 24, volume: 8000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-arms', exerciseId: 'ex-arms-07', exerciseNameEn: 'Tricep Extension', exerciseNameJa: 'トライセプスエクステンション', muscleNameEn: 'Triceps', muscleNameJa: '上腕三頭筋', workoutCount: 6, setCount: 18, volume: 6000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-legs', exerciseId: 'ex-legs-01', exerciseNameEn: 'Squat', exerciseNameJa: 'スクワット', muscleNameEn: 'Quads', muscleNameJa: '大腿四頭筋', workoutCount: 12, setCount: 36, volume: 20000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-back', exerciseId: 'ex-back-01', exerciseNameEn: 'Deadlift', exerciseNameJa: 'デッドリフト', muscleNameEn: 'Lower Back', muscleNameJa: '下背部', workoutCount: 6, setCount: 18, volume: 12000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-core', exerciseId: 'ex-core-01', exerciseNameEn: 'Crunch', exerciseNameJa: 'クランチ', muscleNameEn: 'Abs', muscleNameJa: '腹筋', workoutCount: 15, setCount: 45, volume: 2000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-back', exerciseId: 'ex-back-02', exerciseNameEn: 'Lat Pulldown', exerciseNameJa: 'ラットプルダウン', muscleNameEn: 'Lats', muscleNameJa: '広背筋', workoutCount: 10, setCount: 30, volume: 10000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-back', exerciseId: 'ex-back-09', exerciseNameEn: 'Shrugs', exerciseNameJa: 'シュラッグ', muscleNameEn: 'Traps', muscleNameJa: '僧帽筋', workoutCount: 4, setCount: 12, volume: 4000, lastActiveAt: new Date().toISOString() },
+                { muscleGroupId: 'mg-glutes', exerciseId: 'ex-glutes-01', exerciseNameEn: 'Hip Thrust', exerciseNameJa: 'ヒップスラスト', muscleNameEn: 'Glutes', muscleNameJa: '大臀筋', workoutCount: 7, setCount: 21, volume: 7000, lastActiveAt: new Date().toISOString() }
+              ]} />
             </Card>
 
             {/* Muscle Split (Donut Chart) */}

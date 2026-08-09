@@ -77,15 +77,16 @@ export function MuscleHeatmap({ data }: MuscleHeatmapProps) {
         </TouchableOpacity>
       </View>
 
-      {/* SVG Canvas Container */}
+      {/* Body Image + SVG Overlay Container */}
       <View style={styles.svgWrapper}>
-        {viewMode === 'front' ? (
+        {viewMode === 'front' && (
           <BodyFrontSvg
             getFillColor={getFillColor}
             selectedMuscle={selectedMuscleKey}
             onSelectMuscle={handleSelectMuscle}
           />
-        ) : (
+        )}
+        {viewMode === 'back' && (
           <BodyBackSvg
             getFillColor={getFillColor}
             selectedMuscle={selectedMuscleKey}
@@ -134,7 +135,7 @@ export function MuscleHeatmap({ data }: MuscleHeatmapProps) {
         </Text>
       )}
 
-      {/* Legend */}
+      {/* Heat Level Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.colorBox, { backgroundColor: '#1E1E1E' }]} />
@@ -169,11 +170,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 3,
     marginBottom: spacing.base,
-    width: 180,
+    width: '60%',
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 8,
     alignItems: 'center',
     borderRadius: 9,
   },
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dark.bg.secondary,
   },
   segmentText: {
-    fontSize: typography.fontSize.xs,
+    fontSize: typography.fontSize.sm,
     fontWeight: 'bold',
     color: colors.dark.text.secondary,
   },
@@ -191,13 +192,14 @@ const styles = StyleSheet.create({
   svgWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: spacing.xs,
+    marginVertical: spacing.sm,
   },
   hintText: {
     fontSize: typography.fontSize.xs,
     color: colors.dark.text.tertiary,
     marginTop: spacing.sm,
     fontStyle: 'italic',
+    textAlign: 'center',
   },
   statCard: {
     backgroundColor: colors.dark.bg.tertiary,

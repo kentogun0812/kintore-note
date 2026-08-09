@@ -545,7 +545,8 @@
 - [x] Verify clean TypeScript compilation (`npx tsc --noEmit`) ✅ Done
 
 ## Decisions & Changes
-- Scaled the original, professionally designed EPS vector outline (Path 2) and muscle paths, resolving all jagged/low-poly contours on the head, hands, and feet to make them look completely natural.
+- Added the new file.svg as a separate tab called `Front (Lines)` inside `MuscleHeatmap.tsx` without deleting the old body heatmap, giving users the ability to compare and overlay the strokes while maintaining backwards compatibility with the interactive fills.
+- Processed and implemented two new SVGs (`front.svg`, `back.svg`) provided by the user in the `assets/muscle` directory. They were rendered as static SVG overlays and mapped to new comparison tabs `Front (New)` and `Back (New)` in `MuscleHeatmap.tsx`.
 - Implemented perfect horizontal symmetry (`x_left = 1920 - x_right`) for all limbs and muscle groups (shoulders, biceps, forearms, quads, calves, chest, traps), eliminating any asymmetry caused by the original artwork's lighting effects.
 - Added non-interactive aesthetic lines for the head (neck and jaw outlines) to add structural definition and realism to the head shape.
 - Outlined all muscle segments with a subtle semi-transparent border (`stroke='rgba(255,255,255,0.2)'`) so they are clearly visible and structured even when filled with the 0% trained dark grey color.
@@ -570,7 +571,29 @@
 - Inserted early return checks at the beginning of `requestUserPermission`, `registerFCMToken`, `unregisterFCMToken`, `subscribeToTopicWrapper`, `unsubscribeFromTopicWrapper`, and `setupFCMListeners`.
 - Maintains static imports of `@react-native-firebase/messaging` per the coding structure requested by the user, while preventing runtime execution errors when running inside the Expo Go app.
 
+---
 
+# Tracking Task: Anatomical Line-Art Body Heatmap Overhaul
 
+- **Objective**: Rebuild `BodyFrontSvg.tsx` and `BodyBackSvg.tsx` based on the user's provided line-art anatomical illustration, fixing the broken rendering (where one half was missing due to `ClipPath` transform issues on React Native SVG) and replacing it with clean, anatomically accurate, interactive vector muscle shapes.
+- **Status**: Completed ✅ Done
+- **Current Phase**: Completed
 
+## Task List
+- [x] Initialize/Update `TRACKING_TASK.md` ✅ Done
+- [x] Perform Impact Analysis & Create `implementation_plan.md` ✅ Done
+- [x] Craft SVG paths for front body matching the anatomical line-art reference image (Head, Chest, 6-Pack Abs, Obliques, Shoulders, Biceps, Forearms, Quads, Calves) ✅ Done
+- [x] Craft SVG paths for back body (Traps, Shoulders, Triceps, Lats, Lower Back, Glutes, Hamstrings, Calves) ✅ Done
+- [x] Ensure all left/right muscle pairs are perfectly symmetrical and individually pressable ✅ Done
+- [x] Verify TypeScript compilation (`npx tsc --noEmit`) ✅ Done
+- [x] Create Walkthrough and verify ✅ Done
 
+## Decisions & Changes
+- Replaced the flawed `ClipPath` scale(-1, 1) transform strategy which caused React Native SVG on mobile devices to fail rendering the left side of the body.
+- Re-architected `BodyFrontSvg.tsx` and `BodyBackSvg.tsx` with explicit, clean vector paths modeled after the provided line-art male body illustration.
+- **Final approach adopted**: Image + SVG Overlay strategy.
+  - `front.jpg` / `back.jpg` are displayed as native `<Image>` components for pixel-perfect, performant rendering.
+  - An `<Svg>` layer is absolutely overlaid on top with `<Ellipse>` muscle zones extracted via Python pixel analysis of `front_fill.jpg`, `back_fill.jpg`, and `leg_fill.jpg`.
+  - Muscle zone coordinates are expressed as normalized percentage values (0-1) relative to image dimensions, computed from the orange pixel bounding boxes in the reference fill images.
+  - Inactive muscle zones use `TouchableOpacity` hit areas; active zones are pressable via `react-native-svg` `onPress`.
+  - `MuscleHeatmap.tsx` simplified to 2 tabs (Front / Back), removing all legacy SVG comparison tabs.
